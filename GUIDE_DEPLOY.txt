@@ -1,0 +1,240 @@
+# 🚀 GUIDE DÉPLOIEMENT PHOTOVINTED SAAS
+
+## ✅ C'EST QUOI LES FICHIERS
+
+```
+photovinted-saas/
+├── main.py                 # Backend FastAPI ✨
+├── requirements.txt        # Dépendances Python
+├── Procfile               # Config Railway
+├── .env.example           # Variables d'env
+│
+└── frontend/              # App React
+    ├── app.jsx            # Composant principal
+    ├── package.json       # Dépendances JS
+    ├── vite.config.js     # Config build
+    └── index.html         # HTML entrypoint
+```
+
+---
+
+## 🏠 LOCAL - TESTER EN DEV (5 MIN)
+
+### 1️⃣ Clone / Setup Backend
+
+```bash
+# Crée dossier
+mkdir photovinted-saas
+cd photovinted-saas
+
+# Copy main.py, requirements.txt
+
+# Install deps
+pip install -r requirements.txt
+
+# Crée .env
+cat > .env << EOF
+API_KEY=test_key_12345
+STRIPE_SECRET_KEY=sk_test_4eC39HqLyjWDarhtT1l1kKt
+EOF
+
+# Lance backend
+python main.py
+# ou: uvicorn main:app --reload
+
+# → http://localhost:8000
+```
+
+### 2️⃣ Setup Frontend (terminal NOUVEAU)
+
+```bash
+cd frontend
+
+# Copy app.jsx, package.json, vite.config.js, index.html
+
+# Install
+npm install
+
+# Dev mode
+npm run dev
+
+# → http://localhost:5173
+```
+
+### 3️⃣ TEST
+
+Ouvre http://localhost:5173 → teste l'upload
+
+✅ Si ça marche → Continue!
+
+---
+
+## 🌍 PRODUCTION - RAILWAY (5 MIN)
+
+### 1️⃣ Crée repo GitHub
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git push origin main
+```
+
+### 2️⃣ Connect Railway
+
+1. Vá sur https://railway.app
+2. Click "New Project"
+3. "Deploy from GitHub"
+4. Select ton repo
+5. Railway auto-détecte le Procfile ✨
+
+### 3️⃣ Configure Env Vars
+
+Dashboard Railway → Variables:
+
+```
+API_KEY=ta_clé_api_secrète
+STRIPE_SECRET_KEY=sk_live_xxxxx
+FRONTEND_URL=https://ton-app.railway.app
+```
+
+### 4️⃣ Deploy Frontend (Vercel)
+
+```bash
+cd frontend
+npm install
+npm run build
+
+# Deploy sur Vercel avec:
+# - Build command: npm run build
+# - Output: dist
+```
+
+**Configure Env Vars Vercel:**
+```
+VITE_API_URL=https://ton-backend.railway.app
+VITE_API_KEY=ta_clé_api
+```
+
+---
+
+## 🧪 TEST CURL
+
+```bash
+# Upload image
+curl -X POST http://localhost:8000/enhance \
+  -H "x-api-key: test_key_12345" \
+  -F "file=@photo.jpg"
+
+# Réponse:
+# {
+#   "status": "success",
+#   "filename": "abc123.png",
+#   "url": "/image/abc123.png"
+# }
+
+# Get image
+curl http://localhost:8000/image/abc123.png > result.png
+```
+
+---
+
+## 💰 MONÉTISATION (BONUS)
+
+Stripe est déjà intégré!
+
+Route: `POST /create-checkout-session`
+
+```python
+# Dans app.jsx, ajoute:
+const handleUpgrade = async () => {
+  const res = await fetch(`${API_URL}/create-checkout-session`, {
+    method: "POST",
+    headers: { "x-api-key": API_KEY }
+  });
+  const data = await res.json();
+  window.location.href = data.checkout_url;
+};
+```
+
+---
+
+## ⚡ PROBLÈMES COURANTS
+
+**Q: Image ne se génère pas?**
+A: Check firewall / CORS. Log dit quoi?
+
+**Q: CORS error?**
+A: Backend CORS est ouvert (*), check frontend URL
+
+**Q: File not found après upload?**
+A: Dossier `output/` n'existe pas? main.py le crée auto
+
+**Q: Stripe pas marche?**
+A: T'as besoin clé API Stripe valide (pas test key en prod)
+
+---
+
+## 📊 STRUCTURE FINALE
+
+Quand tu déploies:
+
+```
+Frontend (Vercel)
+    ↓
+    API Call (Authorization + CORS)
+    ↓
+Backend (Railway)
+    ↓
+    Traite image (PIL)
+    ↓
+    Sauvegarde /output
+    ↓
+    Retourne URL
+    ↓
+Frontend affiche image + Download
+```
+
+---
+
+## ✨ PROCHAINES ÉTAPES
+
+1. **Local test** → Valide que ça marche
+2. **Github repo** → Push le code
+3. **Railway backend** → 5 min deploy
+4. **Vercel frontend** → 3 min deploy
+5. **Test en prod** → Upload une image
+6. **Ajoute Stripe** → Monétise!
+
+---
+
+## 📱 FICHIERS QU'IL FAUT
+
+```
+✅ main.py
+✅ requirements.txt
+✅ Procfile
+✅ .env (local)
+✅ app.jsx
+✅ package.json
+✅ vite.config.js
+✅ index.html (créé par Vite)
+✅ input.css (Tailwind)
+✅ .gitignore
+```
+
+---
+
+## 🎯 TL;DR
+
+1. `pip install -r requirements.txt`
+2. `python main.py` (backend)
+3. `npm install && npm run dev` (frontend)
+4. Test http://localhost:5173
+5. Push GitHub
+6. Railway + Vercel deploy
+7. Test prod URL
+8. Done! 🚀
+
+Besoin aide? La doc FastAPI: https://fastapi.tiangolo.com
+React/Vite: https://vite.dev
