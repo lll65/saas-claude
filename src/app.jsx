@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.VITE_API_URL || "http://localhost:8000";
 const API_KEY = "test_key_12345";
 
 export default function PhotoVinted() {
