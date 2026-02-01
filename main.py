@@ -57,7 +57,7 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         # Suppression du fond avec Rembg
         if REMBG_AVAILABLE:
             try:
-                image_without_bg = remove(contents)
+                image_without_bg = remove(contents, alpha_matting=True, alpha_matting_foreground_threshold=270, alpha_matting_background_threshold=20)
                 image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
             except:
                 image = Image.open(BytesIO(contents)).convert("RGBA")
