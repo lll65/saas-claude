@@ -22,6 +22,7 @@ API_KEY = os.getenv("API_KEY", "test_key_12345")
 UPLOAD_DIR = "output"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+FRONTEND_URL = "https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app"
 stripe.api_key = STRIPE_SECRET_KEY
 
 app = FastAPI(title="PhotoVinted API", version="1.0")
@@ -125,8 +126,8 @@ def create_checkout_session(_: bool = Depends(verify_api_key)):
                 },
                 "quantity": 1,
             }],
-            success_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/payment=success",
-            cancel_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/payment=cancel",
+            success_url=f"{FRONTEND_URL}?payment=success",
+            cancel_url=f"{FRONTEND_URL}?payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
