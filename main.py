@@ -57,7 +57,7 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         # Suppression du fond avec Rembg
         if REMBG_AVAILABLE:
             try:
-                image_without_bg = remove(contents, alpha_matting=True, alpha_matting_foreground_threshold=270, alpha_matting_background_threshold=20)
+                image_without_bg = remove(contents)
                 image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
             except:
                 image = Image.open(BytesIO(contents)).convert("RGBA")
@@ -118,20 +118,19 @@ def create_checkout_session(_: bool = Depends(verify_api_key)):
                 "price_data": {
                     "currency": "eur",
                     "product_data": {
-                        "name": "PhotoVinted Pro - 100 images",
-                        "description": "Traitement illimité pour 30 jours",
+                        "name": "PhotoVinted - 100 crédits",
+                        "description": "100 images à améliorer",
                     },
                     "unit_amount": 1500,
                 },
                 "quantity": 1,
             }],
-            success_url="http://localhost:3000?payment=success",
-            cancel_url="http://localhost:3000?payment=cancel",
+            success_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/payment=success",
+            cancel_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/success")
 def success_page():
     return {"status": "payment_success"}

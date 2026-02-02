@@ -117,6 +117,26 @@ export default function PhotoVinted() {
                 <button onClick={handleReset} style={{ flex: 1, background: '#666', color: '#fff', padding: '12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Nouvelle</button>
               </div>
             </div>
+            <div style={{ marginTop: '40px', textAlign: 'center' }}>
+  <h2 style={{ color: '#fff', marginBottom: '20px' }}>Plans</h2>
+  <button 
+    onClick={async () => {
+      try {
+        const response = await fetch(`${API_URL}/create-checkout-session`, {
+          method: "POST",
+          headers: { "x-api-key": API_KEY }
+        });
+        const data = await response.json();
+        window.location.href = data.checkout_url;
+      } catch (err) {
+        alert("Erreur: " + err.message);
+      }
+    }}
+    style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', fontSize: '16px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+  >
+    💳 Acheter 100 crédits - 15€
+  </button>
+</div>
           )}
         </div>
       </div>
