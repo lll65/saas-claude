@@ -9,8 +9,6 @@ export default function PhotoVinted() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [credits, setCredits] = useState(INITIAL_CREDITS);
-  const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
