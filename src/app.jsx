@@ -96,11 +96,12 @@ useEffect(() => {
         <p style={{ textAlign: 'center', color: '#aaa', marginBottom: '20px' }}>Améliorez vos photos automatiquement</p>
 
         <div style={{ background: 'rgba(0,102,204,0.2)', border: '1px solid #0066cc', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
-          <p style={{ color: '#0066cc', margin: '0', fontWeight: 'bold' }}>
-            📸 Crédits restants: <span style={{ fontSize: '20px', color: '#00ff00' }}>{credits}</span>
-          </p>
-          {credits <= 2 && <p style={{ color: '#ff9900', margin: '5px 0 0 0', fontSize: '12px' }}>⚠️ Crédit faible!</p>}
-        </div>
+  <p style={{ color: '#0066cc', margin: '0', fontWeight: 'bold' }}>
+    📸 Crédits restants: <span style={{ fontSize: '20px', color: '#00ff00' }}>{credits || 5}</span>
+  </p>
+  {credits && credits <= 2 && <p style={{ color: '#ff9900', margin: '5px 0 0 0', fontSize: '12px' }}>⚠️ Crédit faible!</p>}
+  {!credits && <p style={{ color: '#ff9900', margin: '5px 0 0 0', fontSize: '12px' }}>Rafraîchis la page!</p>}
+</div>
 
         <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '40px' }}>
           {!result ? (
