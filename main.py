@@ -8,13 +8,11 @@ from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
 
-# Import de rembg
+# Import rembg SANS onnxruntime
 try:
     from rembg import remove
     REMBG_AVAILABLE = True
-    print("✅ rembg est disponible !")
-except Exception as e:
-    print(f"❌ Erreur lors de l'import de rembg : {e}")
+except:
     REMBG_AVAILABLE = False
 
 load_dotenv()
@@ -43,63 +41,77 @@ def verify_api_key(x_api_key: str = Header(...)):
 
 @app.get("/")
 def root():
-    return {"status": "running", "rembg_available": REMBG_AVAILABLE}
+    return {"status": "running", "rembg": REMBG_AVAILABLE}
 
 @app.post("/enhance")
 async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     try:
-        print("📌 Début du traitement de l'image...")
-
         if file.content_type not in ["image/jpeg", "image/png"]:
-            raise HTTPException(status_code=400, detail="Seuls les fichiers JPG ou PNG sont acceptés.")
+            raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
 
         contents = await file.read()
-        print(f"📌 Taille de l'image : {len(contents) / (1024 * 1024):.2f} Mo")
-
+        
         if len(contents) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="L'image dépasse 10 Mo.")
+            raise HTTPException(status_code=413, detail="Image > 10MB")
 
-        # Traitement avec rembg
+        # Suppression du fond avec Rembg
         if REMBG_AVAILABLE:
-            try:
-                print("🔍 Suppression du fond avec rembg...")
-                image_without_bg = remove(contents)
-                print("✅ Fond supprimé avec succès !")
-                image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
-            except Exception as e:
-                print(f"❌ Erreur avec rembg : {e}")
-                image = Image.open(BytesIO(contents)).convert("RGBA")
-        else:
-            print("⚠️ rembg n'est pas disponible, utilisation de l'image originale.")
-            image = Image.open(BytesIO(contents)).convert("RGBA")
+    try:
+        image_without_bg = remove(
+            contents,
+            alpha_matting=True,
+            alpha_matting_foreground_threshold=240,
+            alpha_matting_background_threshold=10
+        )
+        image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
+    except:
+        image = Image.open(BytesIO(contents)).convert("RGBA")
+else:
+    image = Image.open(BytesIO(contents)).convert("RGBA")
 
-        # Sauvegarde une copie de l'image avant traitement pour comparaison
-        test_filename = f"test_{uuid.uuid4()}.png"
-        test_filepath = os.path.join(UPLOAD_DIR, test_filename)
-        Image.open(BytesIO(contents)).save(test_filepath, "PNG")
-        print(f"📌 Image de test sauvegardée : {test_filename}")
-
-        # Suite du traitement...
+        
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
-        # ... (le reste de ton code)
-
+        
+        padding = 90
+        new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
+        canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
+        canvas.paste(image, (padding, padding), image)
+        
+        background = Image.new("RGB", canvas.size, (255, 255, 255))
+        background.paste(canvas, (0, 0), canvas)
+        
+        enhancer = ImageEnhance.Brightness(background)
+        background = enhancer.enhance(1.25)
+        
+        enhancer = ImageEnhance.Contrast(background)
+        background = enhancer.enhance(1.25)
+        
+        enhancer = ImageEnhance.Color(background)
+        background = enhancer.enhance(1.30)
+        
+        enhancer = ImageEnhance.Sharpness(background)
+        background = enhancer.enhance(1.25)
+        
+        background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
+        
+        filename = f"{uuid.uuid4()}.png"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        background.save(filepath, "PNG", quality=95)
+        
         return JSONResponse({
             "status": "success",
             "filename": filename,
-            "url": f"/image/{filename}",
-            "test_image_url": f"/image/{test_filename}"  # Pour comparer
+            "url": f"/image/{filename}"
         })
-
+    
     except Exception as e:
-        print(f"❌ Erreur dans enhance_photo : {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur interne : {str(e)}")
-
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="Image non trouvée.")
+        raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(filepath, media_type="image/png")
 
 @app.post("/create-checkout-session")
@@ -125,7 +137,6 @@ def create_checkout_session(_: bool = Depends(verify_api_key)):
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/success")
 def success_page():
     return {"status": "payment_success"}
@@ -142,7 +153,7 @@ def verify_payment(session_id: str, _: bool = Depends(verify_api_key)):
             return {
                 "status": "success",
                 "credits": 100,
-                "message": "100 crédits ajoutés !"
+                "message": "100 crédits ajoutés!"
             }
         return {"status": "pending"}
     except Exception as e:
