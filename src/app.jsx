@@ -15,10 +15,16 @@ export default function PhotoVinted() {
   });
   const fileInputRef = useRef(null);
 
-  const saveCredits = (newCredits) => {
-    setCredits(newCredits);
-    localStorage.setItem('photovinted_credits', newCredits);
-  };
+  const [credits, setCredits] = useState(() => {
+  const saved = sessionStorage.getItem('photovinted_credits') || localStorage.getItem('photovinted_credits');
+  return saved ? parseInt(saved) : 5;
+});
+
+const saveCredits = (newCredits) => {
+  setCredits(newCredits);
+  sessionStorage.setItem('photovinted_credits', newCredits);
+  localStorage.setItem('photovinted_credits', newCredits); // Backup
+};
 
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
