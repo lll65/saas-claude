@@ -5,5 +5,10 @@ pillow==12.1.0
 stripe==14.1.0
 python-dotenv==1.2.1
 aiofiles==23.2.1
-rembg[u2net]==2.0.33  # Version légère sans onnxruntime lourd
+rembg==2.0.56
+opencv-python-headless==4.9.0.80
+numpy==1.26.4
+onnxruntime==1.17.0
+torch==2.10.0
+torchvision==0.25.0  # Version légère sans onnxruntime lourd
 
