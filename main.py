@@ -8,11 +8,16 @@ from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
 
-# Import rembg SANS onnxruntime
+# REMBG - TRÈS IMPORTANT
 try:
-    from rembg import remove
+    from rembg import remove, new_session
     REMBG_AVAILABLE = True
-except:
+    # Force le téléchargement du modèle au démarrage
+    print("⏳ Téléchargement du modèle Rembg...")
+    session = new_session()
+    print("✅ REMBG CHARGÉ AVEC SUCCÈS")
+except ImportError as e:
+    print(f"❌ REMBG N'A PAS PU CHARGER: {e}")
     REMBG_AVAILABLE = False
 
 load_dotenv()
@@ -54,49 +59,81 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="Image > 10MB")
 
-        # Suppression du fond avec Rembg
-        if REMBG_AVAILABLE:
-    try:
-        image_without_bg = remove(
-            contents,
-            alpha_matting=True,
-            alpha_matting_foreground_threshold=240,
-            alpha_matting_background_threshold=10
-        )
-        image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
-    except:
-        image = Image.open(BytesIO(contents)).convert("RGBA")
-else:
-    image = Image.open(BytesIO(contents)).convert("RGBA")
-
+        # ========== REMBG SUPPRESSION DE FOND ==========
+        print(f"📸 Rembg disponible: {REMBG_AVAILABLE}")
         
+        if REMBG_AVAILABLE:  # <-- Ligne 65
+            try:
+                print("🔄 Suppression du fond avec Rembg...")
+                image_without_bg = remove(
+                    contents,
+                    alpha_matting=False,
+                    only_mask=False,
+                    post_process_mask=True,
+                    session=session
+                )
+                image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
+                print("✅ Fond supprimé avec succès")
+            except Exception as e:
+                print(f"❌ Erreur Rembg: {e}")
+                print("📸 Utilisation de l'image originale")
+                image = Image.open(BytesIO(contents)).convert("RGBA")
+
+
+        else:
+            print("⚠️ Rembg non disponible, image originale utilisée")
+            image = Image.open(BytesIO(contents)).convert("RGBA")
+
+        # ========== RESIZE ==========
+        print("📐 Resize...")
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
         
+        # ========== PADDING BLANC ==========
+        print("🟩 Ajout du padding blanc...")
         padding = 90
         new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
         canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
         canvas.paste(image, (padding, padding), image)
         
+        # ========== FOND BLANC PUR ==========
+        print("⚪ Conversion en fond blanc...")
         background = Image.new("RGB", canvas.size, (255, 255, 255))
         background.paste(canvas, (0, 0), canvas)
         
+        # ========== AMÉLIORATIONS ==========
+        print("✨ Amélioration de l'image...")
+        
+        # Brightness
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.25)
+        background = enhancer.enhance(1.15)
+        print("  ✓ Brightness +15%")
         
+        # Contrast
         enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.25)
-        
-        enhancer = ImageEnhance.Color(background)
         background = enhancer.enhance(1.30)
+        print("  ✓ Contrast +30%")
         
-        enhancer = ImageEnhance.Sharpness(background)
+        # Color saturation
+        enhancer = ImageEnhance.Color(background)
         background = enhancer.enhance(1.25)
+        print("  ✓ Saturation +25%")
         
+        # Sharpness
+        enhancer = ImageEnhance.Sharpness(background)
+        background = enhancer.enhance(1.20)
+        print("  ✓ Sharpness +20%")
+        
+        # ========== RESIZE FINAL ==========
+        print("📏 Resize final 1080x1080...")
         background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
         
+        # ========== SAUVEGARDE ==========
+        print("💾 Sauvegarde...")
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
         background.save(filepath, "PNG", quality=95)
+        
+        print(f"✅ SUCCÈS: {filename}")
         
         return JSONResponse({
             "status": "success",
@@ -105,6 +142,7 @@ else:
         })
     
     except Exception as e:
+        print(f"❌ ERREUR COMPLÈTE: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/image/{filename}")
