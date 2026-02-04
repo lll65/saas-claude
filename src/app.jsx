@@ -13,7 +13,7 @@ export default function PhotoVinted() {
     const saved = localStorage.getItem('photovinted_credits');
     return saved ? parseInt(saved) : 5;
   });
-  const fileInputRef = useRef(null);
+  
 
   const [credits, setCredits] = useState(() => {
   const saved = sessionStorage.getItem('photovinted_credits') || localStorage.getItem('photovinted_credits');
