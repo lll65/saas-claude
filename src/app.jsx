@@ -1,7 +1,26 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const API_URL = "https://web-production-f1129.up.railway.app";
 const API_KEY = "test_key_12345";
+const [credits, setCredits] = useState(() => {
+  const saved = localStorage.getItem('photovinted_credits');
+  return saved ? parseInt(saved) : 5; // 5 images gratuites
+});
+
+const saveCredits = (newCredits) => {
+  setCredits(newCredits);
+  localStorage.setItem('photovinted_credits', newCredits);
+};
+
+// Vérifier si retour de paiement
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    saveCredits(credits + 100); // Ajoute 100 crédits
+    alert('✅ Paiement réussi! +100 crédits ajoutés!');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}, []);
 
 export default function PhotoVinted() {
   const [file, setFile] = useState(null);
@@ -28,6 +47,10 @@ export default function PhotoVinted() {
     }
     setLoading(true);
     setError(null);
+    if (credits <= 0) {
+  setError("❌ Crédits épuisés! Achète plus d'images pour continuer.");
+  return;
+}
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -39,6 +62,7 @@ export default function PhotoVinted() {
       if (!response.ok) throw new Error("Erreur serveur");
       const data = await response.json();
       setResult({ filename: data.filename, url: `${API_URL}${data.url}` });
+      saveCredits(credits - 1);
       setFile(null);
       // NE PAS supprimer preview!
     } catch (err) {
@@ -69,7 +93,12 @@ export default function PhotoVinted() {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <h1 style={{ textAlign: 'center', color: '#fff', fontSize: '36px', marginBottom: '10px' }}>📸 PhotoVinted</h1>
         <p style={{ textAlign: 'center', color: '#aaa', marginBottom: '40px' }}>Améliorez vos photos automatiquement</p>
-
+    <div style={{ background: 'rgba(0,102,204,0.2)', border: '1px solid #0066cc', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
+  <p style={{ color: '#0066cc', margin: '0', fontWeight: 'bold' }}>
+    📸 Crédits restants: <span style={{ fontSize: '20px', color: '#00ff00' }}>{credits}</span>
+  </p>
+  {credits <= 2 && <p style={{ color: '#ff9900', margin: '5px 0 0 0', fontSize: '12px' }}>⚠️ Crédit faible!</p>}
+</div>
         <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '40px' }}>
           {!result ? (
             <div>

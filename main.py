@@ -139,6 +139,20 @@ def success_page():
 def cancel_page():
     return {"status": "payment_canceled"}
 
+@app.get("/verify-payment/{session_id}")
+def verify_payment(session_id: str, _: bool = Depends(verify_api_key)):
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status == "paid":
+            return {
+                "status": "success",
+                "credits": 100,
+                "message": "100 crédits ajoutés!"
+            }
+        return {"status": "pending"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
