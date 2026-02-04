@@ -48,10 +48,13 @@ def root():
 @app.post("/enhance")
 async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     try:
+        print("📌 Début du traitement de l'image...")
+
         if file.content_type not in ["image/jpeg", "image/png"]:
             raise HTTPException(status_code=400, detail="Seuls les fichiers JPG ou PNG sont acceptés.")
 
         contents = await file.read()
+        print(f"📌 Taille de l'image : {len(contents) / (1024 * 1024):.2f} Mo")
 
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="L'image dépasse 10 Mo.")
@@ -59,10 +62,10 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         # Traitement avec rembg
         if REMBG_AVAILABLE:
             try:
-                print("🔍 Tentative de suppression du fond avec rembg...")
+                print("🔍 Suppression du fond avec rembg...")
                 image_without_bg = remove(contents)
-                image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
                 print("✅ Fond supprimé avec succès !")
+                image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
             except Exception as e:
                 print(f"❌ Erreur avec rembg : {e}")
                 image = Image.open(BytesIO(contents)).convert("RGBA")
@@ -70,43 +73,27 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
             print("⚠️ rembg n'est pas disponible, utilisation de l'image originale.")
             image = Image.open(BytesIO(contents)).convert("RGBA")
 
-        # Redimensionnement et améliorations
+        # Sauvegarde une copie de l'image avant traitement pour comparaison
+        test_filename = f"test_{uuid.uuid4()}.png"
+        test_filepath = os.path.join(UPLOAD_DIR, test_filename)
+        Image.open(BytesIO(contents)).save(test_filepath, "PNG")
+        print(f"📌 Image de test sauvegardée : {test_filename}")
+
+        # Suite du traitement...
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
-        padding = 90
-        new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
-        canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
-        canvas.paste(image, (padding, padding), image)
-
-        background = Image.new("RGB", canvas.size, (255, 255, 255))
-        background.paste(canvas, (0, 0), canvas)
-
-        enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.25)
-
-        enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.25)
-
-        enhancer = ImageEnhance.Color(background)
-        background = enhancer.enhance(1.30)
-
-        enhancer = ImageEnhance.Sharpness(background)
-        background = enhancer.enhance(1.25)
-
-        background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
-
-        filename = f"{uuid.uuid4()}.png"
-        filepath = os.path.join(UPLOAD_DIR, filename)
-        background.save(filepath, "PNG", quality=95)
+        # ... (le reste de ton code)
 
         return JSONResponse({
             "status": "success",
             "filename": filename,
-            "url": f"/image/{filename}"
+            "url": f"/image/{filename}",
+            "test_image_url": f"/image/{test_filename}"  # Pour comparer
         })
 
     except Exception as e:
         print(f"❌ Erreur dans enhance_photo : {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne : {str(e)}")
+
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
