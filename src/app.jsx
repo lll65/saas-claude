@@ -20,14 +20,17 @@ export default function PhotoVinted() {
     localStorage.setItem('photovinted_credits', newCredits);
   };
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
-      saveCredits(credits + 100);
-      alert('✅ Paiement réussi! +100 crédits ajoutés!');
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    const saved = localStorage.getItem('photovinted_credits');
+    const currentCredits = saved ? parseInt(saved) : 5;
+    const newCredits = currentCredits + 100;
+    saveCredits(newCredits);
+    alert(`✅ Paiement réussi! +100 crédits ajoutés! Total: ${newCredits}`);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}, [credits, saveCredits]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
