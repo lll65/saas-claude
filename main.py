@@ -125,8 +125,8 @@ def create_checkout_session(_: bool = Depends(verify_api_key)):
                 },
                 "quantity": 1,
             }],
-            success_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/payment=success",
-            cancel_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/payment=cancel",
+            success_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/?payment=success",
+            cancel_url="https://saas-claude-52pzfkh3b-lohangottardi-5625s-projects.vercel.app/?payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
