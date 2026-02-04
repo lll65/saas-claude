@@ -12,8 +12,9 @@ from dotenv import load_dotenv
 try:
     from rembg import remove
     REMBG_AVAILABLE = True
-except ImportError as e:
-    print(f"Erreur lors de l'import de rembg : {e}")
+    print("✅ rembg est disponible !")
+except Exception as e:
+    print(f"❌ Erreur lors de l'import de rembg : {e}")
     REMBG_AVAILABLE = False
 
 load_dotenv()
@@ -42,38 +43,35 @@ def verify_api_key(x_api_key: str = Header(...)):
 
 @app.get("/")
 def root():
-    return {"status": "running", "rembg": REMBG_AVAILABLE}
+    return {"status": "running", "rembg_available": REMBG_AVAILABLE}
 
 @app.post("/enhance")
 async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     try:
         if file.content_type not in ["image/jpeg", "image/png"]:
-            raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
+            raise HTTPException(status_code=400, detail="Seuls les fichiers JPG ou PNG sont acceptés.")
 
         contents = await file.read()
 
         if len(contents) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="Image > 10MB")
+            raise HTTPException(status_code=413, detail="L'image dépasse 10 Mo.")
 
-        # Suppression du fond avec Rembg
+        # Traitement avec rembg
         if REMBG_AVAILABLE:
             try:
-                image_without_bg = remove(
-                    contents,
-                    alpha_matting=True,
-                    alpha_matting_foreground_threshold=240,
-                    alpha_matting_background_threshold=10
-                )
+                print("🔍 Tentative de suppression du fond avec rembg...")
+                image_without_bg = remove(contents)
                 image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
+                print("✅ Fond supprimé avec succès !")
             except Exception as e:
-                print(f"Erreur avec rembg : {e}")
+                print(f"❌ Erreur avec rembg : {e}")
                 image = Image.open(BytesIO(contents)).convert("RGBA")
         else:
-            print("rembg n'est pas disponible")
+            print("⚠️ rembg n'est pas disponible, utilisation de l'image originale.")
             image = Image.open(BytesIO(contents)).convert("RGBA")
 
+        # Redimensionnement et améliorations
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
-
         padding = 90
         new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
         canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
@@ -107,14 +105,14 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         })
 
     except Exception as e:
-        print(f"Erreur dans enhance_photo : {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Erreur dans enhance_photo : {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne : {str(e)}")
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="Image not found")
+        raise HTTPException(status_code=404, detail="Image non trouvée.")
     return FileResponse(filepath, media_type="image/png")
 
 @app.post("/create-checkout-session")
@@ -157,7 +155,7 @@ def verify_payment(session_id: str, _: bool = Depends(verify_api_key)):
             return {
                 "status": "success",
                 "credits": 100,
-                "message": "100 crédits ajoutés!"
+                "message": "100 crédits ajoutés !"
             }
         return {"status": "pending"}
     except Exception as e:
