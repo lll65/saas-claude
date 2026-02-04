@@ -5,3 +5,5 @@ pillow==12.1.0
 stripe==14.1.0
 python-dotenv==1.2.1
 aiofiles==23.2.1
+rembg==2.0.33
+onnxruntime==1.16.0  # Version stable compatible avec rembg
