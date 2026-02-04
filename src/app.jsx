@@ -2,25 +2,33 @@ import React, { useState, useRef, useEffect } from 'react';
 
 const API_URL = "https://web-production-f1129.up.railway.app";
 const API_KEY = "test_key_12345";
-const [credits, setCredits] = useState(() => {
-  const saved = localStorage.getItem('photovinted_credits');
-  return saved ? parseInt(saved) : 5; // 5 images gratuites
-});
 
-const saveCredits = (newCredits) => {
-  setCredits(newCredits);
-  localStorage.setItem('photovinted_credits', newCredits);
-};
+export default function PhotoVinted() {
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [credits, setCredits] = useState(() => {
+    const saved = localStorage.getItem('photovinted_credits');
+    return saved ? parseInt(saved) : 5;
+  });
+  const fileInputRef = useRef(null);
 
-// Vérifier si retour de paiement
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('payment') === 'success') {
-    saveCredits(credits + 100); // Ajoute 100 crédits
-    alert('✅ Paiement réussi! +100 crédits ajoutés!');
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-}, []);
+  const saveCredits = (newCredits) => {
+    setCredits(newCredits);
+    localStorage.setItem('photovinted_credits', newCredits);
+  };
+
+  // Vérifier si retour de paiement
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      saveCredits(credits + 100);
+      alert('✅ Paiement réussi! +100 crédits ajoutés!');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
 export default function PhotoVinted() {
   const [file, setFile] = useState(null);
