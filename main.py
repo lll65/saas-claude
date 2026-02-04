@@ -8,11 +8,12 @@ from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
 
-# Import rembg SANS onnxruntime
+# Import de rembg
 try:
     from rembg import remove
     REMBG_AVAILABLE = True
-except:
+except ImportError as e:
+    print(f"Erreur lors de l'import de rembg : {e}")
     REMBG_AVAILABLE = False
 
 load_dotenv()
@@ -50,61 +51,63 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
             raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
 
         contents = await file.read()
-        
+
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="Image > 10MB")
 
         # Suppression du fond avec Rembg
         if REMBG_AVAILABLE:
-    try:
-        image_without_bg = remove(
-            contents,
-            alpha_matting=True,
-            alpha_matting_foreground_threshold=240,
-            alpha_matting_background_threshold=10
-        )
-        image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
-    except:
-        image = Image.open(BytesIO(contents)).convert("RGBA")
-else:
-    image = Image.open(BytesIO(contents)).convert("RGBA")
+            try:
+                image_without_bg = remove(
+                    contents,
+                    alpha_matting=True,
+                    alpha_matting_foreground_threshold=240,
+                    alpha_matting_background_threshold=10
+                )
+                image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
+            except Exception as e:
+                print(f"Erreur avec rembg : {e}")
+                image = Image.open(BytesIO(contents)).convert("RGBA")
+        else:
+            print("rembg n'est pas disponible")
+            image = Image.open(BytesIO(contents)).convert("RGBA")
 
-        
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
-        
+
         padding = 90
         new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
         canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
         canvas.paste(image, (padding, padding), image)
-        
+
         background = Image.new("RGB", canvas.size, (255, 255, 255))
         background.paste(canvas, (0, 0), canvas)
-        
+
         enhancer = ImageEnhance.Brightness(background)
         background = enhancer.enhance(1.25)
-        
+
         enhancer = ImageEnhance.Contrast(background)
         background = enhancer.enhance(1.25)
-        
+
         enhancer = ImageEnhance.Color(background)
         background = enhancer.enhance(1.30)
-        
+
         enhancer = ImageEnhance.Sharpness(background)
         background = enhancer.enhance(1.25)
-        
+
         background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
-        
+
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
         background.save(filepath, "PNG", quality=95)
-        
+
         return JSONResponse({
             "status": "success",
             "filename": filename,
             "url": f"/image/{filename}"
         })
-    
+
     except Exception as e:
+        print(f"Erreur dans enhance_photo : {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/image/{filename}")
@@ -137,6 +140,7 @@ def create_checkout_session(_: bool = Depends(verify_api_key)):
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/success")
 def success_page():
     return {"status": "payment_success"}
