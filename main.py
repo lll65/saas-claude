@@ -14,7 +14,7 @@ try:
     REMBG_AVAILABLE = True
     print("⏳ Chargement du modèle Rembg...")
     # Utilisation d'un modèle plus léger si besoin (u2netp) ou standard (u2net)
-    session = new_session("u2net") 
+    session = new_session("u2netp") # Plus rapide et léger pour Railway 
     print("✅ REMBG CHARGÉ AVEC SUCCÈS")
 except ImportError as e:
     print(f"❌ REMBG N'A PAS PU CHARGER: {e}")
