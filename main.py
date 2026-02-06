@@ -13,8 +13,7 @@ try:
     from rembg import remove, new_session
     REMBG_AVAILABLE = True
     print("⏳ Chargement du modèle Rembg...")
-    # "u2net" est plus lourd mais BEAUCOUP plus précis pour la qualité Premium
-    # Si Railway crash, repasse sur "u2netp"
+    # Si Railway crash encore, remplace "u2net" par "u2netp"
     session = new_session("u2net") 
     print("✅ REMBG CHARGÉ AVEC SUCCÈS")
 except ImportError as e:
@@ -59,60 +58,44 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
 
         contents = await file.read()
         
-        # --- PRÉ-TRAITEMENT HAUTE QUALITÉ ---
         with Image.open(BytesIO(contents)) as pre_img:
-            pre_img = ImageOps.exif_transpose(pre_img) # Corrige l'orientation auto
+            pre_img = ImageOps.exif_transpose(pre_img)
             if pre_img.mode != "RGB":
                 pre_img = pre_img.convert("RGB")
             
-            # On garde une résolution élevée (2000px) pour la netteté
             pre_img.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
             
             prep_buffer = BytesIO()
-            pre_img.save(prep_buffer, format="PNG") # PNG pour ne pas perdre de détails ici
+            pre_img.save(prep_buffer, format="PNG")
             optimized_contents = prep_buffer.getvalue()
 
         print("🔄 Suppression du fond Premium...")
         image_without_bg = remove(optimized_contents, session=session)
         
-        # Image sans fond
         item = Image.open(BytesIO(image_without_bg)).convert("RGBA")
         item.thumbnail((950, 950), Image.Resampling.LANCZOS)
 
-        # --- CRÉATION DE L'OMBRE PORTÉE (DROP SHADOW) ---
-        # Crée une silhouette floue pour simuler une ombre naturelle
         shadow = item.copy()
         shadow = shadow.filter(ImageFilter.GaussianBlur(radius=20))
         
-        # --- COMPOSITION FINALE ---
         canvas_size = (1080, 1080)
         final_img = Image.new("RGBA", canvas_size, (255, 255, 255, 255))
         
-        # Positionnement au centre
         item_pos = ((canvas_size[0] - item.size[0]) // 2, (canvas_size[1] - item.size[1]) // 2)
-        shadow_pos = (item_pos[0] + 10, item_pos[1] + 15) # Décalage de l'ombre
+        shadow_pos = (item_pos[0] + 10, item_pos[1] + 15)
         
-        # On colle d'abord l'ombre, puis l'objet
         final_img.paste(shadow, shadow_pos, shadow)
         final_img.paste(item, item_pos, item)
         
-        # Conversion en RGB pour le rendu final
         final_img = final_img.convert("RGB")
         
-        # --- AMÉLIORATIONS VISUELLES "VINTED-READY" ---
-        # 1. Luminosité Studio (Boosté à 1.25)
         final_img = ImageEnhance.Brightness(final_img).enhance(1.25)
-        # 2. Contraste (Boosté pour des couleurs vives)
         final_img = ImageEnhance.Contrast(final_img).enhance(1.20)
-        # 3. Saturation (Les couleurs "pop")
         final_img = ImageEnhance.Color(final_img).enhance(1.15)
-        # 4. Netteté CRISTALLINE (Essentiel pour la vente)
         final_img = ImageEnhance.Sharpness(final_img).enhance(1.60)
         
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
-        
-        # Sauvegarde en PNG SANS compression (Qualité max)
         final_img.save(filepath, "PNG", optimize=False)
         
         print(f"✅ SUCCÈS PREMIUM: {filename}")
@@ -134,9 +117,31 @@ async def get_image(filename: str):
         raise HTTPException(status_code=404, detail="Image non trouvée")
     return FileResponse(filepath, media_type="image/png")
 
-# ... (Stripe Checkout reste identique)
+# --- LA ROUTE QUI MANQUAIT (CORRIGÉE) ---
+@app.post("/create-checkout-session")
+async def create_checkout_session(_: bool = Depends(verify_api_key)):
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {'name': '100 Crédits PhotoVinted'},
+                    'unit_amount': 1500,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f"{FRONTEND_URL}/?success=true",
+            cancel_url=f"{FRONTEND_URL}/?canceled=true",
+        )
+        return {"checkout_url": checkout_session.url}
+    except Exception as e:
+        print(f"❌ ERREUR STRIPE: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
+    # Important: Railway utilise 0.0.0.0
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
