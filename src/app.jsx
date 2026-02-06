@@ -24,7 +24,7 @@ export default function PhotoVinted() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
+    if (params.get('success') === 'true' || params.get('payment') === 'success') {
       const saved = localStorage.getItem('photovinted_credits');
       const currentCredits = saved ? parseInt(saved) : 5;
       const newCredits = currentCredits + 100;
@@ -65,7 +65,6 @@ export default function PhotoVinted() {
       const response = await fetch(`${API_URL}/enhance`, {
         method: "POST",
         headers: { 
-          // Utilisation du format standard X-API-Key pour éviter les blocages CORS
           "X-API-Key": API_KEY 
         },
         body: formData,
@@ -78,7 +77,6 @@ export default function PhotoVinted() {
 
       const data = await response.json();
       
-      // On s'assure que l'URL commence bien par http/https
       const finalImageUrl = data.url.startsWith('http') ? data.url : `${API_URL}${data.url}`;
       
       setResult({ 
@@ -96,13 +94,12 @@ export default function PhotoVinted() {
     }
   };
 
-  // ... (Reste du code handleDownload et handleReset identique)
   const handleDownload = () => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result.url;
     a.download = result.filename;
-    document.body.appendChild(a); // Nécessaire pour certains navigateurs
+    document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
@@ -120,14 +117,12 @@ export default function PhotoVinted() {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <h1 style={{ textAlign: 'center', color: '#fff', fontSize: '36px', marginBottom: '10px' }}>📸 PhotoVinted</h1>
         
-        {/* Affichage des crédits */}
         <div style={{ background: 'rgba(0,102,204,0.2)', border: '1px solid #0066cc', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
           <p style={{ color: '#0066cc', margin: '0', fontWeight: 'bold' }}>
             📸 Crédits restants: <span style={{ fontSize: '20px', color: '#00ff00' }}>{credits}</span>
           </p>
         </div>
 
-        {/* Zone d'upload / Résultats */}
         <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '40px' }}>
           {!result ? (
             <div>
@@ -161,41 +156,29 @@ export default function PhotoVinted() {
           )}
         </div>
 
-        {/* Bouton Stripe avec gestion d'email */}
-<div style={{ marginTop: '40px', textAlign: 'center' }}>
-  <button 
-    onClick={async () => {
-      // 1. Demander l'email à l'utilisateur
-      const userEmail = prompt("Où devons-nous envoyer vos 100 crédits ? (Entrez votre email)");
-      
-      if (!userEmail || !userEmail.includes('@')) {
-        alert("Un email valide est requis pour l'achat.");
-        return;
-      }
-
-      try {
-        // 2. Envoyer l'email en paramètre dans l'URL (comme attendu par ton nouveau main.py)
-        const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(userEmail)}`, {
-          method: "POST",
-          headers: { "X-API-Key": API_KEY }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || "Erreur lors de la création de la session");
-        }
-
-        const data = await response.json();
-        // 3. Redirection vers Stripe
-        if (data.checkout_url) {
-          window.location.href = data.checkout_url;
-        }
-      } catch (err) { 
-        alert("Erreur Stripe: " + err.message); 
-      }
-    }}
-    style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
-  >
-    💳 Acheter 100 crédits - 15€
-  </button>
-</div>
+        <div style={{ marginTop: '40px', textAlign: 'center' }}>
+          <button 
+            onClick={async () => {
+              const userEmail = prompt("Où devons-nous envoyer vos 100 crédits ? (Entrez votre email)");
+              if (!userEmail || !userEmail.includes('@')) {
+                alert("Un email valide est requis pour l'achat.");
+                return;
+              }
+              try {
+                const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(userEmail)}`, {
+                  method: "POST",
+                  headers: { "X-API-Key": API_KEY }
+                });
+                const data = await response.json();
+                if (data.checkout_url) window.location.href = data.checkout_url;
+              } catch (err) { alert("Erreur Stripe: " + err.message); }
+            }}
+            style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            💳 Acheter 100 crédits - 15€
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
