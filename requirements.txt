@@ -12,3 +12,4 @@ python-dotenv==1.2.1
 aiofiles==23.2.1
 rembg==2.0.60
 onnxruntime==1.18.0
+supabase
