@@ -161,25 +161,41 @@ export default function PhotoVinted() {
           )}
         </div>
 
-        {/* Bouton Stripe */}
-        <div style={{ marginTop: '40px', textAlign: 'center' }}>
-          <button 
-            onClick={async () => {
-              try {
-                const response = await fetch(`${API_URL}/create-checkout-session`, {
-                  method: "POST",
-                  headers: { "X-API-Key": API_KEY }
-                });
-                const data = await response.json();
-                if (data.checkout_url) window.location.href = data.checkout_url;
-              } catch (err) { alert("Erreur Stripe: " + err.message); }
-            }}
-            style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            💳 Acheter 100 crédits - 15€
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+        {/* Bouton Stripe avec gestion d'email */}
+<div style={{ marginTop: '40px', textAlign: 'center' }}>
+  <button 
+    onClick={async () => {
+      // 1. Demander l'email à l'utilisateur
+      const userEmail = prompt("Où devons-nous envoyer vos 100 crédits ? (Entrez votre email)");
+      
+      if (!userEmail || !userEmail.includes('@')) {
+        alert("Un email valide est requis pour l'achat.");
+        return;
+      }
+
+      try {
+        // 2. Envoyer l'email en paramètre dans l'URL (comme attendu par ton nouveau main.py)
+        const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(userEmail)}`, {
+          method: "POST",
+          headers: { "X-API-Key": API_KEY }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erreur lors de la création de la session");
+        }
+
+        const data = await response.json();
+        // 3. Redirection vers Stripe
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        }
+      } catch (err) { 
+        alert("Erreur Stripe: " + err.message); 
+      }
+    }}
+    style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+  >
+    💳 Acheter 100 crédits - 15€
+  </button>
+</div>
