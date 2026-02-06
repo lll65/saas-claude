@@ -43,10 +43,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, 
-    allow_credentials=True,
+    allow_origins=["*"], # Accepte toutes les URLs pendant les tests
+    allow_credentials=False, # Obligatoire si origins est ["*"]
     allow_methods=["*"],
-    allow_headers=["*"], # Autorise 'x-api-key' et 'content-type'
+    allow_headers=["*"],
 )
 
 def verify_api_key(x_api_key: str = Header(...)):
