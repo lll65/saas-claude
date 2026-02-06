@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -13,7 +13,6 @@ try:
     from rembg import remove, new_session
     REMBG_AVAILABLE = True
     print("⏳ Chargement du modèle Rembg...")
-    # Si Railway crash encore, remplace "u2net" par "u2netp"
     session = new_session("u2net") 
     print("✅ REMBG CHARGÉ AVEC SUCCÈS")
 except ImportError as e:
@@ -22,16 +21,18 @@ except ImportError as e:
 
 load_dotenv()
 
+# Configuration Variables
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_4eC39HqLyjWDarhtT1l1kKt")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "") # À récupérer sur le dashboard Stripe
 API_KEY = os.getenv("API_KEY", "test_key_12345")
-FRONTEND_URL = "https://saas-claude-7v6m08lui-lohangottardi-5625s-projects.vercel.app"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://saas-claude-7v6m08lui-lohangottardi-5625s-projects.vercel.app")
 
 UPLOAD_DIR = "output"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 stripe.api_key = STRIPE_SECRET_KEY
 
-app = FastAPI(title="PhotoVinted API Premium", version="1.2")
+app = FastAPI(title="PhotoVinted API Premium", version="1.3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +41,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- SIMULATION BASE DE DONNÉES (À remplacer par Supabase/PostgreSQL) ---
+# Format: {"email@test.com": 100}
+user_credits = {} 
 
 def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
@@ -53,6 +58,7 @@ def root():
 @app.post("/enhance")
 async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     try:
+        # Note: Ici tu devrais normalement vérifier si l'utilisateur a des crédits avant de traiter
         if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
             raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
 
@@ -105,7 +111,6 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
             "filename": filename,
             "url": f"/image/{filename}"
         })
-    
     except Exception as e:
         print(f"❌ ERREUR SERVEUR: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -117,11 +122,12 @@ async def get_image(filename: str):
         raise HTTPException(status_code=404, detail="Image non trouvée")
     return FileResponse(filepath, media_type="image/png")
 
-# --- LA ROUTE QUI MANQUAIT (CORRIGÉE) ---
+# --- STRIPE CHECKOUT ---
 @app.post("/create-checkout-session")
-async def create_checkout_session(_: bool = Depends(verify_api_key)):
+async def create_checkout_session(email: str, _: bool = Depends(verify_api_key)):
     try:
         checkout_session = stripe.checkout.Session.create(
+            customer_email=email, # Lie le paiement à l'utilisateur
             payment_method_types=['card'],
             line_items=[{
                 'price_data': {
@@ -137,11 +143,34 @@ async def create_checkout_session(_: bool = Depends(verify_api_key)):
         )
         return {"checkout_url": checkout_session.url}
     except Exception as e:
-        print(f"❌ ERREUR STRIPE: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- WEBHOOK STRIPE (L'AUTOMATISATION DES CRÉDITS) ---
+@app.post("/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        user_email = session.get("customer_email")
+        
+        # On ajoute les crédits ici
+        if user_email:
+            current = user_credits.get(user_email, 0)
+            user_credits[user_email] = current + 100
+            print(f"💰 CRÉDITS AJOUTÉS pour {user_email}: 100")
+
+    return JSONResponse({"status": "success"})
 
 if __name__ == "__main__":
     import uvicorn
-    # Important: Railway utilise 0.0.0.0
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
