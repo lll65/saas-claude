@@ -170,6 +170,4 @@ export default function PhotoVinted() {
     </div>
   );
 }
-    </div>
-  );
-}
+   
