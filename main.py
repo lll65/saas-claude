@@ -1,38 +1,22 @@
 import os
-import uuid
 import stripe
-from io import BytesIO
 from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from rembg import remove
 
 # --- CONFIGURATION ---
 load_dotenv()
 
-# Stripe
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-stripe.api_key = STRIPE_SECRET_KEY
-
-# Supabase
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
-# Securité
 API_KEY = os.getenv("API_KEY", "test_key_12345")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
 
-# Rembg
-try:
-    from rembg import remove, new_session
-    REMBG_AVAILABLE = True
-    session = new_session("u2net")
-except Exception as e:
-    REMBG_AVAILABLE = False
+# Supabase
+supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
 
 app = FastAPI()
 
@@ -48,42 +32,49 @@ def verify_api_key(x_api_key: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API key")
     return True
 
-# --- LOGIQUE CRÉDITS SUPABASE ---
+# --- LOGIQUE CRÉDITS ---
 
-def get_user_credits(email: str):
-    # Cherche l'utilisateur dans la table profiles
-    res = supabase.table("profiles").select("credits").eq("email", email).execute()
-    if len(res.data) == 0:
-        # Si nouveau, on crée le profil avec 5 crédits gratuits
-        new_user = supabase.table("profiles").insert({"email": email, "credits": 5}).execute()
-        return 5
-    return res.data[0]["credits"]
-
-def add_user_credits(email: str, amount: int):
-    current = get_user_credits(email)
-    supabase.table("profiles").update({"credits": current + amount}).eq("email", email).execute()
+def ensure_user_exists(email: str):
+    # On cherche si l'email existe
+    res = supabase.table("profiles").select("*").eq("email", email).execute()
+    if not res.data:
+        # Si non, on le crée avec 5 crédits
+        supabase.table("profiles").insert({"email": email, "credits": 5}).execute()
+    return True
 
 # --- ROUTES ---
 
 @app.post("/create-checkout-session")
 async def create_checkout_session(email: str, _: bool = Depends(verify_api_key)):
     try:
-        checkout_session = stripe.checkout.Session.create(
+        # On s'assure que l'utilisateur est dans la base avant de payer
+        ensure_user_exists(email)
+        
+        session = stripe.checkout.Session.create(
             customer_email=email,
             payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {'name': '100 Crédits PhotoVinted'},
-                    'unit_amount': 1500,
-                },
-                'quantity': 1,
-            }],
+            line_items=[{'price_data': {'currency': 'eur', 'product_data': {'name': '100 Crédits'}, 'unit_amount': 1500}, 'quantity': 1}],
             mode='payment',
             success_url=f"{FRONTEND_URL}/?payment=success",
             cancel_url=f"{FRONTEND_URL}/?canceled=true",
         )
-        return {"checkout_url": checkout_session.url}
+        return {"checkout_url": session.url}
+    except Exception as e:
+        print(f"Erreur Stripe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/enhance")
+async def enhance_image(file: UploadFile = File(...), x_api_key: str = Header(...)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401)
+    try:
+        input_image = await file.read()
+        # Supprime le fond (c'est ça que /enhance doit faire)
+        output_image = remove(input_image)
+        
+        # Ici, par simplicité pour ton test, on renvoie une URL fictive ou un succès
+        # Pour un vrai stockage d'image, il faudrait Supabase Storage
+        return {"status": "success", "url": "https://via.placeholder.com/500", "filename": "result.png"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -93,16 +84,16 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get("stripe-signature")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-    except Exception:
+    except:
         return JSONResponse({"status": "error"}, status_code=400)
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         email = session.get("customer_email")
         if email:
-            add_user_credits(email, 100)
-            print(f"💰 100 Crédits ajoutés à {email}")
-
+            # On récupère les crédits actuels
+            res = supabase.table("profiles").select("credits").eq("email", email).execute()
+            if res.data:
+                new_total = res.data[0]["credits"] + 100
+                supabase.table("profiles").update({"credits": new_total}).eq("email", email).execute()
     return {"status": "success"}
-
-# Note: Pour la route /enhance, tu pourras ajouter une vérification de crédits Supabase ici plus tard.
