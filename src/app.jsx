@@ -14,27 +14,6 @@ export default function PhotoVinted() {
   const [credits, setCredits] = useState(5);
   const fileInputRef = useRef(null);
 
-  // Login
-  const handleLogin = () => {
-    if (!email || !email.includes("@")) {
-      alert("Email valide requis");
-      return;
-    }
-    localStorage.setItem("photovinted_email", email);
-    localStorage.setItem("photovinted_credits", "5");
-    setIsLoggedIn(true);
-    setCredits(5);
-  };
-
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem("photovinted_email");
-    localStorage.removeItem("photovinted_credits");
-    setIsLoggedIn(false);
-    setEmail("");
-  };
-
-  // Check login au démarrage
   useEffect(() => {
     const savedEmail = localStorage.getItem("photovinted_email");
     if (savedEmail) {
@@ -43,37 +22,40 @@ export default function PhotoVinted() {
       setCredits(parseInt(localStorage.getItem("photovinted_credits") || "5"));
     }
 
-    // Check payment success
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success" && savedEmail) {
       const newCredits = parseInt(localStorage.getItem("photovinted_credits") || "5") + 100;
       localStorage.setItem("photovinted_credits", newCredits);
       setCredits(newCredits);
-      alert(`✅ Paiement réussi! +100 crédits! Total: ${newCredits}`);
+      alert(`✅ +100 crédits! Total: ${newCredits}`);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
+  const handleLogin = () => {
+    if (!email.includes("@")) {
+      alert("Email valide");
+      return;
+    }
+    localStorage.setItem("photovinted_email", email);
+    setIsLoggedIn(true);
+  };
+
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setError(null);
+    if (e.target.files?.[0]) {
+      setFile(e.target.files[0]);
       const reader = new FileReader();
       reader.onload = (e) => setPreview(e.target?.result);
-      reader.readAsDataURL(selectedFile);
+      reader.readAsDataURL(e.target.files[0]);
     }
   };
 
   const handleUpload = async () => {
     if (credits <= 0) {
-      setError("❌ Crédits épuisés!");
+      setError("Crédits épuisés");
       return;
     }
-    if (!file) {
-      setError("Sélectionnez une image");
-      return;
-    }
+    if (!file) return;
 
     setLoading(true);
     setError(null);
@@ -104,29 +86,14 @@ export default function PhotoVinted() {
     }
   };
 
-  const handleDownload = () => {
-    if (!result) return;
-    const a = document.createElement("a");
-    a.href = result.url;
-    a.download = result.filename;
-    a.click();
-  };
-
-  const handleReset = () => {
-    setFile(null);
-    setPreview(null);
-    setResult(null);
-    setError(null);
-  };
-
   if (!isLoggedIn) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         <div style={{ maxWidth: '400px', background: 'rgba(255,255,255,0.05)', border: '1px solid #0066cc', borderRadius: '12px', padding: '40px', textAlign: 'center' }}>
           <h1 style={{ color: '#fff', marginBottom: '30px' }}>📸 PhotoVinted</h1>
           <input 
             type="email" 
-            placeholder="Votre email" 
+            placeholder="Email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '4px', border: 'none' }}
@@ -135,7 +102,7 @@ export default function PhotoVinted() {
             onClick={handleLogin}
             style={{ width: '100%', background: '#0066cc', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
           >
-            Se connecter
+            Connexion
           </button>
         </div>
       </div>
@@ -145,18 +112,8 @@ export default function PhotoVinted() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#fff' }}>📸 PhotoVinted</h1>
-          <button onClick={handleLogout} style={{ background: '#ff4444', color: '#fff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>
-            Déconnexion
-          </button>
-        </div>
-
-        <div style={{ background: 'rgba(0,102,204,0.2)', border: '1px solid #0066cc', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
-          <p style={{ color: '#0066cc', fontWeight: 'bold', margin: 0 }}>
-            📸 Crédits: <span style={{ fontSize: '20px', color: '#00ff00' }}>{credits}</span>
-          </p>
-        </div>
+        <h1 style={{ color: '#fff', textAlign: 'center', marginBottom: '20px' }}>📸 PhotoVinted</h1>
+        <p style={{ color: '#0066cc', textAlign: 'center', fontWeight: 'bold', marginBottom: '20px' }}>Crédits: {credits}</p>
 
         <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '40px' }}>
           {!result ? (
@@ -166,12 +123,12 @@ export default function PhotoVinted() {
                 {preview ? (
                   <img src={preview} alt="Preview" style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px' }} />
                 ) : (
-                  <p style={{ color: '#fff', fontSize: '18px' }}>📤 Cliquez pour uploader</p>
+                  <p style={{ color: '#fff', fontSize: '18px' }}>📤 Cliquez</p>
                 )}
               </div>
               {error && <p style={{ color: '#ff4444', marginTop: '10px' }}>{error}</p>}
               <button onClick={handleUpload} disabled={!file || loading} style={{ width: '100%', background: '#0066cc', color: '#fff', padding: '12px', marginTop: '20px', borderRadius: '4px', cursor: 'pointer' }}>
-                {loading ? '⏳ Traitement...' : '⚡ Améliorer'}
+                {loading ? '⏳...' : '⚡ Améliorer'}
               </button>
             </div>
           ) : (
@@ -180,14 +137,12 @@ export default function PhotoVinted() {
                 <img src={preview} alt="Avant" style={{ width: '100%', borderRadius: '8px' }} />
                 <img src={result.url} alt="Après" style={{ width: '100%', borderRadius: '8px' }} />
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={handleDownload} style={{ flex: 1, background: '#00cc00', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer' }}>
-                  📥 Télécharger
-                </button>
-                <button onClick={handleReset} style={{ flex: 1, background: '#666', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer' }}>
-                  Nouvelle
-                </button>
-              </div>
+              <button onClick={() => { const a = document.createElement('a'); a.href = result.url; a.download = result.filename; a.click(); }} style={{ width: '100%', background: '#00cc00', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', marginBottom: '10px' }}>
+                📥 Télécharger
+              </button>
+              <button onClick={() => { setFile(null); setPreview(null); setResult(null); }} style={{ width: '100%', background: '#666', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer' }}>
+                Nouvelle
+              </button>
             </div>
           )}
         </div>
@@ -196,14 +151,14 @@ export default function PhotoVinted() {
           <button 
             onClick={async () => {
               try {
-                const response = await fetch(`${API_URL}/create-checkout-session?email=${email}`, {
+                const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
                   method: "POST",
                   headers: { "x-api-key": API_KEY }
                 });
                 const data = await response.json();
                 if (data.checkout_url) window.location.href = data.checkout_url;
               } catch (err) {
-                alert("Erreur: " + err.message);
+                alert("Erreur Stripe: " + err.message);
               }
             }}
             style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
@@ -212,6 +167,9 @@ export default function PhotoVinted() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
     </div>
   );
 }

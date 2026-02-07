@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -11,10 +11,8 @@ from dotenv import load_dotenv
 try:
     from rembg import remove, new_session
     REMBG_AVAILABLE = True
-    print("✅ REMBG CHARGÉ")
 except:
     REMBG_AVAILABLE = False
-    print("❌ REMBG N'A PAS CHARGÉ")
 
 load_dotenv()
 
@@ -27,38 +25,35 @@ stripe.api_key = STRIPE_SECRET_KEY
 
 app = FastAPI()
 
-# CORS - TRÈS STRICT POUR PRODUCTION
+# CORS - PERMISSIF TOTAL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "*"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "X-API-Key", "x-api-key"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+def verify_api_key(x_api_key: str = Header(None)):
+    if not x_api_key or x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return True
+
 @app.get("/")
 def root():
     return {"status": "running", "rembg": REMBG_AVAILABLE}
 
 @app.post("/enhance")
-async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
+async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
     try:
-        if file.content_type not in ["image/jpeg", "image/png"]:
-            raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
-
         contents = await file.read()
         
-        if len(contents) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="Image > 10MB")
-
         # REMBG
         if REMBG_AVAILABLE:
             try:
-                from rembg import new_session
                 session = new_session("u2net")
                 image_without_bg = remove(contents, session=session)
                 image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
@@ -69,7 +64,6 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         
         # Traitement
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
-        
         padding = 90
         new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
         canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
@@ -80,13 +74,10 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         
         enhancer = ImageEnhance.Brightness(background)
         background = enhancer.enhance(1.20)
-        
         enhancer = ImageEnhance.Contrast(background)
         background = enhancer.enhance(1.25)
-        
         enhancer = ImageEnhance.Color(background)
         background = enhancer.enhance(1.25)
-        
         enhancer = ImageEnhance.Sharpness(background)
         background = enhancer.enhance(1.20)
         
@@ -103,31 +94,26 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
         })
     
     except Exception as e:
-        print(f"❌ ERREUR: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="Image not found")
+        raise HTTPException(status_code=404)
     return FileResponse(filepath, media_type="image/png")
 
 @app.post("/create-checkout-session")
-async def create_checkout_session(request: dict = None, x_api_key: str = Header(None)):
+async def create_checkout_session(email: str = Query(None), x_api_key: str = Header(None)):
+    print(f"DEBUG: email={email}, api_key={x_api_key}")
+    
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    
     try:
-        if x_api_key != API_KEY:
-            raise HTTPException(status_code=401, detail="Invalid API key")
-        
-        # Récupère l'email depuis les query params
-        from fastapi import Query
-        
-        # Teste si ça vient de la requête
-        email = request.get("email") if request else None
-        
-        if not email:
-            raise HTTPException(status_code=400, detail="Email required")
-        
         session = stripe.checkout.Session.create(
             customer_email=email,
             payment_method_types=["card"],
@@ -135,9 +121,7 @@ async def create_checkout_session(request: dict = None, x_api_key: str = Header(
             line_items=[{
                 "price_data": {
                     "currency": "eur",
-                    "product_data": {
-                        "name": "PhotoVinted - 100 crédits",
-                    },
+                    "product_data": {"name": "100 Crédits"},
                     "unit_amount": 1500,
                 },
                 "quantity": 1,
@@ -145,9 +129,9 @@ async def create_checkout_session(request: dict = None, x_api_key: str = Header(
             success_url="https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app/?payment=success",
             cancel_url="https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app/?payment=cancel",
         )
-        return {"checkout_url": session.url, "session_id": session.id}
+        return {"checkout_url": session.url}
     except Exception as e:
-        print(f"❌ Erreur Stripe: {e}")
+        print(f"ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
