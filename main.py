@@ -1,106 +1,149 @@
-import os
-import stripe
-import io
-from fastapi import FastAPI, HTTPException, Header, UploadFile, File, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse
+import os
+import uuid
+from io import BytesIO
+from PIL import Image, ImageEnhance
+import stripe
 from dotenv import load_dotenv
-from supabase import create_client, Client
-from rembg import remove
+
+try:
+    from rembg import remove, new_session
+    REMBG_AVAILABLE = True
+    print("✅ REMBG CHARGÉ")
+except:
+    REMBG_AVAILABLE = False
+    print("❌ REMBG N'A PAS CHARGÉ")
 
 load_dotenv()
 
-# --- CONFIGURATION ---
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_xxx")
 API_KEY = os.getenv("API_KEY", "test_key_12345")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
+UPLOAD_DIR = "output"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Initialisation Supabase (si les clés manquent, le serveur ne crash pas)
-try:
-    supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
-except Exception as e:
-    print(f"⚠️ Supabase non connecté: {e}")
-    supabase = None
+stripe.api_key = STRIPE_SECRET_KEY
 
 app = FastAPI()
 
-# --- SÉCURITÉ CORS ---
+# CORS - TRÈS STRICT POUR PRODUCTION
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permet à n'importe quel site (Vercel) de parler à ton API
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- ROUTES ---
-
-@app.post("/create-checkout-session")
-async def create_checkout_session(email: str, x_api_key: str = Header(...)):
-    """Lance le paiement Stripe et crée le profil utilisateur"""
+def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Clé API invalide")
-    
-    try:
-        # On tente de créer l'utilisateur dans Supabase avant le paiement
-        if supabase:
-            try:
-                supabase.table("profiles").upsert({"email": email, "credits": 5}, on_conflict="email").execute()
-            except:
-                pass # Si la DB rate, on laisse quand même l'utilisateur payer
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return True
 
-        # Création de la session Stripe
-        session = stripe.checkout.Session.create(
-            customer_email=email,
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {'name': '100 Crédits PhotoVinted'},
-                    'unit_amount': 1500, # 15.00€
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=f"{FRONTEND_URL}/?payment=success",
-            cancel_url=f"{FRONTEND_URL}/?canceled=true",
-        )
-        return {"checkout_url": session.url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/")
+def root():
+    return {"status": "running", "rembg": REMBG_AVAILABLE}
 
 @app.post("/enhance")
-async def enhance_image(file: UploadFile = File(...), x_api_key: str = Header(...)):
-    """Traite l'image (retrait de fond)"""
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401)
+async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     try:
-        input_data = await file.read()
-        output_data = remove(input_data) # Moteur de retrait de fond
-        return Response(content=output_data, media_type="image/png")
+        if file.content_type not in ["image/jpeg", "image/png"]:
+            raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
+
+        contents = await file.read()
+        
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Image > 10MB")
+
+        # REMBG
+        if REMBG_AVAILABLE:
+            try:
+                from rembg import new_session
+                session = new_session("u2net")
+                image_without_bg = remove(contents, session=session)
+                image = Image.open(BytesIO(image_without_bg)).convert("RGBA")
+            except:
+                image = Image.open(BytesIO(contents)).convert("RGBA")
+        else:
+            image = Image.open(BytesIO(contents)).convert("RGBA")
+        
+        # Traitement
+        image.thumbnail((900, 900), Image.Resampling.LANCZOS)
+        
+        padding = 90
+        new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
+        canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
+        canvas.paste(image, (padding, padding), image)
+        
+        background = Image.new("RGB", canvas.size, (255, 255, 255))
+        background.paste(canvas, (0, 0), canvas)
+        
+        enhancer = ImageEnhance.Brightness(background)
+        background = enhancer.enhance(1.20)
+        
+        enhancer = ImageEnhance.Contrast(background)
+        background = enhancer.enhance(1.25)
+        
+        enhancer = ImageEnhance.Color(background)
+        background = enhancer.enhance(1.25)
+        
+        enhancer = ImageEnhance.Sharpness(background)
+        background = enhancer.enhance(1.20)
+        
+        background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
+        
+        filename = f"{uuid.uuid4()}.png"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        background.save(filepath, "PNG", quality=95)
+        
+        return JSONResponse({
+            "status": "success",
+            "filename": filename,
+            "url": f"/image/{filename}"
+        })
+    
     except Exception as e:
+        print(f"❌ ERREUR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/webhook")
-async def stripe_webhook(request: Request):
-    """Reçoit le signal de Stripe pour ajouter les crédits"""
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    
+@app.get("/image/{filename}")
+async def get_image(filename: str):
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(filepath, media_type="image/png")
+
+@app.post("/create-checkout-session")
+def create_checkout_session(email: str = None, _: bool = Depends(verify_api_key)):
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-    except:
-        return JSONResponse({"status": "error"}, status_code=400)
+        if not email:
+            raise HTTPException(status_code=400, detail="Email required")
+        
+        session = stripe.checkout.Session.create(
+            customer_email=email,
+            payment_method_types=["card"],
+            mode="payment",
+            line_items=[{
+                "price_data": {
+                    "currency": "eur",
+                    "product_data": {
+                        "name": "PhotoVinted - 100 crédits",
+                        "description": "100 images à améliorer",
+                    },
+                    "unit_amount": 1500,
+                },
+                "quantity": 1,
+            }],
+            success_url="https://saas-claude-9xrpf43ka-lohangottardi-5625s-projects.vercel.app/?payment=success",
+            cancel_url="https://saas-claude-9xrpf43ka-lohangottardi-5625s-projects.vercel.app/?payment=cancel",
+        )
+        return {"checkout_url": session.url, "session_id": session.id}
+    except Exception as e:
+        print(f"Erreur Stripe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        email = session.get("customer_email")
-        if email and supabase:
-            # On récupère les crédits actuels pour ajouter 100
-            res = supabase.table("profiles").select("credits").eq("email", email).execute()
-            if res.data:
-                new_total = res.data[0]["credits"] + 100
-                supabase.table("profiles").update({"credits": new_total}).eq("email", email).execute()
-                print(f"✅ 100 crédits ajoutés à {email}")
-
-    return {"status": "success"}
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

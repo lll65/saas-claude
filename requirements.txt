@@ -1,8 +1,5 @@
---index-url https://download.pytorch.org/whl/cpu
-torch==2.4.0+cpu
-torchvision==0.19.0+cpu
---extra-index-url https://pypi.org/simple
-numpy>=1.24.0,<2.0.0
+## **ÉTAPE 3: Simplifier requirements.txt**
+```
 fastapi==0.128.0
 uvicorn==0.40.0
 python-multipart==0.0.21
@@ -10,6 +7,8 @@ pillow==12.1.0
 stripe==14.1.0
 python-dotenv==1.2.1
 aiofiles==23.2.1
-rembg==2.0.60
+rembg==2.0.72
+numpy==2.3.0
 onnxruntime==1.18.0
-supabase
+torch==2.4.0
+torchvision==0.19.0
