@@ -30,17 +30,16 @@ app = FastAPI()
 # CORS - TRÈS STRICT POUR PRODUCTION
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "*"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key", "x-api-key"],
 )
-
-def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return True
-
 @app.get("/")
 def root():
     return {"status": "running", "rembg": REMBG_AVAILABLE}
@@ -115,8 +114,17 @@ async def get_image(filename: str):
     return FileResponse(filepath, media_type="image/png")
 
 @app.post("/create-checkout-session")
-def create_checkout_session(email: str = None, _: bool = Depends(verify_api_key)):
+async def create_checkout_session(request: dict = None, x_api_key: str = Header(None)):
     try:
+        if x_api_key != API_KEY:
+            raise HTTPException(status_code=401, detail="Invalid API key")
+        
+        # Récupère l'email depuis les query params
+        from fastapi import Query
+        
+        # Teste si ça vient de la requête
+        email = request.get("email") if request else None
+        
         if not email:
             raise HTTPException(status_code=400, detail="Email required")
         
@@ -129,18 +137,17 @@ def create_checkout_session(email: str = None, _: bool = Depends(verify_api_key)
                     "currency": "eur",
                     "product_data": {
                         "name": "PhotoVinted - 100 crédits",
-                        "description": "100 images à améliorer",
                     },
                     "unit_amount": 1500,
                 },
                 "quantity": 1,
             }],
-            success_url="https://saas-claude-9xrpf43ka-lohangottardi-5625s-projects.vercel.app/?payment=success",
-            cancel_url="https://saas-claude-9xrpf43ka-lohangottardi-5625s-projects.vercel.app/?payment=cancel",
+            success_url="https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app/?payment=success",
+            cancel_url="https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app/?payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
-        print(f"Erreur Stripe: {e}")
+        print(f"❌ Erreur Stripe: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
