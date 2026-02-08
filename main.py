@@ -1,6 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request, Body, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import os
 import uuid
 from io import BytesIO
@@ -36,11 +37,33 @@ app = FastAPI(title="PhotoVinted API Premium", version="1.3")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=False, 
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+def _cors_headers():
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+    }
+
+@app.middleware("http")
+async def ensure_cors_headers(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return Response(status_code=200, headers=_cors_headers())
+    response = await call_next(request)
+    for header, value in _cors_headers().items():
+        response.headers.setdefault(header, value)
+    return response
+
+
+@app.options("/{path:path}")
+async def preflight_handler():
+    return Response(status_code=200, headers=_cors_headers())
 
 # --- SIMULATION BASE DE DONNÉES (À remplacer par Supabase/PostgreSQL) ---
 # Format: {"email@test.com": 100}
@@ -75,25 +98,29 @@ async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_a
             pre_img.save(prep_buffer, format="PNG")
             optimized_contents = prep_buffer.getvalue()
 
-        print("🔄 Suppression du fond Premium...")
-        image_without_bg = remove(optimized_contents, session=session)
-        
-        item = Image.open(BytesIO(image_without_bg)).convert("RGBA")
-        item.thumbnail((950, 950), Image.Resampling.LANCZOS)
+        if REMBG_AVAILABLE:
+            print("🔄 Suppression du fond Premium...")
+            image_without_bg = remove(optimized_contents, session=session)
+            
+            item = Image.open(BytesIO(image_without_bg)).convert("RGBA")
+            item.thumbnail((950, 950), Image.Resampling.LANCZOS)
 
-        shadow = item.copy()
-        shadow = shadow.filter(ImageFilter.GaussianBlur(radius=20))
-        
-        canvas_size = (1080, 1080)
-        final_img = Image.new("RGBA", canvas_size, (255, 255, 255, 255))
-        
-        item_pos = ((canvas_size[0] - item.size[0]) // 2, (canvas_size[1] - item.size[1]) // 2)
-        shadow_pos = (item_pos[0] + 10, item_pos[1] + 15)
-        
-        final_img.paste(shadow, shadow_pos, shadow)
-        final_img.paste(item, item_pos, item)
-        
-        final_img = final_img.convert("RGB")
+            shadow = item.copy()
+            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=20))
+            
+            canvas_size = (1080, 1080)
+            final_img = Image.new("RGBA", canvas_size, (255, 255, 255, 255))
+            
+            item_pos = ((canvas_size[0] - item.size[0]) // 2, (canvas_size[1] - item.size[1]) // 2)
+            shadow_pos = (item_pos[0] + 10, item_pos[1] + 15)
+            
+            final_img.paste(shadow, shadow_pos, shadow)
+            final_img.paste(item, item_pos, item)
+            
+            final_img = final_img.convert("RGB")
+        else:
+            print("⚠️ REMBG indisponible, application d'une amélioration simple.")
+            final_img = pre_img.copy()
         
         final_img = ImageEnhance.Brightness(final_img).enhance(1.25)
         final_img = ImageEnhance.Contrast(final_img).enhance(1.20)
@@ -123,23 +150,36 @@ async def get_image(filename: str):
     return FileResponse(filepath, media_type="image/png")
 
 # --- STRIPE CHECKOUT ---
+class CheckoutRequest(BaseModel):
+    email: str | None = None
+
+
 @app.post("/create-checkout-session")
-async def create_checkout_session(email: str, _: bool = Depends(verify_api_key)):
+async def create_checkout_session(
+    payload: CheckoutRequest | None = Body(default=None),
+    email: str | None = None,
+    _: bool = Depends(verify_api_key),
+):
     try:
-        checkout_session = stripe.checkout.Session.create(
-            customer_email=email, # Lie le paiement à l'utilisateur
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {'name': '100 Crédits PhotoVinted'},
-                    'unit_amount': 1500,
+        customer_email = payload.email if payload and payload.email else email
+        session_config = {
+            "payment_method_types": ["card"],
+            "line_items": [{
+                "price_data": {
+                    "currency": "eur",
+                    "product_data": {"name": "100 Crédits PhotoVinted"},
+                    "unit_amount": 1500,
                 },
-                'quantity': 1,
+                "quantity": 1,
             }],
-            mode='payment',
-            success_url=f"{FRONTEND_URL}/?success=true",
-            cancel_url=f"{FRONTEND_URL}/?canceled=true",
+            "mode": "payment",
+            "success_url": f"{FRONTEND_URL}/?payment=success",
+            "cancel_url": f"{FRONTEND_URL}/?payment=cancel",
+        }
+        if customer_email:
+            session_config["customer_email"] = customer_email
+        checkout_session = stripe.checkout.Session.create(
+            **session_config
         )
         return {"checkout_url": checkout_session.url}
     except Exception as e:
