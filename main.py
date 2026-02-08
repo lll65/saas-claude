@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request, Body, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -42,6 +42,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def ensure_cors_headers(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return Response(status_code=200, headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        })
+    response = await call_next(request)
+    response.headers.setdefault("Access-Control-Allow-Origin", "*")
+    response.headers.setdefault("Access-Control-Allow-Headers", "*")
+    response.headers.setdefault("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    return response
 
 # --- SIMULATION BASE DE DONNÉES (À remplacer par Supabase/PostgreSQL) ---
 # Format: {"email@test.com": 100}
@@ -133,8 +147,13 @@ class CheckoutRequest(BaseModel):
 
 
 @app.post("/create-checkout-session")
-async def create_checkout_session(payload: CheckoutRequest, _: bool = Depends(verify_api_key)):
+async def create_checkout_session(
+    payload: CheckoutRequest | None = Body(default=None),
+    email: str | None = None,
+    _: bool = Depends(verify_api_key),
+):
     try:
+        customer_email = payload.email if payload and payload.email else email
         session_config = {
             "payment_method_types": ["card"],
             "line_items": [{
@@ -149,8 +168,8 @@ async def create_checkout_session(payload: CheckoutRequest, _: bool = Depends(ve
             "success_url": f"{FRONTEND_URL}/?payment=success",
             "cancel_url": f"{FRONTEND_URL}/?payment=cancel",
         }
-        if payload.email:
-            session_config["customer_email"] = payload.email
+        if customer_email:
+            session_config["customer_email"] = customer_email
         checkout_session = stripe.checkout.Session.create(
             **session_config
         )
