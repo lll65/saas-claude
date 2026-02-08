@@ -37,25 +37,33 @@ app = FastAPI(title="PhotoVinted API Premium", version="1.3")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=False, 
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+def _cors_headers():
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+    }
 
 @app.middleware("http")
 async def ensure_cors_headers(request: Request, call_next):
     if request.method == "OPTIONS":
-        return Response(status_code=200, headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        })
+        return Response(status_code=200, headers=_cors_headers())
     response = await call_next(request)
-    response.headers.setdefault("Access-Control-Allow-Origin", "*")
-    response.headers.setdefault("Access-Control-Allow-Headers", "*")
-    response.headers.setdefault("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    for header, value in _cors_headers().items():
+        response.headers.setdefault(header, value)
     return response
+
+
+@app.options("/{path:path}")
+async def preflight_handler():
+    return Response(status_code=200, headers=_cors_headers())
 
 # --- SIMULATION BASE DE DONNÉES (À remplacer par Supabase/PostgreSQL) ---
 # Format: {"email@test.com": 100}
