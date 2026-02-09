@@ -56,64 +56,65 @@ def root():
     return {"status": "running", "rembg": REMBG_AVAILABLE}
 
 @app.post("/enhance")
-async def enhance_photo(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
+async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
     try:
-        # Note: Ici tu devrais normalement vérifier si l'utilisateur a des crédits avant de traiter
-        if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
-            raise HTTPException(status_code=400, detail="JPG ou PNG uniquement")
-
+        import requests
+        
         contents = await file.read()
         
-        with Image.open(BytesIO(contents)) as pre_img:
-            pre_img = ImageOps.exif_transpose(pre_img)
-            if pre_img.mode != "RGB":
-                pre_img = pre_img.convert("RGB")
-            
-            pre_img.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
-            
-            prep_buffer = BytesIO()
-            pre_img.save(prep_buffer, format="PNG")
-            optimized_contents = prep_buffer.getvalue()
-
-        print("🔄 Suppression du fond Premium...")
-        image_without_bg = remove(optimized_contents, session=session)
+        # REMOVE.BG API - MEILLEUR QUE REMBG
+        REMOVEBG_API_KEY = os.getenv("REMOVEBG_API_KEY", "")
         
-        item = Image.open(BytesIO(image_without_bg)).convert("RGBA")
-        item.thumbnail((950, 950), Image.Resampling.LANCZOS)
-
-        shadow = item.copy()
-        shadow = shadow.filter(ImageFilter.GaussianBlur(radius=20))
+        response = requests.post(
+            'https://api.remove.bg/v1.0/removebg',
+            files={'image_file': ('image.png', contents)},
+            data={'size': 'auto'},
+            headers={'X-API-Key': REMOVEBG_API_KEY},
+            timeout=30
+        )
         
-        canvas_size = (1080, 1080)
-        final_img = Image.new("RGBA", canvas_size, (255, 255, 255, 255))
+        if response.status_code == 200:
+            image = Image.open(BytesIO(response.content)).convert("RGBA")
+        else:
+            image = Image.open(BytesIO(contents)).convert("RGBA")
         
-        item_pos = ((canvas_size[0] - item.size[0]) // 2, (canvas_size[1] - item.size[1]) // 2)
-        shadow_pos = (item_pos[0] + 10, item_pos[1] + 15)
+        # Traitement identique
+        image.thumbnail((900, 900), Image.Resampling.LANCZOS)
+        padding = 90
+        new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
+        canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
+        canvas.paste(image, (padding, padding), image)
         
-        final_img.paste(shadow, shadow_pos, shadow)
-        final_img.paste(item, item_pos, item)
+        background = Image.new("RGB", canvas.size, (255, 255, 255))
+        background.paste(canvas, (0, 0), canvas)
         
-        final_img = final_img.convert("RGB")
+        enhancer = ImageEnhance.Brightness(background)
+        background = enhancer.enhance(1.20)
+        enhancer = ImageEnhance.Contrast(background)
+        background = enhancer.enhance(1.25)
+        enhancer = ImageEnhance.Color(background)
+        background = enhancer.enhance(1.25)
+        enhancer = ImageEnhance.Sharpness(background)
+        background = enhancer.enhance(1.20)
         
-        final_img = ImageEnhance.Brightness(final_img).enhance(1.25)
-        final_img = ImageEnhance.Contrast(final_img).enhance(1.20)
-        final_img = ImageEnhance.Color(final_img).enhance(1.15)
-        final_img = ImageEnhance.Sharpness(final_img).enhance(1.60)
+        background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
         
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
-        final_img.save(filepath, "PNG", optimize=False)
-        
-        print(f"✅ SUCCÈS PREMIUM: {filename}")
+        background.save(filepath, "PNG", quality=95)
         
         return JSONResponse({
             "status": "success",
             "filename": filename,
             "url": f"/image/{filename}"
         })
+    
     except Exception as e:
-        print(f"❌ ERREUR SERVEUR: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
