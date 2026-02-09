@@ -1,59 +1,42 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import uuid
+import requests
 from io import BytesIO
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
 
-# --- CONFIGURATION REMBG ---
-try:
-    from rembg import remove, new_session
-    REMBG_AVAILABLE = True
-    print("⏳ Chargement du modèle Rembg...")
-    session = new_session("u2net") 
-    print("✅ REMBG CHARGÉ AVEC SUCCÈS")
-except ImportError as e:
-    print(f"❌ REMBG N'A PAS PU CHARGER: {e}")
-    REMBG_AVAILABLE = False
-
 load_dotenv()
 
-# Configuration Variables
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_4eC39HqLyjWDarhtT1l1kKt")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "") # À récupérer sur le dashboard Stripe
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_xxx")
 API_KEY = os.getenv("API_KEY", "test_key_12345")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://saas-claude-7v6m08lui-lohangottardi-5625s-projects.vercel.app")
-
+REMOVEBG_API_KEY = os.getenv("REMOVEBG_API_KEY", "")
 UPLOAD_DIR = "output"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 stripe.api_key = STRIPE_SECRET_KEY
 
-app = FastAPI(title="PhotoVinted API Premium", version="1.3")
+app = FastAPI(title="PhotoVinted API", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=False, 
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- SIMULATION BASE DE DONNÉES (À remplacer par Supabase/PostgreSQL) ---
-# Format: {"email@test.com": 100}
-user_credits = {} 
-
-def verify_api_key(x_api_key: str = Header(...)):
+def verify_api_key(x_api_key: str = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return True
 
 @app.get("/")
 def root():
-    return {"status": "running", "rembg": REMBG_AVAILABLE}
+    return {"status": "running", "service": "remove.bg"}
 
 @app.post("/enhance")
 async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(None)):
@@ -61,13 +44,9 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         raise HTTPException(status_code=401, detail="Invalid API key")
     
     try:
-        import requests
-        
         contents = await file.read()
         
-        # REMOVE.BG API - MEILLEUR QUE REMBG
-        REMOVEBG_API_KEY = os.getenv("REMOVEBG_API_KEY", "")
-        
+        # Remove.bg API
         response = requests.post(
             'https://api.remove.bg/v1.0/removebg',
             files={'image_file': ('image.png', contents)},
@@ -81,7 +60,7 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         else:
             image = Image.open(BytesIO(contents)).convert("RGBA")
         
-        # Traitement identique
+        # Traitement
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
         padding = 90
         new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
@@ -113,65 +92,48 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         })
     
     except Exception as e:
+        print(f"ERROR: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
-
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="Image non trouvée")
+        raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(filepath, media_type="image/png")
 
-# --- STRIPE CHECKOUT ---
 @app.post("/create-checkout-session")
-async def create_checkout_session(email: str, _: bool = Depends(verify_api_key)):
+async def create_checkout_session(email: str = Query(None), x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    
     try:
-        checkout_session = stripe.checkout.Session.create(
-            customer_email=email, # Lie le paiement à l'utilisateur
-            payment_method_types=['card'],
+        session = stripe.checkout.Session.create(
+            customer_email=email,
+            payment_method_types=["card"],
+            mode="payment",
             line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {'name': '100 Crédits PhotoVinted'},
-                    'unit_amount': 1500,
+                "price_data": {
+                    "currency": "eur",
+                    "product_data": {"name": "100 Crédits PhotoVinted"},
+                    "unit_amount": 1500,
                 },
-                'quantity': 1,
+                "quantity": 1,
             }],
-            mode='payment',
-            success_url=f"{FRONTEND_URL}/?success=true",
-            cancel_url=f"{FRONTEND_URL}/?canceled=true",
+            success_url="https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app/?payment=success",
+            cancel_url="https://saas-claude-gk14uhyae-lohangottardi-5625s-projects.vercel.app/?payment=cancel",
         )
-        return {"checkout_url": checkout_session.url}
+        return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
+        print(f"ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# --- WEBHOOK STRIPE (L'AUTOMATISATION DES CRÉDITS) ---
-@app.post("/webhook")
-async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
-
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        user_email = session.get("customer_email")
-        
-        # On ajoute les crédits ici
-        if user_email:
-            current = user_credits.get(user_email, 0)
-            user_credits[user_email] = current + 100
-            print(f"💰 CRÉDITS AJOUTÉS pour {user_email}: 100")
-
-    return JSONResponse({"status": "success"})
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
