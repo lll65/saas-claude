@@ -5,6 +5,7 @@ const API_URL = "https://web-production-f1129.up.railway.app";
 const API_KEY = "test_key_12345";
 
 export default function PhotoVinted() {
+  // États
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -16,12 +17,13 @@ export default function PhotoVinted() {
   });
   const fileInputRef = useRef(null);
 
-  // Utilisation de useCallback pour éviter les boucles infinies dans useEffect
+  // Sauvegarde des crédits dans le localStorage
   const saveCredits = useCallback((newCredits) => {
     setCredits(newCredits);
     localStorage.setItem('photovinted_credits', newCredits.toString());
   }, []);
 
+  // Gestion de l'URL après un paiement réussi
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
@@ -30,11 +32,11 @@ export default function PhotoVinted() {
       const newCredits = currentCredits + 100;
       saveCredits(newCredits);
       alert(`✅ Paiement réussi! +100 crédits ajoutés! Total: ${newCredits}`);
-      // Nettoie l'URL sans recharger la page
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [saveCredits]);
 
+  // Gestion du changement de fichier
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -45,6 +47,7 @@ export default function PhotoVinted() {
     reader.readAsDataURL(selectedFile);
   };
 
+  // Upload du fichier vers l'API
   const handleUpload = async () => {
     if (credits <= 0) {
       setError("❌ Crédits épuisés! Achète plus d'images pour continuer.");
@@ -64,9 +67,8 @@ export default function PhotoVinted() {
 
       const response = await fetch(`${API_URL}/enhance`, {
         method: "POST",
-        headers: { 
-          // Utilisation du format standard X-API-Key pour éviter les blocages CORS
-          "X-API-Key": API_KEY 
+        headers: {
+          "X-API-Key": API_KEY
         },
         body: formData,
       });
@@ -77,15 +79,13 @@ export default function PhotoVinted() {
       }
 
       const data = await response.json();
-      
-      // On s'assure que l'URL commence bien par http/https
       const finalImageUrl = data.url.startsWith('http') ? data.url : `${API_URL}${data.url}`;
-      
-      setResult({ 
-        filename: data.filename, 
-        url: finalImageUrl 
+
+      setResult({
+        filename: data.filename,
+        url: finalImageUrl
       });
-      
+
       setFile(null);
       saveCredits(credits - 1);
     } catch (err) {
@@ -96,17 +96,18 @@ export default function PhotoVinted() {
     }
   };
 
-  // ... (Reste du code handleDownload et handleReset identique)
+  // Téléchargement du résultat
   const handleDownload = () => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result.url;
     a.download = result.filename;
-    document.body.appendChild(a); // Nécessaire pour certains navigateurs
+    document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
+  // Réinitialisation de l'état
   const handleReset = () => {
     setFile(null);
     setPreview(null);
@@ -115,11 +116,12 @@ export default function PhotoVinted() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Rendu
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', fontFamily: 'Arial, sans-serif' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <h1 style={{ textAlign: 'center', color: '#fff', fontSize: '36px', marginBottom: '10px' }}>📸 PhotoVinted</h1>
-        
+
         {/* Affichage des crédits */}
         <div style={{ background: 'rgba(0,102,204,0.2)', border: '1px solid #0066cc', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
           <p style={{ color: '#0066cc', margin: '0', fontWeight: 'bold' }}>
@@ -163,16 +165,28 @@ export default function PhotoVinted() {
 
         {/* Bouton Stripe */}
         <div style={{ marginTop: '40px', textAlign: 'center' }}>
-          <button 
+          <button
             onClick={async () => {
+              const email = prompt("Votre email:");
+              if (!email || !email.includes("@")) {
+                alert("Email valide requis");
+                return;
+              }
+
               try {
-                const response = await fetch(`${API_URL}/create-checkout-session`, {
+                const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
                   method: "POST",
-                  headers: { "X-API-Key": API_KEY }
+                  headers: { "x-api-key": API_KEY }
                 });
                 const data = await response.json();
-                if (data.checkout_url) window.location.href = data.checkout_url;
-              } catch (err) { alert("Erreur Stripe: " + err.message); }
+                if (data.checkout_url) {
+                  window.location.href = data.checkout_url;
+                } else {
+                  alert("Erreur: " + data.error);
+                }
+              } catch (err) {
+                alert("Erreur: " + err.message);
+              }
             }}
             style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
           >

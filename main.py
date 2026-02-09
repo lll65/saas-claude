@@ -83,7 +83,7 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
-        background.save(filepath, "PNG", quality=95)
+        background.save(filepath, "PNG")  # PNG = pas de compression
         
         return JSONResponse({
             "status": "success",
