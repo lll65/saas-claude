@@ -46,11 +46,11 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
     try:
         contents = await file.read()
         
-        # Remove.bg API - HAUTE QUALITÉ
+        # Remove.bg API - ORIGINAL QUI MARCHE
         response = requests.post(
             'https://api.remove.bg/v1.0/removebg',
             files={'image_file': ('image.png', contents)},
-            data={'size': 'full', 'type': 'auto'},  # Auto = marche mieux pour tous les cas
+            data={'size': 'auto'},
             headers={'X-API-Key': REMOVEBG_API_KEY},
             timeout=30
         )
@@ -60,33 +60,30 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         else:
             image = Image.open(BytesIO(contents)).convert("RGBA")
         
-        # NE PAS redimensionner l'image d'origine!
-        # Juste ajouter padding blanc
-        width, height = image.size
-        
-        # Créer un canvas blanc sans écrase la photo
-        padding = max(int(width * 0.1), 50)  # 10% padding minimum 50px
-        new_size = (width + padding * 2, height + padding * 2)
+        # Traitement original qui marchait
+        image.thumbnail((900, 900), Image.Resampling.LANCZOS)
+        padding = 90
+        new_size = (image.size[0] + padding * 2, image.size[1] + padding * 2)
         canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
         canvas.paste(image, (padding, padding), image)
         
-        # Convertir en RGB
         background = Image.new("RGB", canvas.size, (255, 255, 255))
         background.paste(canvas, (0, 0), canvas)
         
-        # Enhancement LÉGER (pas d'artefacts)
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.10)  # +10%
+        background = enhancer.enhance(1.25)
         enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.15)  # +15%
+        background = enhancer.enhance(1.30)
         enhancer = ImageEnhance.Color(background)
-        background = enhancer.enhance(1.10)  # +10%
+        background = enhancer.enhance(1.20)
+        enhancer = ImageEnhance.Sharpness(background)
+        background = enhancer.enhance(1.15)
         
-        # AUCUN redimensionnement final (garde la qualité!)
+        background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
         
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
-        background.save(filepath, "PNG", quality=95)  # PNG lossless
+        background.save(filepath, "PNG", quality=95)
         
         return JSONResponse({
             "status": "success",
@@ -138,5 +135,4 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
 
