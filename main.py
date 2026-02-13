@@ -71,13 +71,13 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         background.paste(canvas, (0, 0), canvas)
         
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.20)
+        background = enhancer.enhance(1.35)
         enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.25)
+        background = enhancer.enhance(1.40)
         enhancer = ImageEnhance.Color(background)
-        background = enhancer.enhance(1.25)
+        background = enhancer.enhance(1.35)
         enhancer = ImageEnhance.Sharpness(background)
-        background = enhancer.enhance(1.20)
+        background = enhancer.enhance(1.30)
         
         background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
         
