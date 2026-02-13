@@ -50,7 +50,7 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         response = requests.post(
             'https://api.remove.bg/v1.0/removebg',
             files={'image_file': ('image.png', contents)},
-            data={'size': 'full', 'type': 'product'},  # FULL SIZE + PRODUCT (mieux pour photos)
+            data={'size': 'full', 'type': 'auto'},  # Auto = marche mieux pour tous les cas
             headers={'X-API-Key': REMOVEBG_API_KEY},
             timeout=30
         )
