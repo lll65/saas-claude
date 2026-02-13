@@ -96,13 +96,13 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         
         # ÉTAPE 6: Enhancement léger
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.25)
+        background = enhancer.enhance(1.10)  # Était 1.25 (trop!)
         enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.30)
+        background = enhancer.enhance(1.10)  # Était 1.30 (trop!)
         enhancer = ImageEnhance.Color(background)
-        background = enhancer.enhance(1.20)
+        background = enhancer.enhance(1.05)  # Était 1.20 (trop!)
         enhancer = ImageEnhance.Sharpness(background)
-        background = enhancer.enhance(1.15)
+        background = enhancer.enhance(1.05)  # Était 1.15 (trop!)
         
         # ÉTAPE 7: Redimensionner pour affichage (1080x1080)
         background.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
