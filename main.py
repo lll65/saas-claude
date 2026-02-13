@@ -50,7 +50,7 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         response = requests.post(
             'https://api.remove.bg/v1.0/removebg',
             files={'image_file': ('image.png', contents)},
-            data={'size': 'auto'},
+            data={'size': 'regular', 'type': 'auto'},  # Regular = meilleure qualité
             headers={'X-API-Key': REMOVEBG_API_KEY},
             timeout=30
         )
@@ -71,13 +71,13 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         background.paste(canvas, (0, 0), canvas)
         
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.45)  # +45%
+        background = enhancer.enhance(1.25)  # +45%
         enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.50)  # +50%
+        background = enhancer.enhance(1.30)  # +50%
         enhancer = ImageEnhance.Color(background)
-        background = enhancer.enhance(1.40)  # +40%
+        background = enhancer.enhance(1.20)  # +40%
         enhancer = ImageEnhance.Sharpness(background)
-        background = enhancer.enhance(1.35)  # +35%
+        background = enhancer.enhance(1.15)  # +35%
         
         background = background.resize((1080, 1080), Image.Resampling.LANCZOS)
         
