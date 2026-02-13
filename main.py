@@ -46,47 +46,72 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
     try:
         contents = await file.read()
         
-        # Remove.bg API - HAUTE QUALITÉ
+        # ÉTAPE 1: Charger l'image originale
+        original_image = Image.open(BytesIO(contents))
+        original_width, original_height = original_image.size
+        
+        print(f"Image originale: {original_width}x{original_height}")
+        
+        # ÉTAPE 2: Compresser pour Remove.bg (max 2000px)
+        compressed_image = original_image.copy()
+        if original_width > 2000 or original_height > 2000:
+            compressed_image.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
+            print(f"Compressée pour Remove.bg: {compressed_image.size}")
+        
+        # Sauver en JPG compressé temporaire
+        temp_buffer = BytesIO()
+        compressed_image.save(temp_buffer, format="JPEG", quality=85)
+        temp_buffer.seek(0)
+        compressed_contents = temp_buffer.getvalue()
+        
+        # ÉTAPE 3: Envoyer à Remove.bg
         response = requests.post(
             'https://api.remove.bg/v1.0/removebg',
-            files={'image_file': ('image.png', contents)},
-            data={'size': 'full', 'type': 'auto'},  # Auto = marche mieux pour tous les cas
+            files={'image_file': ('image.jpg', compressed_contents)},
+            data={'size': 'auto'},
             headers={'X-API-Key': REMOVEBG_API_KEY},
             timeout=30
         )
         
         if response.status_code == 200:
             image = Image.open(BytesIO(response.content)).convert("RGBA")
+            print("✅ Remove.bg succès")
         else:
-            image = Image.open(BytesIO(contents)).convert("RGBA")
+            print(f"❌ Remove.bg erreur {response.status_code}")
+            image = original_image.convert("RGBA")
         
-        # NE PAS redimensionner l'image d'origine!
-        # Juste ajouter padding blanc
-        width, height = image.size
+        # ÉTAPE 4: Redimensionner à la VRAIE taille originale
+        if image.size != (original_width, original_height):
+            image = image.resize((original_width, original_height), Image.Resampling.LANCZOS)
+            print(f"Redimensionnée à: {image.size}")
         
-        # Créer un canvas blanc sans écrase la photo
-        padding = max(int(width * 0.1), 50)  # 10% padding minimum 50px
-        new_size = (width + padding * 2, height + padding * 2)
+        # ÉTAPE 5: Ajouter padding blanc
+        padding = 90
+        new_size = (original_width + padding * 2, original_height + padding * 2)
         canvas = Image.new("RGBA", new_size, (255, 255, 255, 255))
         canvas.paste(image, (padding, padding), image)
         
-        # Convertir en RGB
         background = Image.new("RGB", canvas.size, (255, 255, 255))
         background.paste(canvas, (0, 0), canvas)
         
-        # Enhancement LÉGER (pas d'artefacts)
+        # ÉTAPE 6: Enhancement léger
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.10)  # +10%
+        background = enhancer.enhance(1.25)
         enhancer = ImageEnhance.Contrast(background)
-        background = enhancer.enhance(1.15)  # +15%
+        background = enhancer.enhance(1.30)
         enhancer = ImageEnhance.Color(background)
-        background = enhancer.enhance(1.10)  # +10%
+        background = enhancer.enhance(1.20)
+        enhancer = ImageEnhance.Sharpness(background)
+        background = enhancer.enhance(1.15)
         
-        # AUCUN redimensionnement final (garde la qualité!)
+        # ÉTAPE 7: Redimensionner pour affichage (1080x1080)
+        background.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
         
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
-        background.save(filepath, "PNG", quality=95)  # PNG lossless
+        background.save(filepath, "PNG", quality=95)
+        
+        print(f"✅ Image sauvegardée: {filename}")
         
         return JSONResponse({
             "status": "success",
