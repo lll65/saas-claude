@@ -104,8 +104,7 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         enhancer = ImageEnhance.Sharpness(background)
         background = enhancer.enhance(1.85)  # Était 1.35 (trop!)
         
-        # ÉTAPE 7: Redimensionner pour affichage (1080x1080)
-        background.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
+        
         
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(UPLOAD_DIR, filename)
