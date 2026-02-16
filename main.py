@@ -96,7 +96,7 @@ async def enhance_photo(file: UploadFile = File(...), x_api_key: str = Header(No
         
         # ÉTAPE 6: Enhancement léger
         enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(1.40)  # Était 1.25 (trop!)
+        background = enhancer.enhance(1.25)  # Était 1.25 (trop!)
         enhancer = ImageEnhance.Contrast(background)
         background = enhancer.enhance(1.0)  # Était 1.30 (trop!)
         enhancer = ImageEnhance.Color(background)
