@@ -135,8 +135,8 @@ export default function PhotoVinted() {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ maxWidth: '800px', textAlign: 'center' }}>
-          <h1 style={{ color: '#fff', fontSize: '48px', marginBottom: '20px' }}>📸 PhotoVinted</h1>
-          <p style={{ color: '#aaa', fontSize: '20px', marginBottom: '40px' }}>Améliore tes photos pour Vinted en 1 clic</p>
+          <h1 style={{ color: '#fff', fontSize: '48px', marginBottom: '20px' }}>📸 PhotoBoost</h1>
+          <p style={{ color: '#aaa', fontSize: '20px', marginBottom: '40px' }}>Améliore tes photos en 1 clic</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '40px' }}>
             <div style={{ background: 'rgba(0,102,204,0.1)', padding: '30px 20px', borderRadius: '8px' }}>
@@ -169,7 +169,7 @@ export default function PhotoVinted() {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ maxWidth: '400px', background: 'rgba(255,255,255,0.05)', border: '1px solid #0066cc', borderRadius: '12px', padding: '40px' }}>
-          <h1 style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>📸 PhotoVinted</h1>
+          <h1 style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>📸 PhotoBoost</h1>
 
           <input 
             type="email" 
@@ -210,7 +210,7 @@ export default function PhotoVinted() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#fff', margin: 0 }}>📸 PhotoVinted</h1>
+          <h1 style={{ color: '#fff', margin: 0 }}>📸 PhotoBoost</h1>
           <button 
             onClick={handleLogout}
             style={{ background: '#ff4444', color: '#fff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
