@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const API_URL = "https://web-production-f1129.up.railway.app";
 const API_KEY = "test_key_12345";
 
-export default function PhotoVinted() {
-  const [page, setPage] = useState('landing'); // 'landing', 'login', 'app'
+export default function PhotoBoost() {
+  const [page, setPage] = useState('landing');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [file, setFile] = useState(null);
@@ -15,30 +15,16 @@ export default function PhotoVinted() {
   const [credits, setCredits] = useState(5);
   const fileInputRef = useRef(null);
 
-  // Au démarrage: check si user est loggé
   useEffect(() => {
-    const savedEmail = localStorage.getItem('photovinted_email');
-    const savedPassword = localStorage.getItem('photovinted_password');
-    if (savedEmail && savedPassword) {
+    const savedEmail = localStorage.getItem('photoboost_email');
+    if (savedEmail) {
       setEmail(savedEmail);
-      setPassword(savedPassword);
-      setCredits(parseInt(localStorage.getItem('photovinted_credits') || "5"));
+      setCredits(parseInt(localStorage.getItem('photoboost_credits') || "5"));
       setPage('app');
-    }
-
-    // Check payment success
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
-      const newCredits = parseInt(localStorage.getItem('photovinted_credits') || "5") + 100;
-      localStorage.setItem('photovinted_credits', newCredits);
-      setCredits(newCredits);
-      alert(`✅ Paiement réussi! +100 crédits! Total: ${newCredits}`);
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  // LOGIN
-  const handleLogin = () => {
+  const handleRegister = async () => {
     if (!email.includes("@")) {
       alert("Email valide");
       return;
@@ -47,25 +33,57 @@ export default function PhotoVinted() {
       alert("Mot de passe minimum 6 caractères");
       return;
     }
-    localStorage.setItem('photovinted_email', email);
-    localStorage.setItem('photovinted_password', password);
-    localStorage.setItem('photovinted_credits', "5");
-    setCredits(5);
-    setPage('app');
+
+    try {
+      const response = await fetch(`${API_URL}/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+        method: "POST",
+        headers: { "x-api-key": API_KEY }
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        localStorage.setItem('photoboost_email', email);
+        localStorage.setItem('photoboost_credits', "5");
+        setCredits(5);
+        setPage('app');
+      } else {
+        alert("Erreur: " + data.detail);
+      }
+    } catch (err) {
+      alert("Erreur: " + err.message);
+    }
   };
 
-  // LOGOUT
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(`${API_URL}/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+        method: "POST",
+        headers: { "x-api-key": API_KEY }
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        localStorage.setItem('photoboost_email', email);
+        localStorage.setItem('photoboost_credits', data.credits);
+        setCredits(data.credits);
+        setPage('app');
+      } else {
+        alert("Erreur: " + data.detail);
+      }
+    } catch (err) {
+      alert("Erreur: " + err.message);
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('photovinted_email');
-    localStorage.removeItem('photovinted_password');
-    localStorage.removeItem('photovinted_credits');
+    localStorage.removeItem('photoboost_email');
+    localStorage.removeItem('photoboost_credits');
     setEmail("");
     setPassword("");
     setCredits(5);
     setPage('landing');
   };
 
-  // UPLOAD
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) {
       setFile(e.target.files[0]);
@@ -93,7 +111,7 @@ export default function PhotoVinted() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${API_URL}/enhance`, {
+      const response = await fetch(`${API_URL}/enhance?email=${encodeURIComponent(email)}`, {
         method: "POST",
         headers: { "x-api-key": API_KEY },
         body: formData,
@@ -107,7 +125,7 @@ export default function PhotoVinted() {
 
       const newCredits = credits - 1;
       setCredits(newCredits);
-      localStorage.setItem('photovinted_credits', newCredits);
+      localStorage.setItem('photoboost_credits', newCredits);
     } catch (err) {
       setError("Erreur: " + err.message);
     } finally {
@@ -130,7 +148,6 @@ export default function PhotoVinted() {
     setError(null);
   };
 
-  // PAGE: LANDING
   if (page === 'landing') {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -164,7 +181,6 @@ export default function PhotoVinted() {
     );
   }
 
-  // PAGE: LOGIN
   if (page === 'login') {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -195,6 +211,13 @@ export default function PhotoVinted() {
           </button>
 
           <button 
+            onClick={handleRegister}
+            style={{ width: '100%', background: '#00cc00', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: 'none', marginBottom: '10px' }}
+          >
+            S'inscrire
+          </button>
+
+          <button 
             onClick={() => setPage('landing')}
             style={{ width: '100%', background: 'transparent', color: '#0066cc', padding: '12px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #0066cc' }}
           >
@@ -205,7 +228,6 @@ export default function PhotoVinted() {
     );
   }
 
-  // PAGE: APP
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
