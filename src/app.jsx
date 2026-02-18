@@ -49,10 +49,10 @@ export default function PhotoBoost() {
       if (response.ok) {
         localStorage.setItem('photoboost_email', email);
         localStorage.setItem('photoboost_password', password);
-        localStorage.setItem('photoboost_credits', "5");
+        localStorage.setItem('photoboost_credits', "5");  // Start à 5
         setCredits(5);
         setIsConnected(true);
-        alert("✅ Inscrit! Vous avez 5 crédits gratuits pour démarrer.");
+        alert("✅ Inscrit avec 5 crédits gratuits!");
       } else {
         alert("Erreur: " + data.detail);
       }

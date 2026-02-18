@@ -90,7 +90,7 @@ async def register(email: str = Query(None), password: str = Query(None)):
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email et password requis")
     
-    if not email.includes("@"):
+    if "@" not in email:
         raise HTTPException(status_code=400, detail="Email invalide")
     
     users = load_users()
