@@ -4,9 +4,6 @@ const API_URL = "https://web-production-f1129.up.railway.app";
 const API_KEY = "test_key_12345";
 
 export default function PhotoBoost() {
-  const [page, setPage] = useState('app'); // Commence directement en app
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,12 +11,19 @@ export default function PhotoBoost() {
   const [error, setError] = useState(null);
   const [credits, setCredits] = useState(null); // null = gratuit par IP
   const [freeImagesUsed, setFreeImagesUsed] = useState(0);
+  
+  // Auth
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('photoboost_email');
     if (savedEmail) {
       setEmail(savedEmail);
+      setIsConnected(true);
       const savedCredits = parseInt(localStorage.getItem('photoboost_credits') || "0");
       setCredits(savedCredits);
     }
@@ -27,7 +31,7 @@ export default function PhotoBoost() {
 
   const handleRegister = async () => {
     if (!email.includes("@")) {
-      alert("Email valide");
+      alert("Email valide requis");
       return;
     }
     if (password.length < 6) {
@@ -45,9 +49,10 @@ export default function PhotoBoost() {
       if (response.ok) {
         localStorage.setItem('photoboost_email', email);
         localStorage.setItem('photoboost_password', password);
-        localStorage.setItem('photoboost_credits', "0");
-        setCredits(0);
-        alert("✅ Compte créé!");
+        localStorage.setItem('photoboost_credits', "5");
+        setCredits(5);
+        setIsConnected(true);
+        alert("✅ Inscrit! Vous avez 5 crédits gratuits pour démarrer.");
       } else {
         alert("Erreur: " + data.detail);
       }
@@ -57,6 +62,15 @@ export default function PhotoBoost() {
   };
 
   const handleLogin = async () => {
+    if (!email.includes("@")) {
+      alert("Email valide requis");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Minimum 6 caractères");
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
         method: "POST",
@@ -69,6 +83,7 @@ export default function PhotoBoost() {
         localStorage.setItem('photoboost_password', password);
         localStorage.setItem('photoboost_credits', data.credits);
         setCredits(data.credits);
+        setIsConnected(true);
         alert("✅ Connecté!");
       } else {
         alert("Erreur: " + data.detail);
@@ -85,6 +100,7 @@ export default function PhotoBoost() {
     setEmail("");
     setPassword("");
     setCredits(null);
+    setIsConnected(false);
     setFreeImagesUsed(0);
   };
 
@@ -108,13 +124,13 @@ export default function PhotoBoost() {
     if (credits === null) {
       // Gratuit par IP
       if (freeImagesUsed >= 5) {
-        setError("❌ Limite de 5 images gratuites atteinte! Cliquez sur 'Payer' pour plus.");
+        setError("❌ Limite de 5 images gratuites atteinte! Inscrivez-vous pour plus.");
         return;
       }
     } else {
       // Payant
       if (credits <= 0) {
-        setError("❌ Crédits épuisés!");
+        setError("❌ Crédits épuisés! Achetez-en plus.");
         return;
       }
     }
@@ -171,14 +187,13 @@ export default function PhotoBoost() {
   };
 
   const handlePayment = async () => {
-    const paymentEmail = prompt("Votre email pour recevoir les crédits:");
-    if (!paymentEmail || !paymentEmail.includes("@")) {
-      alert("Email valide requis");
+    if (!isConnected) {
+      alert("Vous devez d'abord vous inscrire ou vous connecter pour payer!");
       return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(paymentEmail)}`, {
+      const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
         method: "POST",
         headers: { "x-api-key": API_KEY }
       });
@@ -198,7 +213,7 @@ export default function PhotoBoost() {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ color: '#fff', margin: 0 }}>📸 PhotoBoost</h1>
-          {email && (
+          {isConnected && (
             <button 
               onClick={handleLogout}
               style={{ background: '#ff4444', color: '#fff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
@@ -212,7 +227,7 @@ export default function PhotoBoost() {
           {credits !== null && (
             <div style={{ background: 'rgba(0,204,0,0.2)', border: '1px solid #00cc00', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
               <p style={{ color: '#00ff00', margin: '0', fontWeight: 'bold' }}>
-                💳 Crédits: <span style={{ fontSize: '20px' }}>{credits}</span>
+                💳 Crédits restants: <span style={{ fontSize: '20px' }}>{credits}</span>
               </p>
             </div>
           )}
@@ -257,50 +272,52 @@ export default function PhotoBoost() {
           )}
         </div>
 
-        <div style={{ marginTop: '40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          <button 
-            onClick={handlePayment}
-            style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
-          >
-            💳 Payer: 100 crédits - 15€
-          </button>
-          {!email ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        {!isConnected ? (
+          <div style={{ marginTop: '40px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '40px' }}>
+            <h2 style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>Inscrivez-vous pour accéder au paiement</h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
               <input 
                 type="email" 
                 placeholder="Email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ padding: '10px', borderRadius: '4px', border: 'none', boxSizing: 'border-box' }}
+                style={{ padding: '12px', borderRadius: '4px', border: 'none', boxSizing: 'border-box', fontSize: '16px' }}
               />
               <input 
                 type="password" 
-                placeholder="Mot de passe" 
+                placeholder="Mot de passe (min 6 caractères)" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ padding: '10px', borderRadius: '4px', border: 'none', boxSizing: 'border-box' }}
+                style={{ padding: '12px', borderRadius: '4px', border: 'none', boxSizing: 'border-box', fontSize: '16px' }}
               />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <button 
                 onClick={handleLogin}
-                style={{ background: '#00cc00', color: '#fff', padding: '10px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
+                style={{ background: '#00cc00', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold', fontSize: '16px' }}
               >
                 Connexion
               </button>
               <button 
                 onClick={handleRegister}
-                style={{ background: '#ff9900', color: '#fff', padding: '10px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
+                style={{ background: '#ff9900', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold', fontSize: '16px' }}
               >
                 S'inscrire
               </button>
             </div>
-          ) : (
-            <div style={{ background: 'rgba(0,204,0,0.2)', border: '1px solid #00cc00', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
-              <p style={{ color: '#00ff00', margin: '0', fontWeight: 'bold' }}>
-                ✅ Connecté: {email}
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div style={{ marginTop: '40px', textAlign: 'center' }}>
+            <button 
+              onClick={handlePayment}
+              style={{ background: '#0066cc', color: '#fff', padding: '15px 40px', fontSize: '18px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
+            >
+              💳 Payer: 100 crédits - 15€
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
