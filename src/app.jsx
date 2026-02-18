@@ -4,7 +4,7 @@ const API_URL = "https://web-production-f1129.up.railway.app";
 const API_KEY = "test_key_12345";
 
 export default function PhotoBoost() {
-  const [page, setPage] = useState('landing');
+  const [page, setPage] = useState('app'); // Commence directement en app
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [file, setFile] = useState(null);
@@ -22,7 +22,6 @@ export default function PhotoBoost() {
       setEmail(savedEmail);
       const savedCredits = parseInt(localStorage.getItem('photoboost_credits') || "0");
       setCredits(savedCredits);
-      setPage('app');
     }
   }, []);
 
@@ -48,7 +47,7 @@ export default function PhotoBoost() {
         localStorage.setItem('photoboost_password', password);
         localStorage.setItem('photoboost_credits', "0");
         setCredits(0);
-        setPage('app');
+        alert("✅ Compte créé!");
       } else {
         alert("Erreur: " + data.detail);
       }
@@ -70,7 +69,7 @@ export default function PhotoBoost() {
         localStorage.setItem('photoboost_password', password);
         localStorage.setItem('photoboost_credits', data.credits);
         setCredits(data.credits);
-        setPage('app');
+        alert("✅ Connecté!");
       } else {
         alert("Erreur: " + data.detail);
       }
@@ -87,7 +86,6 @@ export default function PhotoBoost() {
     setPassword("");
     setCredits(null);
     setFreeImagesUsed(0);
-    setPage('landing');
   };
 
   const handleFileChange = (e) => {
@@ -110,13 +108,13 @@ export default function PhotoBoost() {
     if (credits === null) {
       // Gratuit par IP
       if (freeImagesUsed >= 5) {
-        setError("❌ Limite de 5 images gratuites atteinte! Inscrivez-vous et payez pour plus.");
+        setError("❌ Limite de 5 images gratuites atteinte! Cliquez sur 'Payer' pour plus.");
         return;
       }
     } else {
       // Payant
       if (credits <= 0) {
-        setError("❌ Crédits épuisés! Achetez plus.");
+        setError("❌ Crédits épuisés!");
         return;
       }
     }
@@ -172,97 +170,42 @@ export default function PhotoBoost() {
     setError(null);
   };
 
-  if (page === 'landing') {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ maxWidth: '800px', textAlign: 'center' }}>
-          <h1 style={{ color: '#fff', fontSize: '48px', marginBottom: '20px' }}>📸 PhotoBoost</h1>
-          <p style={{ color: '#aaa', fontSize: '20px', marginBottom: '40px' }}>Améliore tes photos en 1 clic</p>
+  const handlePayment = async () => {
+    const paymentEmail = prompt("Votre email pour recevoir les crédits:");
+    if (!paymentEmail || !paymentEmail.includes("@")) {
+      alert("Email valide requis");
+      return;
+    }
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '40px' }}>
-            <div style={{ background: 'rgba(0,102,204,0.1)', padding: '30px 20px', borderRadius: '8px' }}>
-              <p style={{ color: '#fff', fontSize: '40px', margin: '0 0 10px 0' }}>🎯</p>
-              <p style={{ color: '#fff', fontWeight: 'bold' }}>Fond blanc parfait</p>
-            </div>
-            <div style={{ background: 'rgba(0,102,204,0.1)', padding: '30px 20px', borderRadius: '8px' }}>
-              <p style={{ color: '#fff', fontSize: '40px', margin: '0 0 10px 0' }}>✨</p>
-              <p style={{ color: '#fff', fontWeight: 'bold' }}>Luminosité optimale</p>
-            </div>
-            <div style={{ background: 'rgba(0,102,204,0.1)', padding: '30px 20px', borderRadius: '8px' }}>
-              <p style={{ color: '#fff', fontSize: '40px', margin: '0 0 10px 0' }}>⚡</p>
-              <p style={{ color: '#fff', fontWeight: 'bold' }}>5 gratuites + Illimité payant</p>
-            </div>
-          </div>
-
-          <button 
-            onClick={() => setPage('login')}
-            style={{ background: '#0066cc', color: '#fff', padding: '15px 50px', fontSize: '18px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: 'none' }}
-          >
-            Commencer →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (page === 'login') {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ maxWidth: '400px', background: 'rgba(255,255,255,0.05)', border: '1px solid #0066cc', borderRadius: '12px', padding: '40px' }}>
-          <h1 style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>📸 PhotoBoost</h1>
-
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '4px', border: 'none', boxSizing: 'border-box' }}
-          />
-
-          <input 
-            type="password" 
-            placeholder="Mot de passe" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '4px', border: 'none', boxSizing: 'border-box' }}
-          />
-
-          <button 
-            onClick={handleLogin}
-            style={{ width: '100%', background: '#0066cc', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: 'none', marginBottom: '10px' }}
-          >
-            Connexion
-          </button>
-
-          <button 
-            onClick={handleRegister}
-            style={{ width: '100%', background: '#00cc00', color: '#fff', padding: '12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: 'none', marginBottom: '10px' }}
-          >
-            S'inscrire
-          </button>
-
-          <button 
-            onClick={() => setPage('landing')}
-            style={{ width: '100%', background: 'transparent', color: '#0066cc', padding: '12px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #0066cc' }}
-          >
-            Retour
-          </button>
-        </div>
-      </div>
-    );
-  }
+    try {
+      const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(paymentEmail)}`, {
+        method: "POST",
+        headers: { "x-api-key": API_KEY }
+      });
+      const data = await response.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        alert("Erreur: " + (data.detail || "Impossible de créer la session"));
+      }
+    } catch (err) {
+      alert("Erreur: " + err.message);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ color: '#fff', margin: 0 }}>📸 PhotoBoost</h1>
-          <button 
-            onClick={handleLogout}
-            style={{ background: '#ff4444', color: '#fff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
-          >
-            Déconnexion
-          </button>
+          {email && (
+            <button 
+              onClick={handleLogout}
+              style={{ background: '#ff4444', color: '#fff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
+            >
+              Déconnexion ({email})
+            </button>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: credits !== null ? '1fr 1fr' : '1fr', gap: '20px', marginBottom: '20px' }}>
@@ -314,27 +257,50 @@ export default function PhotoBoost() {
           )}
         </div>
 
-        {credits !== null && (
-          <div style={{ marginTop: '40px', textAlign: 'center' }}>
-            <button 
-              onClick={async () => {
-                try {
-                  const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
-                    method: "POST",
-                    headers: { "x-api-key": API_KEY }
-                  });
-                  const data = await response.json();
-                  if (data.checkout_url) window.location.href = data.checkout_url;
-                } catch (err) {
-                  alert("Erreur: " + err.message);
-                }
-              }}
-              style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
-            >
-              💳 Acheter 100 crédits - 15€
-            </button>
-          </div>
-        )}
+        <div style={{ marginTop: '40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <button 
+            onClick={handlePayment}
+            style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
+          >
+            💳 Payer: 100 crédits - 15€
+          </button>
+          {!email ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <input 
+                type="email" 
+                placeholder="Email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ padding: '10px', borderRadius: '4px', border: 'none', boxSizing: 'border-box' }}
+              />
+              <input 
+                type="password" 
+                placeholder="Mot de passe" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ padding: '10px', borderRadius: '4px', border: 'none', boxSizing: 'border-box' }}
+              />
+              <button 
+                onClick={handleLogin}
+                style={{ background: '#00cc00', color: '#fff', padding: '10px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
+              >
+                Connexion
+              </button>
+              <button 
+                onClick={handleRegister}
+                style={{ background: '#ff9900', color: '#fff', padding: '10px', borderRadius: '4px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
+              >
+                S'inscrire
+              </button>
+            </div>
+          ) : (
+            <div style={{ background: 'rgba(0,204,0,0.2)', border: '1px solid #00cc00', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
+              <p style={{ color: '#00ff00', margin: '0', fontWeight: 'bold' }}>
+                ✅ Connecté: {email}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
