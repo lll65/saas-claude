@@ -12,54 +12,81 @@ export default function PhotoBoost() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [credits, setCredits] = useState(5);
+  const [credits, setCredits] = useState(null); // null = gratuit par IP
+  const [freeImagesUsed, setFreeImagesUsed] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('photoboost_email');
     if (savedEmail) {
       setEmail(savedEmail);
-      setCredits(parseInt(localStorage.getItem('photoboost_credits') || "5"));
+      const savedCredits = parseInt(localStorage.getItem('photoboost_credits') || "0");
+      setCredits(savedCredits);
       setPage('app');
     }
   }, []);
 
   const handleRegister = async () => {
-  if (!email.includes("@")) {
-    alert("Email valide");
-    return;
-  }
-  if (password.length < 6) {
-    alert("Mot de passe minimum 6 caractères");
-    return;
-  }
-  localStorage.setItem('photoboost_email', email);
-  localStorage.setItem('photoboost_password', password);
-  localStorage.setItem('photoboost_credits', "5");
-  setCredits(5);
-  setPage('app');
-};
+    if (!email.includes("@")) {
+      alert("Email valide");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Minimum 6 caractères");
+      return;
+    }
 
-const handleLogin = async () => {
-  const saved = localStorage.getItem('photoboost_email');
-  const savedPwd = localStorage.getItem('photoboost_password');
-  
-  if (saved === email && savedPwd === password) {
-    setCredits(parseInt(localStorage.getItem('photoboost_credits') || "5"));
-    setPage('app');
-  } else if (!saved) {
-    alert("Cet email n'existe pas! S'inscrire d'abord");
-  } else {
-    alert("Mot de passe incorrect");
-  }
-};
+    try {
+      const response = await fetch(`${API_URL}/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+        method: "POST",
+        headers: { "x-api-key": API_KEY }
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        localStorage.setItem('photoboost_email', email);
+        localStorage.setItem('photoboost_password', password);
+        localStorage.setItem('photoboost_credits', "0");
+        setCredits(0);
+        setPage('app');
+      } else {
+        alert("Erreur: " + data.detail);
+      }
+    } catch (err) {
+      alert("Erreur: " + err.message);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(`${API_URL}/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+        method: "POST",
+        headers: { "x-api-key": API_KEY }
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        localStorage.setItem('photoboost_email', email);
+        localStorage.setItem('photoboost_password', password);
+        localStorage.setItem('photoboost_credits', data.credits);
+        setCredits(data.credits);
+        setPage('app');
+      } else {
+        alert("Erreur: " + data.detail);
+      }
+    } catch (err) {
+      alert("Erreur: " + err.message);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('photoboost_email');
+    localStorage.removeItem('photoboost_password');
     localStorage.removeItem('photoboost_credits');
     setEmail("");
     setPassword("");
-    setCredits(5);
+    setCredits(null);
+    setFreeImagesUsed(0);
     setPage('landing');
   };
 
@@ -74,13 +101,24 @@ const handleLogin = async () => {
   };
 
   const handleUpload = async () => {
-    if (credits <= 0) {
-      setError("❌ Crédits épuisés!");
-      return;
-    }
     if (!file) {
       setError("Sélectionnez une image");
       return;
+    }
+
+    // Vérifier les limites
+    if (credits === null) {
+      // Gratuit par IP
+      if (freeImagesUsed >= 5) {
+        setError("❌ Limite de 5 images gratuites atteinte! Inscrivez-vous et payez pour plus.");
+        return;
+      }
+    } else {
+      // Payant
+      if (credits <= 0) {
+        setError("❌ Crédits épuisés! Achetez plus.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -90,21 +128,28 @@ const handleLogin = async () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${API_URL}/enhance?email=${encodeURIComponent(email)}`, {
+      const response = await fetch(`${API_URL}/enhance?email=${email ? encodeURIComponent(email) : ""}`, {
         method: "POST",
         headers: { "x-api-key": API_KEY },
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Erreur serveur");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Erreur serveur");
+      }
 
       const data = await response.json();
       setResult({ filename: data.filename, url: `${API_URL}${data.url}` });
       setFile(null);
 
-      const newCredits = credits - 1;
-      setCredits(newCredits);
-      localStorage.setItem('photoboost_credits', newCredits);
+      // Update credits
+      if (data.credits_left !== null) {
+        setCredits(data.credits_left);
+        localStorage.setItem('photoboost_credits', data.credits_left);
+      } else {
+        setFreeImagesUsed(freeImagesUsed + 1);
+      }
     } catch (err) {
       setError("Erreur: " + err.message);
     } finally {
@@ -145,7 +190,7 @@ const handleLogin = async () => {
             </div>
             <div style={{ background: 'rgba(0,102,204,0.1)', padding: '30px 20px', borderRadius: '8px' }}>
               <p style={{ color: '#fff', fontSize: '40px', margin: '0 0 10px 0' }}>⚡</p>
-              <p style={{ color: '#fff', fontWeight: 'bold' }}>Gratuit (5 images)</p>
+              <p style={{ color: '#fff', fontWeight: 'bold' }}>5 gratuites + Illimité payant</p>
             </div>
           </div>
 
@@ -153,7 +198,7 @@ const handleLogin = async () => {
             onClick={() => setPage('login')}
             style={{ background: '#0066cc', color: '#fff', padding: '15px 50px', fontSize: '18px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: 'none' }}
           >
-            Commencer gratuitement →
+            Commencer →
           </button>
         </div>
       </div>
@@ -220,10 +265,21 @@ const handleLogin = async () => {
           </button>
         </div>
 
-        <div style={{ background: 'rgba(0,102,204,0.2)', border: '1px solid #0066cc', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
-          <p style={{ color: '#0066cc', margin: '0', fontWeight: 'bold' }}>
-            📸 Crédits: <span style={{ fontSize: '20px', color: '#00ff00' }}>{credits}</span>
-          </p>
+        <div style={{ display: 'grid', gridTemplateColumns: credits !== null ? '1fr 1fr' : '1fr', gap: '20px', marginBottom: '20px' }}>
+          {credits !== null && (
+            <div style={{ background: 'rgba(0,204,0,0.2)', border: '1px solid #00cc00', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
+              <p style={{ color: '#00ff00', margin: '0', fontWeight: 'bold' }}>
+                💳 Crédits: <span style={{ fontSize: '20px' }}>{credits}</span>
+              </p>
+            </div>
+          )}
+          {credits === null && (
+            <div style={{ background: 'rgba(255,165,0,0.2)', border: '1px solid #ff9900', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
+              <p style={{ color: '#ffaa00', margin: '0', fontWeight: 'bold' }}>
+                🎯 Gratuites: <span style={{ fontSize: '20px' }}>{freeImagesUsed}/5</span>
+              </p>
+            </div>
+          )}
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '40px' }}>
@@ -258,25 +314,27 @@ const handleLogin = async () => {
           )}
         </div>
 
-        <div style={{ marginTop: '40px', textAlign: 'center' }}>
-          <button 
-            onClick={async () => {
-              try {
-                const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
-                  method: "POST",
-                  headers: { "x-api-key": API_KEY }
-                });
-                const data = await response.json();
-                if (data.checkout_url) window.location.href = data.checkout_url;
-              } catch (err) {
-                alert("Erreur: " + err.message);
-              }
-            }}
-            style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
-          >
-            💳 Acheter 100 crédits - 15€
-          </button>
-        </div>
+        {credits !== null && (
+          <div style={{ marginTop: '40px', textAlign: 'center' }}>
+            <button 
+              onClick={async () => {
+                try {
+                  const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
+                    method: "POST",
+                    headers: { "x-api-key": API_KEY }
+                  });
+                  const data = await response.json();
+                  if (data.checkout_url) window.location.href = data.checkout_url;
+                } catch (err) {
+                  alert("Erreur: " + err.message);
+                }
+              }}
+              style={{ background: '#0066cc', color: '#fff', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
+            >
+              💳 Acheter 100 crédits - 15€
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

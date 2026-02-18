@@ -1,35 +1,27 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import uuid
 import requests
+import json
 from io import BytesIO
 from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
-from supabase import create_client, Client
 
 load_dotenv()
 
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_xxx")
 API_KEY = os.getenv("API_KEY", "test_key_12345")
 REMOVEBG_API_KEY = os.getenv("REMOVEBG_API_KEY", "")
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 UPLOAD_DIR = "output"
+IP_TRACKER_FILE = "ip_tracker.json"
+USERS_FILE = "users.json"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 stripe.api_key = STRIPE_SECRET_KEY
-
-# Connexion Supabase
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print("✅ Supabase connecté")
-except Exception as e:
-    print(f"❌ Erreur Supabase: {e}")
-    supabase = None
 
 app = FastAPI(title="PhotoBoost API", version="1.0")
 
@@ -41,84 +33,120 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def verify_api_key(x_api_key: str = Header(None)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return True
+# ===== IP TRACKER (pour 5 images gratuites) =====
+def load_ip_tracker():
+    """Charge le fichier de tracking des IPs"""
+    try:
+        with open(IP_TRACKER_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_ip_tracker(tracker):
+    """Sauvegarde le fichier de tracking des IPs"""
+    with open(IP_TRACKER_FILE, 'w') as f:
+        json.dump(tracker, f)
+
+def check_ip_limit(client_ip: str, max_images: int = 5):
+    """Vérifie si l'IP a dépassé la limite (5 images à VIE)"""
+    tracker = load_ip_tracker()
+    
+    if client_ip not in tracker:
+        tracker[client_ip] = {"count": 0}
+    
+    ip_data = tracker[client_ip]
+    
+    if ip_data["count"] >= max_images:
+        save_ip_tracker(tracker)
+        return False, ip_data["count"], max_images
+    
+    ip_data["count"] += 1
+    save_ip_tracker(tracker)
+    return True, ip_data["count"], max_images
+
+# ===== USERS DB (pour les crédits payants) =====
+def load_users():
+    """Charge la base utilisateurs"""
+    try:
+        with open(USERS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_users(users):
+    """Sauvegarde la base utilisateurs"""
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f)
+
+# ===== ROUTES =====
 
 @app.get("/")
 def root():
-    return {"status": "running", "service": "remove.bg"}
+    return {"status": "running", "service": "PhotoBoost with IP limit + paid credits"}
 
 @app.post("/register")
 async def register(email: str = Query(None), password: str = Query(None)):
-    """Enregistre un nouvel utilisateur"""
+    """Enregistre un nouvel utilisateur payant"""
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email et password requis")
     
-    if not supabase:
-        raise HTTPException(status_code=500, detail="Database unavailable")
+    if not email.includes("@"):
+        raise HTTPException(status_code=400, detail="Email invalide")
     
-    try:
-        # Vérifie si l'email existe déjà
-        response = supabase.table("users").select("*").eq("email", email).execute()
-        if response.data:
-            raise HTTPException(status_code=400, detail="Email déjà utilisé")
-        
-        # Crée un nouvel utilisateur
-        new_user = {
-            "email": email,
-            "password": password,
-            "credits": 5
-        }
-        supabase.table("users").insert(new_user).execute()
-        
-        return {"status": "success", "message": "Utilisateur créé"}
+    users = load_users()
     
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if email in users:
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+    
+    users[email] = {
+        "password": password,
+        "credits": 0
+    }
+    save_users(users)
+    
+    return {"status": "success", "message": "Utilisateur créé"}
 
 @app.post("/login")
 async def login(email: str = Query(None), password: str = Query(None)):
-    """Vérifie l'identifiant et retourne les crédits"""
+    """Connexion utilisateur payant"""
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email et password requis")
     
-    if not supabase:
-        raise HTTPException(status_code=500, detail="Database unavailable")
+    users = load_users()
     
-    try:
-        # Cherche l'utilisateur
-        response = supabase.table("users").select("*").eq("email", email).eq("password", password).execute()
-        
-        if not response.data:
-            raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
-        
-        user = response.data[0]
-        return {
-            "status": "success",
-            "email": user["email"],
-            "credits": user["credits"]
-        }
+    if email not in users:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    user = users[email]
+    if user["password"] != password:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    
+    return {
+        "status": "success",
+        "email": email,
+        "credits": user["credits"]
+    }
 
 @app.post("/enhance")
-async def enhance_photo(file: UploadFile = File(...), email: str = Query(None), x_api_key: str = Header(None)):
+async def enhance_photo(file: UploadFile = File(...), email: str = Query(None), x_api_key: str = Header(None), request: Request = None):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
-    if not email:
-        raise HTTPException(status_code=400, detail="Email required")
+    client_ip = request.client.host
+    users = load_users()
+    
+    # Si l'email est fourni = utilisateur payant
+    if email and email in users:
+        user = users[email]
+        if user["credits"] <= 0:
+            raise HTTPException(status_code=402, detail="Crédits insuffisants")
+    else:
+        # Pas d'email = utilisateur gratuit par IP
+        allowed, used, limit = check_ip_limit(client_ip, max_images=5)
+        if not allowed:
+            raise HTTPException(status_code=429, detail=f"Limite gratuite atteinte: {used}/{limit}. Achetez des crédits!")
     
     try:
-        # Vérifie les crédits
-        if supabase:
-            response = supabase.table("users").select("credits").eq("email", email).execute()
-            if not response.data or response.data[0]["credits"] <= 0:
-                raise HTTPException(status_code=402, detail="Crédits insuffisants")
-        
         contents = await file.read()
         
         # Charger l'image originale
@@ -176,15 +204,19 @@ async def enhance_photo(file: UploadFile = File(...), email: str = Query(None), 
         filepath = os.path.join(UPLOAD_DIR, filename)
         background.save(filepath, "PNG", quality=95)
         
-        # Décrémenter les crédits
-        if supabase:
-            current_credits = supabase.table("users").select("credits").eq("email", email).execute().data[0]["credits"]
-            supabase.table("users").update({"credits": current_credits - 1}).eq("email", email).execute()
+        # Décrémenter les crédits si payant
+        if email and email in users:
+            users[email]["credits"] -= 1
+            save_users(users)
+            credits_left = users[email]["credits"]
+        else:
+            credits_left = None
         
         return JSONResponse({
             "status": "success",
             "filename": filename,
-            "url": f"/image/{filename}"
+            "url": f"/image/{filename}",
+            "credits_left": credits_left
         })
     
     except Exception as e:
@@ -228,7 +260,7 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/webhook")
-async def stripe_webhook(request):
+async def stripe_webhook(request: Request):
     """Ajoute les crédits après paiement"""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
@@ -244,9 +276,10 @@ async def stripe_webhook(request):
         session = event["data"]["object"]
         email = session.get("customer_email")
         
-        if email and supabase:
-            current = supabase.table("users").select("credits").eq("email", email).execute().data[0]["credits"]
-            supabase.table("users").update({"credits": current + 100}).eq("email", email).execute()
+        users = load_users()
+        if email and email in users:
+            users[email]["credits"] += 100
+            save_users(users)
     
     return {"status": "success"}
 
