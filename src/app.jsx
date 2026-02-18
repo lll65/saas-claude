@@ -20,6 +20,11 @@ export default function PhotoBoost() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    // Charger les images gratuites utilisées par cette IP
+    const savedFree = parseInt(localStorage.getItem('photoboost_free_used') || "0");
+    setFreeImagesUsed(savedFree);
+
+    // Charger les données de connexion si existe
     const savedEmail = localStorage.getItem('photoboost_email');
     if (savedEmail) {
       setEmail(savedEmail);
@@ -49,10 +54,10 @@ export default function PhotoBoost() {
       if (response.ok) {
         localStorage.setItem('photoboost_email', email);
         localStorage.setItem('photoboost_password', password);
-        localStorage.setItem('photoboost_credits', "5");  // Start à 5
-        setCredits(5);
+        localStorage.setItem('photoboost_credits', "0");
+        setCredits(0);
         setIsConnected(true);
-        alert("✅ Inscrit avec 5 crédits gratuits!");
+        alert("✅ Inscrit! Vous avez 0 crédit. Cliquez sur 'Payer' pour en acheter.");
       } else {
         alert("Erreur: " + data.detail);
       }
@@ -101,7 +106,6 @@ export default function PhotoBoost() {
     setPassword("");
     setCredits(null);
     setIsConnected(false);
-    setFreeImagesUsed(0);
   };
 
   const handleFileChange = (e) => {
@@ -124,7 +128,7 @@ export default function PhotoBoost() {
     if (credits === null) {
       // Gratuit par IP
       if (freeImagesUsed >= 5) {
-        setError("❌ Limite de 5 images gratuites atteinte! Inscrivez-vous pour plus.");
+        setError("❌ Limite de 5 images gratuites atteinte! Inscrivez-vous et payez pour plus.");
         return;
       }
     } else {
@@ -162,7 +166,9 @@ export default function PhotoBoost() {
         setCredits(data.credits_left);
         localStorage.setItem('photoboost_credits', data.credits_left);
       } else {
-        setFreeImagesUsed(freeImagesUsed + 1);
+        const newFree = freeImagesUsed + 1;
+        setFreeImagesUsed(newFree);
+        localStorage.setItem('photoboost_free_used', newFree);
       }
     } catch (err) {
       setError("Erreur: " + err.message);

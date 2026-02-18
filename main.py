@@ -86,7 +86,7 @@ def root():
 
 @app.post("/register")
 async def register(email: str = Query(None), password: str = Query(None)):
-    """Enregistre un nouvel utilisateur payant"""
+    """Enregistre un nouvel utilisateur payant (0 crédits)"""
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email et password requis")
     
@@ -100,11 +100,11 @@ async def register(email: str = Query(None), password: str = Query(None)):
     
     users[email] = {
         "password": password,
-        "credits": 0
+        "credits": 0  # COMMENCE À 0!
     }
     save_users(users)
     
-    return {"status": "success", "message": "Utilisateur créé"}
+    return {"status": "success", "message": "Utilisateur créé avec 0 crédits"}
 
 @app.post("/login")
 async def login(email: str = Query(None), password: str = Query(None)):
