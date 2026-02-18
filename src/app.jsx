@@ -25,55 +25,34 @@ export default function PhotoBoost() {
   }, []);
 
   const handleRegister = async () => {
-    if (!email.includes("@")) {
-      alert("Email valide");
-      return;
-    }
-    if (password.length < 6) {
-      alert("Mot de passe minimum 6 caractères");
-      return;
-    }
+  if (!email.includes("@")) {
+    alert("Email valide");
+    return;
+  }
+  if (password.length < 6) {
+    alert("Mot de passe minimum 6 caractères");
+    return;
+  }
+  localStorage.setItem('photoboost_email', email);
+  localStorage.setItem('photoboost_password', password);
+  localStorage.setItem('photoboost_credits', "5");
+  setCredits(5);
+  setPage('app');
+};
 
-    try {
-      const response = await fetch(`${API_URL}/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-        method: "POST",
-        headers: { "x-api-key": API_KEY }
-      });
-      const data = await response.json();
-      
-      if (response.ok) {
-        localStorage.setItem('photoboost_email', email);
-        localStorage.setItem('photoboost_credits', "5");
-        setCredits(5);
-        setPage('app');
-      } else {
-        alert("Erreur: " + data.detail);
-      }
-    } catch (err) {
-      alert("Erreur: " + err.message);
-    }
-  };
-
-  const handleLogin = async () => {
-    try {
-      const response = await fetch(`${API_URL}/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-        method: "POST",
-        headers: { "x-api-key": API_KEY }
-      });
-      const data = await response.json();
-      
-      if (response.ok) {
-        localStorage.setItem('photoboost_email', email);
-        localStorage.setItem('photoboost_credits', data.credits);
-        setCredits(data.credits);
-        setPage('app');
-      } else {
-        alert("Erreur: " + data.detail);
-      }
-    } catch (err) {
-      alert("Erreur: " + err.message);
-    }
-  };
+const handleLogin = async () => {
+  const saved = localStorage.getItem('photoboost_email');
+  const savedPwd = localStorage.getItem('photoboost_password');
+  
+  if (saved === email && savedPwd === password) {
+    setCredits(parseInt(localStorage.getItem('photoboost_credits') || "5"));
+    setPage('app');
+  } else if (!saved) {
+    alert("Cet email n'existe pas! S'inscrire d'abord");
+  } else {
+    alert("Mot de passe incorrect");
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem('photoboost_email');
