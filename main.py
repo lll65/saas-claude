@@ -23,7 +23,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 stripe.api_key = STRIPE_SECRET_KEY
 
-app = FastAPI(title="PhotoBoost API", version="1.0")
+app = FastAPI(title="PixGlow API", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -246,13 +246,13 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
             line_items=[{
                 "price_data": {
                     "currency": "eur",
-                    "product_data": {"name": "100 Crédits PhotoBoost"},
+                    "product_data": {"name": "100 Crédits PixGlow"},
                     "unit_amount": 1500,
                 },
                 "quantity": 1,
             }],
-            success_url="https://photoboost.com/?payment=success&email=" + email,
-            cancel_url="https://photoboost.com/?payment=cancel",
+            success_url="https://pixglow.app/?payment=success&email=" + email
+            cancel_url="https://pixglow.app/?payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:

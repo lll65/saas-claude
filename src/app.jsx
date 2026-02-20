@@ -218,7 +218,7 @@ export default function PhotoBoost() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#fff', margin: 0 }}>📸 PhotoBoost</h1>
+          <h1 style={{ color: '#fff', margin: 0 }}>📸 PixGlow</h1>
           {isConnected && (
             <button 
               onClick={handleLogout}
