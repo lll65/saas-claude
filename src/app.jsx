@@ -26,11 +26,34 @@ export default function PhotoBoost() {
 
     // Charger les données de connexion si existe
     const savedEmail = localStorage.getItem('photoboost_email');
+    const savedPassword = localStorage.getItem('photoboost_password');
+    
     if (savedEmail) {
       setEmail(savedEmail);
       setIsConnected(true);
       const savedCredits = parseInt(localStorage.getItem('photoboost_credits') || "0");
       setCredits(savedCredits);
+    }
+
+    // ===== NOUVEAU: Recharger les crédits après paiement Stripe =====
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success" && savedEmail && savedPassword) {
+      // Appelle le backend pour récupérer les crédits à jour
+      fetch(`${API_URL}/login?email=${encodeURIComponent(savedEmail)}&password=${encodeURIComponent(savedPassword)}`, {
+        method: "POST",
+        headers: { "x-api-key": API_KEY }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === "success") {
+          localStorage.setItem('photoboost_credits', data.credits);
+          setCredits(data.credits);
+          alert(`✅ Paiement réussi! ${data.credits} crédits disponibles!`);
+          // Nettoie l'URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      })
+      .catch(err => console.log("Erreur refresh crédits:", err));
     }
   }, []);
 
@@ -205,7 +228,8 @@ export default function PhotoBoost() {
       });
       const data = await response.json();
       if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+        // Après paiement, attendre et recharger
+        window.location.href = data.checkout_url + "&return_url=" + window.location.href;
       } else {
         alert("Erreur: " + (data.detail || "Impossible de créer la session"));
       }
