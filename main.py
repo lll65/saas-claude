@@ -82,7 +82,7 @@ def save_users(users):
 
 @app.get("/")
 def root():
-    return {"status": "running", "service": "PhotoBoost with IP limit + paid credits"}
+    return {"status": "running", "service": "PixGlow with IP limit + paid credits"}
 
 @app.post("/register")
 async def register(email: str = Query(None), password: str = Query(None)):
@@ -100,7 +100,7 @@ async def register(email: str = Query(None), password: str = Query(None)):
     
     users[email] = {
         "password": password,
-        "credits": 0  # COMMENCE À 0!
+        "credits": 0
     }
     save_users(users)
     
@@ -251,7 +251,7 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
                 },
                 "quantity": 1,
             }],
-            success_url="https://pixglow.app/?payment=success&email=" + email,((
+            success_url="https://pixglow.app/?payment=success&email=" + email,
             cancel_url="https://pixglow.app/?payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
