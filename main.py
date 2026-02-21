@@ -251,7 +251,7 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
                 },
                 "quantity": 1,
             }],
-            success_url="https://pixglow.app/?payment=success&email=" + email,
+            success_url="https://pixglow.app/?payment=success&email=" + email,((
             cancel_url="https://pixglow.app/?payment=cancel",
         )
         return {"checkout_url": session.url, "session_id": session.id}
