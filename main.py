@@ -3,18 +3,17 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import uuid
-import requests
 import json
 from io import BytesIO
 from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
+from rembg import remove
 
 load_dotenv()
 
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_xxx")
 API_KEY = os.getenv("API_KEY", "test_key_12345")
-REMOVEBG_API_KEY = os.getenv("REMOVEBG_API_KEY", "")
 
 UPLOAD_DIR = "output"
 IP_TRACKER_FILE = "ip_tracker.json"
@@ -33,9 +32,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===== IP TRACKER (pour 5 images gratuites) =====
+# ===== IP TRACKER =====
 def load_ip_tracker():
-    """Charge le fichier de tracking des IPs"""
     try:
         with open(IP_TRACKER_FILE, 'r') as f:
             return json.load(f)
@@ -43,12 +41,10 @@ def load_ip_tracker():
         return {}
 
 def save_ip_tracker(tracker):
-    """Sauvegarde le fichier de tracking des IPs"""
     with open(IP_TRACKER_FILE, 'w') as f:
         json.dump(tracker, f)
 
 def check_ip_limit(client_ip: str, max_images: int = 5):
-    """Vérifie si l'IP a dépassé la limite (5 images à VIE)"""
     tracker = load_ip_tracker()
     
     if client_ip not in tracker:
@@ -64,9 +60,8 @@ def check_ip_limit(client_ip: str, max_images: int = 5):
     save_ip_tracker(tracker)
     return True, ip_data["count"], max_images
 
-# ===== USERS DB (pour les crédits payants) =====
+# ===== USERS DB =====
 def load_users():
-    """Charge la base utilisateurs"""
     try:
         with open(USERS_FILE, 'r') as f:
             return json.load(f)
@@ -74,7 +69,6 @@ def load_users():
         return {}
 
 def save_users(users):
-    """Sauvegarde la base utilisateurs"""
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f)
 
@@ -82,11 +76,10 @@ def save_users(users):
 
 @app.get("/")
 def root():
-    return {"status": "running", "service": "PixGlow with IP limit + paid credits"}
+    return {"status": "running", "service": "PixGlow with Rembg"}
 
 @app.post("/register")
 async def register(email: str = Query(None), password: str = Query(None)):
-    """Enregistre un nouvel utilisateur payant (0 crédits)"""
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email et password requis")
     
@@ -104,11 +97,10 @@ async def register(email: str = Query(None), password: str = Query(None)):
     }
     save_users(users)
     
-    return {"status": "success", "message": "Utilisateur créé avec 0 crédits"}
+    return {"status": "success", "message": "Utilisateur créé"}
 
 @app.post("/login")
 async def login(email: str = Query(None), password: str = Query(None)):
-    """Connexion utilisateur payant"""
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email et password requis")
     
@@ -135,16 +127,15 @@ async def enhance_photo(file: UploadFile = File(...), email: str = Query(None), 
     client_ip = request.client.host
     users = load_users()
     
-    # Si l'email est fourni = utilisateur payant
+    # Vérifier les crédits
     if email and email in users:
         user = users[email]
         if user["credits"] <= 0:
             raise HTTPException(status_code=402, detail="Crédits insuffisants")
     else:
-        # Pas d'email = utilisateur gratuit par IP
         allowed, used, limit = check_ip_limit(client_ip, max_images=5)
         if not allowed:
-            raise HTTPException(status_code=429, detail=f"Limite gratuite atteinte: {used}/{limit}. Achetez des crédits!")
+            raise HTTPException(status_code=429, detail=f"Limite gratuite atteinte: {used}/{limit}")
     
     try:
         contents = await file.read()
@@ -153,31 +144,15 @@ async def enhance_photo(file: UploadFile = File(...), email: str = Query(None), 
         original_image = Image.open(BytesIO(contents))
         original_width, original_height = original_image.size
         
-        # Compresser pour Remove.bg
-        compressed_image = original_image.copy()
+        # Redimensionner temporairement pour Rembg si trop gros
+        temp_image = original_image.copy()
         if original_width > 2000 or original_height > 2000:
-            compressed_image.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
+            temp_image.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
         
-        temp_buffer = BytesIO()
-        compressed_image.save(temp_buffer, format="JPEG", quality=85)
-        temp_buffer.seek(0)
-        compressed_contents = temp_buffer.getvalue()
+        # REMBG - Retirer le fond (GRATUIT!)
+        image = remove(temp_image)
         
-        # Remove.bg API
-        response = requests.post(
-            'https://api.remove.bg/v1.0/removebg',
-            files={'image_file': ('image.jpg', compressed_contents)},
-            data={'size': 'auto'},
-            headers={'X-API-Key': REMOVEBG_API_KEY},
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            image = Image.open(BytesIO(response.content)).convert("RGBA")
-        else:
-            image = original_image.convert("RGBA")
-        
-        # Redimensionner à la vraie taille
+        # Redimensionner à la taille originale
         if image.size != (original_width, original_height):
             image = image.resize((original_width, original_height), Image.Resampling.LANCZOS)
         
@@ -261,7 +236,6 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
 
 @app.post("/webhook")
 async def stripe_webhook(request: Request):
-    """Ajoute les crédits après paiement"""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     
