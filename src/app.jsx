@@ -38,21 +38,32 @@ export default function PixGlow() {
       setCredits(savedCredits);
     }
 
+    // Check payment success
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success" && savedEmail && savedPassword) {
-      fetch(`${API_URL}/login?email=${encodeURIComponent(savedEmail)}&password=${encodeURIComponent(savedPassword)}`, {
-        method: "POST",
-        headers: { "x-api-key": API_KEY }
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status === "success") {
-          localStorage.setItem('photoboost_credits', data.credits);
-          setCredits(data.credits);
-          alert(`✅ Paiement réussi! ${data.credits} crédits disponibles!`);
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      });
+      console.log("💳 Payment success detected, refreshing credits...");
+      
+      // Attendre 2 secondes que le webhook soit traité
+      setTimeout(() => {
+        fetch(`${API_URL}/login?email=${encodeURIComponent(savedEmail)}&password=${encodeURIComponent(savedPassword)}`, {
+          method: "POST",
+          headers: { "x-api-key": API_KEY }
+        })
+        .then(r => r.json())
+        .then(data => {
+          console.log("✅ Login response:", data);
+          if (data.status === "success") {
+            localStorage.setItem('photoboost_credits', data.credits);
+            setCredits(data.credits);
+            alert(`✅ Paiement réussi!\n💰 Vous avez maintenant ${data.credits} crédits!`);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        })
+        .catch(err => {
+          console.error("❌ Erreur refresh:", err);
+          alert("Erreur lors de la récupération des crédits. Rechargez la page.");
+        });
+      }, 2000);
     }
   }, []);
 

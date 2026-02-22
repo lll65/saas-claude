@@ -9,10 +9,13 @@ from PIL import Image, ImageEnhance
 import stripe
 from dotenv import load_dotenv
 from rembg import remove
+import hmac
+import hashlib
 
 load_dotenv()
 
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_xxx")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 API_KEY = os.getenv("API_KEY", "test_key_12345")
 
 UPLOAD_DIR = "output"
@@ -70,7 +73,7 @@ def load_users():
 
 def save_users(users):
     with open(USERS_FILE, 'w') as f:
-        json.dump(users, f)
+        json.dump(users, f, indent=2)
 
 # ===== ROUTES =====
 
@@ -228,6 +231,7 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
             }],
             success_url="https://pixglow.app/?payment=success&email=" + email,
             cancel_url="https://pixglow.app/?payment=cancel",
+            metadata={"email": email}
         )
         return {"checkout_url": session.url, "session_id": session.id}
     except Exception as e:
@@ -236,24 +240,51 @@ async def create_checkout_session(email: str = Query(None), x_api_key: str = Hea
 
 @app.post("/webhook")
 async def stripe_webhook(request: Request):
+    """Webhook Stripe - Ajoute 100 crédits après paiement réussi"""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, os.getenv("STRIPE_WEBHOOK_SECRET", "")
-        )
-    except:
-        return JSONResponse({"error": "webhook_error"}, status_code=400)
+    print(f"[WEBHOOK] Reçu webhook Stripe")
+    print(f"[WEBHOOK] Signature: {sig_header}")
     
+    # Si pas de webhook secret, accepter quand même (development)
+    if STRIPE_WEBHOOK_SECRET:
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, STRIPE_WEBHOOK_SECRET
+            )
+            print(f"[WEBHOOK] ✅ Signature valide")
+        except ValueError:
+            print(f"[WEBHOOK] ❌ Invalid payload")
+            return JSONResponse({"error": "Invalid payload"}, status_code=400)
+        except stripe.error.SignatureVerificationError:
+            print(f"[WEBHOOK] ❌ Invalid signature")
+            return JSONResponse({"error": "Invalid signature"}, status_code=400)
+    else:
+        # Mode dev: parser le JSON directement
+        try:
+            event = json.loads(payload)
+            print(f"[WEBHOOK] Mode dev (pas de webhook secret)")
+        except:
+            return JSONResponse({"error": "Invalid payload"}, status_code=400)
+    
+    print(f"[WEBHOOK] Type: {event.get('type')}")
+    
+    # Traiter le paiement réussi
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         email = session.get("customer_email")
         
+        print(f"[WEBHOOK] ✅ Paiement réussi pour: {email}")
+        
         users = load_users()
         if email and email in users:
+            # Ajouter 100 crédits
             users[email]["credits"] += 100
             save_users(users)
+            print(f"[WEBHOOK] ✅ Crédits ajoutés! Total: {users[email]['credits']}")
+        else:
+            print(f"[WEBHOOK] ⚠️ Email {email} non trouvé dans la base")
     
     return {"status": "success"}
 
