@@ -29,14 +29,26 @@ export default function PixGlow() {
     setFreeImagesLeft(savedFree);
 
     const savedEmail = localStorage.getItem('photoboost_email');
-    const savedPassword = localStorage.getItem('photoboost_password');
-    
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setIsConnected(true);
-      const savedCredits = parseInt(localStorage.getItem('photoboost_credits') || "0");
-      setCredits(savedCredits);
+const savedPassword = localStorage.getItem('photoboost_password');
+
+if (savedEmail && savedPassword) {
+  setEmail(savedEmail);
+  setIsConnected(true);
+  
+  // 🔥 Récupère TOUJOURS les crédits du serveur au reload
+  fetch(`${API_URL}/login?email=${encodeURIComponent(savedEmail)}&password=${encodeURIComponent(savedPassword)}`, {
+    method: "POST",
+    headers: { "x-api-key": API_KEY }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === "success") {
+      setCredits(data.credits); // ✅ Du SERVEUR = JAMAIS PERTE!
+      localStorage.setItem('photoboost_credits', data.credits);
     }
+  })
+  .catch(err => console.log("Erreur load credits:", err));
+}
 
     // Check payment success
     const params = new URLSearchParams(window.location.search);
@@ -300,6 +312,55 @@ export default function PixGlow() {
     );
   }
 
+// ===== HELP PAGE =====
+if (page === 'help') {
+  return (
+    <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', minHeight: '100vh', color: '#fff', overflowX: 'hidden' }}>
+      <div style={{ padding: isMobile ? '15px' : '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <h1 style={{ margin: 0, fontSize: isMobile ? '24px' : '28px', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('landing')}>✨ PixGlow</h1>
+        <button onClick={() => setPage('landing')} style={{ background: '#3b82f6', color: '#fff', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>Accueil</button>
+      </div>
+
+      <div style={{ padding: isMobile ? '20px' : '40px', maxWidth: '900px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: isMobile ? '28px' : '36px', marginBottom: '30px' }}>Centre d'Aide</h1>
+
+        <div style={{ background: 'rgba(51, 65, 85, 0.5)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '20px', marginBottom: '15px' }}>❓ Questions Fréquentes</h2>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#60a5fa', marginBottom: '8px' }}>Combien d'images gratuites ai-je?</h3>
+            <p style={{ color: '#cbd5e1', margin: 0 }}>Vous avez 5 images gratuites par IP à VIE. Une fois épuisées, vous devez acheter des crédits.</p>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#60a5fa', marginBottom: '8px' }}>Combien coûte une image?</h3>
+            <p style={{ color: '#cbd5e1', margin: 0 }}>1 crédit = 0,15€. Un paquet = 100 crédits pour 15€.</p>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#60a5fa', marginBottom: '8px' }}>Mes crédits vont-ils disparaître?</h3>
+            <p style={{ color: '#cbd5e1', margin: 0 }}>Non! Vos crédits sont stockés sur nos serveurs. Ils restent même après vidage du cache.</p>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#60a5fa', marginBottom: '8px' }}>Comment contacter le support?</h3>
+            <p style={{ color: '#cbd5e1', margin: 0 }}>Envoyez un email à <strong>support@pixglow.app</strong> - Réponse &lt;24h.</p>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#60a5fa', marginBottom: '8px' }}>Mes photos sont conservées?</h3>
+            <p style={{ color: '#cbd5e1', margin: 0 }}>Non, elles sont supprimées après 24h. Téléchargez immédiatement après traitement.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: 'rgba(15, 23, 42, 0.95)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+        <p>© 2026 PixGlow - La photo qui vend</p>
+        <a href="mailto:support@pixglow.app" style={{ color: '#64748b', textDecoration: 'underline' }}>Contact</a>
+      </div>
+    </div>
+  );
+}
   // ===== APP PAGE =====
   return (
     <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', minHeight: '100vh', color: '#fff', padding: isMobile ? '15px' : '20px', overflowX: 'hidden' }}>
