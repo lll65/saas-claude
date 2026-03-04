@@ -2,6 +2,7 @@ fastapi
 uvicorn
 pillow
 rembg
+onnxruntime
 stripe
 python-dotenv
 passlib[bcrypt]
