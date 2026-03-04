@@ -1,480 +1,480 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const API_URL = "https://web-production-f1129.up.railway.app";
-const API_KEY = "test_key_12345";
 
 export default function PixGlow() {
-  const [page, setPage] = useState('landing');
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [credits, setCredits] = useState(null);
-  const [freeImagesLeft, setFreeImagesLeft] = useState(5);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [page, setPage]               = useState('landing');
+  const [file, setFile]               = useState(null);
+  const [preview, setPreview]         = useState(null);
+  const [loading, setLoading]         = useState(false);
+  const [result, setResult]           = useState(null);
+  const [error, setError]             = useState(null);
+  const [credits, setCredits]         = useState(null);
+  const [freeLeft, setFreeLeft]       = useState(5);
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
   const [isConnected, setIsConnected] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const fileInputRef = useRef(null);
+  const [isMobile, setIsMobile]       = useState(window.innerWidth < 768);
+  const fileInputRef   = useRef(null);
   const cameraInputRef = useRef(null);
 
+  /* ── helpers ── */
+  const getToken = () => localStorage.getItem('pg_token');
+
+  const authHeaders = () => {
+    const t = getToken();
+    return t ? { Authorization: `Bearer ${t}` } : {};
+  };
+
+  /* ── resize ── */
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const fn = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
   }, []);
 
+  /* ── init ── */
   useEffect(() => {
-    const savedFree = parseInt(localStorage.getItem('photoboost_free_left') || "5");
-    setFreeImagesLeft(savedFree);
+    const saved = parseInt(localStorage.getItem('pg_free') || '5');
+    setFreeLeft(saved);
 
-    const savedEmail = localStorage.getItem('photoboost_email');
-    const savedPassword = localStorage.getItem('photoboost_password');
-
-    if (savedEmail && savedPassword) {
+    const token = getToken();
+    const savedEmail = localStorage.getItem('pg_email');
+    if (token && savedEmail) {
       setEmail(savedEmail);
       setIsConnected(true);
-      
-      fetch(`${API_URL}/login?email=${encodeURIComponent(savedEmail)}&password=${encodeURIComponent(savedPassword)}`, {
-        method: "POST",
-        headers: { "x-api-key": API_KEY }
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status === "success") {
-          setCredits(data.credits);
-          localStorage.setItem('photoboost_credits', data.credits);
-        }
-      })
-      .catch(err => console.log("Erreur load:", err));
+      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => { if (d.credits !== undefined) setCredits(d.credits); })
+        .catch(() => {});
     }
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success" && savedEmail && savedPassword) {
+    if (params.get('payment') === 'success' && token) {
       setTimeout(() => {
-        fetch(`${API_URL}/login?email=${encodeURIComponent(savedEmail)}&password=${encodeURIComponent(savedPassword)}`, {
-          method: "POST",
-          headers: { "x-api-key": API_KEY }
-        })
-        .then(r => r.json())
-        .then(data => {
-          if (data.status === "success") {
-            setCredits(data.credits);
-            localStorage.setItem('photoboost_credits', data.credits);
-            alert(`✅ Paiement réussi!\n💰 ${data.credits} crédits!`);
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        });
+        fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.json())
+          .then(d => {
+            if (d.credits !== undefined) {
+              setCredits(d.credits);
+              alert(`✅ Paiement confirmé !\nVous avez maintenant ${d.credits} crédits disponibles.`);
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          });
       }, 2000);
     }
   }, []);
 
-  const handleRegister = async () => {
-    if (!email.includes("@")) { alert("Email valide"); return; }
-    if (password.length < 6) { alert("Min 6 chars"); return; }
+  /* ── auth ── */
+  const handleAuth = async (mode) => {
+    if (!email.includes('@'))    { alert('Entrez un email valide');                   return; }
+    if (password.length < 6)     { alert('Le mot de passe doit faire 6 caractères minimum'); return; }
     try {
-      const response = await fetch(`${API_URL}/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-        method: "POST", headers: { "x-api-key": API_KEY }
+      const res  = await fetch(`${API_URL}/${mode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('photoboost_email', email);
-        localStorage.setItem('photoboost_password', password);
-        setCredits(0);
-        setIsConnected(true);
-        setPage('app');
-      } else alert("Error: " + data.detail);
-    } catch (err) { alert("Error"); }
-  };
-
-  const handleLogin = async () => {
-    if (!email.includes("@")) { alert("Email valide"); return; }
-    if (password.length < 6) { alert("Min 6 chars"); return; }
-    try {
-      const response = await fetch(`${API_URL}/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-        method: "POST", headers: { "x-api-key": API_KEY }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('photoboost_email', email);
-        localStorage.setItem('photoboost_password', password);
-        setCredits(data.credits);
-        setIsConnected(true);
-        setPage('app');
-      } else alert("Error");
-    } catch (err) { alert("Error"); }
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || 'Erreur'); return; }
+      localStorage.setItem('pg_token', data.token);
+      localStorage.setItem('pg_email', email);
+      setCredits(data.credits);
+      setIsConnected(true);
+      setPage('app');
+    } catch { alert('Erreur réseau, réessayez.'); }
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    setEmail(""); setPassword(""); setCredits(null);
+    ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k));
+    setEmail(''); setPassword(''); setCredits(null);
     setIsConnected(false); setPage('landing');
   };
 
+  /* ── upload ── */
   const handleFileChange = (e) => {
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
-      const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target?.result);
-      reader.readAsDataURL(e.target.files[0]);
-    }
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f); setResult(null); setError(null);
+    const reader = new FileReader();
+    reader.onload = ev => setPreview(ev.target.result);
+    reader.readAsDataURL(f);
   };
 
   const handleUpload = async () => {
-    if (!file) { setError("Select image"); return; }
-    if (credits === null && freeImagesLeft <= 0) { setError("Limit reached"); return; }
-    if (credits !== null && credits <= 0) { setError("No credits"); return; }
+    if (!file)                              { setError('Sélectionnez une photo');                      return; }
+    if (!isConnected && freeLeft <= 0)      { setError('Limite gratuite atteinte → créez un compte'); return; }
+    if (isConnected && credits !== null && credits <= 0) { setError('Crédits épuisés → rechargez');  return; }
 
-    setLoading(true);
+    setLoading(true); setError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch(`${API_URL}/enhance?email=${email || ""}`, {
-        method: "POST",
-        headers: { "x-api-key": API_KEY },
-        body: formData,
-      });
-      const data = await response.json();
+      const form = new FormData();
+      form.append('file', file);
+      const res  = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: authHeaders(), body: form });
+      const data = await res.json();
+      if (!res.ok) { setError(data.detail || 'Erreur traitement'); setLoading(false); return; }
+
       setResult({ filename: data.filename, url: `${API_URL}${data.url}` });
-      if (data.credits_left !== null) {
+
+      if (data.credits_left !== null && data.credits_left !== undefined) {
         setCredits(data.credits_left);
-        localStorage.setItem('photoboost_credits', data.credits_left);
       } else {
-        setFreeImagesLeft(freeImagesLeft - 1);
-        localStorage.setItem('photoboost_free_left', freeImagesLeft - 1);
+        const n = freeLeft - 1;
+        setFreeLeft(n);
+        localStorage.setItem('pg_free', n);
       }
-    } catch (err) { setError("Error"); }
+    } catch { setError('Erreur réseau, réessayez.'); }
     finally { setLoading(false); }
   };
 
   const handleDownload = () => {
-    if (!result) return;
-    const a = document.createElement("a");
-    a.href = result.url;
-    a.download = result.filename;
-    a.click();
+    const a = document.createElement('a');
+    a.href = result.url; a.download = result.filename; a.click();
   };
 
   const handlePayment = async () => {
-    if (!isConnected) { alert("S'inscrire d'abord!"); return; }
+    const token = getToken();
+    if (!token) { alert('Connectez-vous d\'abord'); return; }
     try {
-      const response = await fetch(`${API_URL}/create-checkout-session?email=${encodeURIComponent(email)}`, {
-        method: "POST", headers: { "x-api-key": API_KEY }
+      const res  = await fetch(`${API_URL}/create-checkout-session`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await response.json();
+      const data = await res.json();
       if (data.checkout_url) window.location.href = data.checkout_url;
-    } catch (err) { alert("Error"); }
+    } catch { alert('Erreur paiement, réessayez.'); }
   };
 
-  // LANDING
-  if (page === 'landing') {
-    return (
-      <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', minHeight: '100vh', color: '#fff' }}>
-        <div style={{ padding: isMobile ? '15px' : '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <h1 style={{ margin: 0, fontSize: isMobile ? '24px' : '28px', fontWeight: 'bold' }}>✨ PixGlow</h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setPage('help')} style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}>Aide</button>
-            <button onClick={() => setPage('app')} style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: '#fff', padding: isMobile ? '10px 20px' : '12px 30px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px' }}>
-              {isMobile ? 'Go' : 'Commencer →'}
-            </button>
+  /* ── styles ── */
+  const S = {
+    page: {
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      minHeight: '100vh', color: '#fff', fontFamily: "'Inter', sans-serif"
+    },
+    nav: {
+      padding: isMobile ? '14px 18px' : '18px 48px',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(15,23,42,0.97)', backdropFilter: 'blur(12px)',
+      position: 'sticky', top: 0, zIndex: 100
+    },
+    logo: { margin: 0, fontSize: isMobile ? '20px' : '24px', fontWeight: 800, cursor: 'pointer', letterSpacing: '-0.5px' },
+    btn: (bg, extra = {}) => ({
+      background: bg, color: '#fff', border: 'none', borderRadius: '10px',
+      padding: '11px 22px', fontWeight: 700, cursor: 'pointer', fontSize: '14px',
+      transition: 'opacity .2s', ...extra
+    }),
+    card: (extra = {}) => ({
+      background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(148,163,184,0.12)',
+      borderRadius: '16px', padding: isMobile ? '20px' : '28px',
+      backdropFilter: 'blur(10px)', ...extra
+    }),
+  };
+
+  /* ════════════════════════════════════════════
+     LANDING
+  ════════════════════════════════════════════ */
+  if (page === 'landing') return (
+    <div style={S.page}>
+      <nav style={S.nav}>
+        <h1 style={S.logo}>✨ PixGlow</h1>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button onClick={() => setPage('help')}
+            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}>
+            Aide
+          </button>
+          <button onClick={() => setPage('app')} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)')}>
+            {isMobile ? 'Commencer' : 'Commencer gratuitement →'}
+          </button>
+        </div>
+      </nav>
+
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '40px 18px' : '80px 40px', textAlign: 'center' }}>
+
+        {/* Badge niche */}
+        <div style={{ display: 'inline-block', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: '24px', padding: '6px 18px', marginBottom: '24px', fontSize: '13px', color: '#93c5fd', fontWeight: 600 }}>
+          🛍️ Conçu pour les vendeurs Vinted, Leboncoin & Vestiaire
+        </div>
+
+        {/* Titre */}
+        <h2 style={{ fontSize: isMobile ? '36px' : '62px', fontWeight: 900, margin: '0 0 18px 0', background: 'linear-gradient(135deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1.1, letterSpacing: '-1px' }}>
+          Photos fond blanc<br/>en 1 clic
+        </h2>
+        <p style={{ fontSize: isMobile ? '16px' : '20px', color: '#94a3b8', maxWidth: '560px', margin: '0 auto 16px auto', lineHeight: 1.6 }}>
+          Suppression automatique du fond, luminosité parfaite,<br/>
+          <strong style={{ color: '#e2e8f0' }}>qualité studio pour tes articles Vinted.</strong>
+        </p>
+        <p style={{ color: '#22c55e', fontWeight: 700, fontSize: '15px', marginBottom: '48px' }}>
+          ✅ 5 photos gratuites — aucune carte bancaire requise
+        </p>
+
+        {/* Features */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px', marginBottom: '56px' }}>
+          {[
+            { icon: '🎨', titre: 'Fond blanc parfait', desc: 'Ton article ressort comme sur un site e-commerce professionnel', color: '59,130,246' },
+            { icon: '✨', titre: 'Luminosité & netteté', desc: 'Contraste et couleurs optimisés automatiquement à chaque image', color: '167,139,250' },
+            { icon: '⚡', titre: 'Résultat en 10 sec', desc: 'Plus besoin de Photoshop ou d\'application complexe', color: '34,197,94' },
+          ].map((f, i) => (
+            <div key={i} style={{ background: `rgba(${f.color},0.07)`, border: `1px solid rgba(${f.color},0.22)`, borderRadius: '14px', padding: '24px 20px' }}>
+              <div style={{ fontSize: '38px', marginBottom: '14px' }}>{f.icon}</div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: 700 }}>{f.titre}</h3>
+              <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Avant / Après */}
+        <div style={{ ...S.card(), maxWidth: '680px', margin: '0 auto 52px auto' }}>
+          <p style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1.5px', margin: '0 0 18px 0', fontWeight: 600 }}>Exemple de résultat</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 36px 1fr', alignItems: 'center', gap: '12px' }}>
+            {/* Avant */}
+            <div style={{ background: 'linear-gradient(135deg,#1e293b,#334155)', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ height: '110px', background: 'linear-gradient(135deg,#334155,#475569)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '44px' }}>👗</div>
+              <p style={{ color: '#64748b', fontSize: '11px', margin: '10px 0 0 0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Avant</p>
+            </div>
+            <div style={{ fontSize: '22px', textAlign: 'center', color: '#3b82f6', fontWeight: 900 }}>→</div>
+            {/* Après */}
+            <div style={{ background: '#fff', borderRadius: '10px', padding: '16px', textAlign: 'center', border: '2px solid #22c55e' }}>
+              <div style={{ height: '110px', background: '#f8fafc', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '44px', border: '1px solid #e2e8f0' }}>👗</div>
+              <p style={{ color: '#16a34a', fontSize: '11px', margin: '10px 0 0 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Après — Fond blanc ✅</p>
+            </div>
           </div>
         </div>
 
-        <div style={{ padding: isMobile ? '40px 20px' : '80px 40px', textAlign: 'center', maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: isMobile ? '32px' : '56px', fontWeight: 'bold', marginBottom: '20px', background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Transforme tes photos en 1 clic
-          </h2>
-          <p style={{ fontSize: isMobile ? '16px' : '20px', color: '#cbd5e1', marginBottom: '40px' }}>
-            Fond blanc parfait, luminosité optimale, qualité maximale.
-          </p>
+        {/* Témoignages */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '14px', maxWidth: '900px', margin: '0 auto 52px auto' }}>
+          {[
+            { nom: 'Sophie M.', stars: '⭐⭐⭐⭐⭐', texte: "Mes vues ont doublé sur Vinted depuis que j'utilise PixGlow. Mes photos font vraiment pro !" },
+            { nom: 'Karim B.', stars: '⭐⭐⭐⭐⭐', texte: "Simple, rapide, bluffant. Je prépare 20 fiches produit en 5 minutes." },
+            { nom: 'Léa F.', stars: '⭐⭐⭐⭐⭐', texte: "Enfin un outil pensé pour Vinted. Le fond blanc change vraiment tout pour les acheteurs." },
+          ].map((t, i) => (
+            <div key={i} style={{ ...S.card(), textAlign: 'left' }}>
+              <p style={{ margin: '0 0 4px 0', fontSize: '13px' }}>{t.stars}</p>
+              <p style={{ color: '#cbd5e1', fontSize: '14px', margin: '0 0 12px 0', lineHeight: 1.6, fontStyle: 'italic' }}>"{t.texte}"</p>
+              <p style={{ color: '#60a5fa', fontSize: '13px', margin: 0, fontWeight: 700 }}>— {t.nom}</p>
+            </div>
+          ))}
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
-            <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '32px', marginBottom: '10px' }}>🎨</div>
-              <h3 style={{ margin: '0 0 5px 0' }}>Fond Blanc</h3>
-              <p style={{ color: '#cbd5e1', fontSize: '14px', margin: 0 }}>Retire automatiquement</p>
-            </div>
-            <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '32px', marginBottom: '10px' }}>✨</div>
-              <h3 style={{ margin: '0 0 5px 0' }}>Lumière</h3>
-              <p style={{ color: '#cbd5e1', fontSize: '14px', margin: 0 }}>Optimise auto</p>
-            </div>
-            <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '32px', marginBottom: '10px' }}>⚡</div>
-              <h3 style={{ margin: '0 0 5px 0' }}>Gratuit</h3>
-              <p style={{ color: '#cbd5e1', fontSize: '14px', margin: 0 }}>5 images free</p>
-            </div>
+        {/* Pricing */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', maxWidth: '640px', margin: '0 auto 48px auto' }}>
+          {/* Gratuit */}
+          <div style={{ ...S.card({ border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.06)' }), textAlign: 'center' }}>
+            <p style={{ fontSize: '28px', margin: '0 0 6px 0' }}>🎁</p>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '18px' }}>Gratuit</h3>
+            <p style={{ color: '#22c55e', fontWeight: 700, fontSize: '22px', margin: '0 0 8px 0' }}>5 photos</p>
+            <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 16px 0' }}>Sans inscription<br/>Sans carte bancaire</p>
+            <button onClick={() => setPage('app')} style={S.btn('linear-gradient(135deg,#22c55e,#16a34a)', { width: '100%' })}>Essayer maintenant</button>
           </div>
+          {/* Pro */}
+          <div style={{ ...S.card({ border: '2px solid rgba(59,130,246,0.5)', background: 'rgba(59,130,246,0.08)' }), textAlign: 'center', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#3b82f6,#1d4ed8)', borderRadius: '20px', padding: '3px 14px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>MEILLEURE OFFRE</div>
+            <p style={{ fontSize: '28px', margin: '0 0 6px 0' }}>💎</p>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '18px' }}>Pro</h3>
+            <p style={{ color: '#60a5fa', fontWeight: 700, fontSize: '22px', margin: '0 0 4px 0' }}>15€</p>
+            <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 4px 0' }}>100 crédits · 0,15€/photo</p>
+            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 16px 0' }}>Valables à vie</p>
+            <button onClick={() => setPage('app')} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)', { width: '100%' })}>Acheter les crédits</button>
+          </div>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px', maxWidth: '600px', margin: '0 auto' }}>
-            <button onClick={() => setPage('app')} style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: '#fff', padding: '14px', fontSize: '16px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>5 Images Free</button>
-            <button onClick={() => setPage('app')} style={{ background: 'transparent', color: '#60a5fa', padding: '14px', fontSize: '16px', borderRadius: '10px', border: '2px solid #60a5fa', cursor: 'pointer', fontWeight: 'bold' }}>Buy Credits</button>
-          </div>
+        {/* FAQ rapide */}
+        <p style={{ color: '#475569', fontSize: '14px' }}>
+          Des questions ? <button onClick={() => setPage('help')} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline', fontSize: '14px' }}>Consultez notre aide</button>
+        </p>
+      </div>
+    </div>
+  );
+
+  /* ════════════════════════════════════════════
+     AIDE
+  ════════════════════════════════════════════ */
+  if (page === 'help') return (
+    <div style={S.page}>
+      <nav style={S.nav}>
+        <h1 style={S.logo} onClick={() => setPage('landing')}>✨ PixGlow</h1>
+        <button onClick={() => setPage('landing')} style={S.btn('#334155')}>← Accueil</button>
+      </nav>
+      <div style={{ maxWidth: '760px', margin: '0 auto', padding: isMobile ? '24px 18px' : '52px 40px' }}>
+        <h1 style={{ fontSize: isMobile ? '28px' : '36px', fontWeight: 800, marginBottom: '32px' }}>Centre d'aide</h1>
+        <div style={S.card()}>
+          {[
+            { q: "Combien de photos gratuites ?", r: "5 photos gratuites par adresse IP, sans inscription ni carte bancaire." },
+            { q: "Quel tarif après l'essai ?", r: "1 crédit = 1 photo = 0,15€. Le pack 100 crédits est à 15€, valable à vie." },
+            { q: "Mes crédits expirent-ils ?", r: "Non. Vos crédits sont sauvegardés sur nos serveurs et ne disparaissent jamais." },
+            { q: "Quels formats sont acceptés ?", r: "JPG, PNG, WEBP. Taille recommandée : moins de 10 Mo." },
+            { q: "Est-ce adapté à Vinted ?", r: "Oui, c'est la raison d'être de PixGlow. Les photos fond blanc augmentent significativement les clics et les ventes sur Vinted." },
+            { q: "Le paiement est-il sécurisé ?", r: "Oui, 100%. Le paiement est traité par Stripe, le standard mondial de la sécurité bancaire en ligne." },
+            { q: "Comment contacter le support ?", r: "Écrivez à support@pixglow.app — réponse garantie en moins de 24h." },
+          ].map((faq, i, arr) => (
+            <div key={i} style={{ paddingBottom: '20px', marginBottom: '20px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+              <h3 style={{ color: '#60a5fa', margin: '0 0 8px 0', fontSize: '16px', fontWeight: 700 }}>{faq.q}</h3>
+              <p style={{ color: '#cbd5e1', margin: 0, fontSize: '15px', lineHeight: 1.65 }}>{faq.r}</p>
+            </div>
+          ))}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // HELP
-  if (page === 'help') {
-    return (
-      <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', minHeight: '100vh', color: '#fff' }}>
-        <div style={{ padding: isMobile ? '15px' : '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <h1 style={{ margin: 0, fontSize: isMobile ? '24px' : '28px', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('landing')}>✨ PixGlow</h1>
-          <button onClick={() => setPage('landing')} style={{ background: '#3b82f6', color: '#fff', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>Home</button>
-        </div>
-
-        <div style={{ padding: isMobile ? '20px' : '40px', maxWidth: '900px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: isMobile ? '28px' : '36px', marginBottom: '30px' }}>Help Center</h1>
-
-          <div style={{ background: 'rgba(51,65,85,0.5)', borderRadius: '12px', padding: '20px' }}>
-            <h2 style={{ fontSize: '20px', marginBottom: '15px' }}>❓ FAQ</h2>
-
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#60a5fa', margin: '0 0 8px 0' }}>5 free images?</h3>
-              <p style={{ color: '#cbd5e1', margin: 0 }}>Yes, 5 per IP lifetime. No reset.</p>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#60a5fa', margin: '0 0 8px 0' }}>Cost per image?</h3>
-              <p style={{ color: '#cbd5e1', margin: 0 }}>1 credit = €0.15. 100 credits = €15.</p>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#60a5fa', margin: '0 0 8px 0' }}>Credits disappear?</h3>
-              <p style={{ color: '#cbd5e1', margin: 0 }}>No! Server-side storage. Forever.</p>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#60a5fa', margin: '0 0 8px 0' }}>Contact support?</h3>
-              <p style={{ color: '#cbd5e1', margin: 0 }}>support@pixglow.app - &lt;24h response.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // APP PAGE - PROFESSIONAL DESIGN
+  /* ════════════════════════════════════════════
+     APP
+  ════════════════════════════════════════════ */
   return (
-    <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', minHeight: '100vh', color: '#fff', padding: isMobile ? '0' : '20px' }}>
-      {/* HEADER */}
-      <div style={{ background: 'rgba(15,23,42,0.95)', padding: isMobile ? '15px' : '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <h1 style={{ margin: 0, fontSize: isMobile ? '22px' : '28px', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('landing')}>✨ PixGlow</h1>
-        {isConnected && <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', padding: '8px 16px', borderRadius: '6px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>Logout</button>}
-      </div>
+    <div style={S.page}>
+      <nav style={S.nav}>
+        <h1 style={S.logo} onClick={() => setPage('landing')}>✨ PixGlow</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isConnected && <span style={{ color: '#64748b', fontSize: '13px', display: isMobile ? 'none' : 'block' }}>{email}</span>}
+          {isConnected
+            ? <button onClick={handleLogout} style={S.btn('#ef4444')}>Déconnexion</button>
+            : <button onClick={() => setPage('landing')} style={S.btn('#334155')}>← Accueil</button>}
+        </div>
+      </nav>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '15px' : '30px 20px' }}>
-        {/* CREDITS CARD */}
-        <div style={{ background: credits !== null ? 'linear-gradient(135deg, rgba(34,197,94,0.2) 0%, rgba(34,197,94,0.1) 100%)' : 'linear-gradient(135deg, rgba(251,146,60,0.2) 0%, rgba(251,146,60,0.1) 100%)', border: credits !== null ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(251,146,60,0.3)', borderRadius: '16px', padding: '25px', marginBottom: '25px', textAlign: 'center' }}>
-          <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 10px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            {credits !== null ? 'Credits Available' : 'Free Images Left'}
+      <div style={{ maxWidth: '840px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
+
+        {/* ─ COMPTEUR ─ */}
+        <div style={{
+          background: credits !== null
+            ? 'linear-gradient(135deg,rgba(34,197,94,.13),rgba(34,197,94,.06))'
+            : freeLeft > 0
+              ? 'linear-gradient(135deg,rgba(251,146,60,.13),rgba(251,146,60,.06))'
+              : 'linear-gradient(135deg,rgba(239,68,68,.13),rgba(239,68,68,.06))',
+          border: `1px solid ${credits !== null ? 'rgba(34,197,94,.3)' : freeLeft > 0 ? 'rgba(251,146,60,.3)' : 'rgba(239,68,68,.3)'}`,
+          borderRadius: '16px', padding: '22px 20px', marginBottom: '18px', textAlign: 'center'
+        }}>
+          <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 600 }}>
+            {credits !== null ? 'Crédits disponibles' : 'Photos gratuites restantes'}
           </p>
-          <p style={{ fontSize: isMobile ? '36px' : '48px', fontWeight: 'bold', color: credits !== null ? '#22c55e' : '#fb923c', margin: 0 }}>
-            {credits !== null ? credits : `${freeImagesLeft}/5`}
+          <p style={{ fontSize: isMobile ? '44px' : '56px', fontWeight: 900, color: credits !== null ? '#22c55e' : freeLeft > 0 ? '#fb923c' : '#ef4444', margin: 0, lineHeight: 1 }}>
+            {credits !== null ? credits : `${freeLeft}/5`}
           </p>
+          {!isConnected && freeLeft === 0 && (
+            <p style={{ color: '#f87171', fontSize: '14px', margin: '10px 0 0 0', fontWeight: 600 }}>
+              Limite atteinte — inscrivez-vous pour continuer ↓
+            </p>
+          )}
         </div>
 
-        {/* UPLOAD SECTION */}
-        <div style={{ background: 'rgba(51,65,85,0.5)', border: '1px solid rgba(148,163,184,0.2)', borderRadius: '16px', padding: isMobile ? '20px' : '40px', backdropFilter: 'blur(10px)', marginBottom: '25px' }}>
-          {!result ? (
-            <div>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileChange} style={{ display: 'none' }} />
+        {/* ─ UPLOAD / RÉSULTAT ─ */}
+        <div style={{ ...S.card(), marginBottom: '18px' }}>
+          <input ref={fileInputRef}   type="file" accept="image/*"                   onChange={handleFileChange} style={{ display: 'none' }} />
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileChange} style={{ display: 'none' }} />
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    background: 'rgba(59,130,246,0.2)',
-                    border: '2px solid #3b82f6',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    color: '#60a5fa',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  📸 Galerie
+          {!result ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+                <button onClick={() => fileInputRef.current?.click()}
+                  style={{ background: 'rgba(59,130,246,.12)', border: '2px solid rgba(59,130,246,.4)', borderRadius: '12px', padding: '20px 12px', color: '#60a5fa', cursor: 'pointer', fontWeight: 700, fontSize: '15px' }}>
+                  📁 Galerie
                 </button>
-                {isMobile && (
-                  <button
-                    onClick={() => cameraInputRef.current?.click()}
-                    style={{
-                      background: 'rgba(168,85,247,0.2)',
-                      border: '2px solid #a78bfa',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      color: '#d8b4fe',
-                      cursor: 'pointer',
-                      fontWeight: 'bold',
-                      fontSize: '16px',
-                      transition: 'all 0.3s'
-                    }}
-                  >
-                    📷 Caméra
-                  </button>
-                )}
+                <button onClick={() => cameraInputRef.current?.click()}
+                  style={{ background: 'rgba(167,139,250,.12)', border: '2px solid rgba(167,139,250,.4)', borderRadius: '12px', padding: '20px 12px', color: '#c4b5fd', cursor: 'pointer', fontWeight: 700, fontSize: '15px' }}>
+                  📷 Appareil photo
+                </button>
               </div>
 
               {preview && (
-                <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                  <img src={preview} alt="Preview" style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '12px' }} />
+                <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+                  <img src={preview} alt="Aperçu" style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'cover', borderRadius: '12px', border: '2px solid rgba(59,130,246,.35)' }} />
+                  <p style={{ color: '#94a3b8', fontSize: '13px', margin: '8px 0 0 0' }}>Photo sélectionnée ✅</p>
                 </div>
               )}
 
-              {error && <p style={{ color: '#ef4444', textAlign: 'center', marginBottom: '15px' }}>{error}</p>}
+              {error && (
+                <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', color: '#f87171', fontSize: '14px', textAlign: 'center' }}>
+                  {error}
+                </div>
+              )}
 
               <button
                 onClick={handleUpload}
                 disabled={!file || loading}
                 style={{
-                  width: '100%',
-                  background: file ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : '#6b7280',
-                  color: '#fff',
-                  padding: '16px',
-                  fontSize: '18px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  cursor: file ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.3s'
+                  width: '100%', border: 'none', fontWeight: 800, borderRadius: '12px',
+                  padding: '18px', fontSize: '18px', cursor: file && !loading ? 'pointer' : 'not-allowed',
+                  background: file && !loading
+                    ? 'linear-gradient(135deg,#3b82f6,#1d4ed8)'
+                    : 'rgba(71,85,105,.6)',
+                  color: '#fff', transition: 'all .2s'
                 }}
               >
-                {loading ? '⏳ Processing...' : '⚡ Enhance'} 
+                {loading ? '⏳ Traitement en cours...' : file ? '⚡ Améliorer ma photo' : '← Sélectionnez une photo d\'abord'}
               </button>
-            </div>
+
+              {loading && (
+                <p style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', marginTop: '10px' }}>
+                  Suppression du fond + optimisation · environ 10–15 secondes
+                </p>
+              )}
+            </>
           ) : (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div style={{ background: 'rgba(30,41,59,0.5)', borderRadius: '12px', padding: '15px' }}>
-                  <p style={{ color: '#cbd5e1', fontSize: '12px', margin: '0 0 10px 0' }}>Before</p>
-                  <img src={preview} alt="Before" style={{ width: '100%', borderRadius: '8px' }} />
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+                <div style={{ background: 'rgba(15,23,42,.6)', borderRadius: '12px', padding: '14px' }}>
+                  <p style={{ color: '#64748b', fontSize: '11px', margin: '0 0 10px 0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Avant</p>
+                  <img src={preview} alt="Avant" style={{ width: '100%', borderRadius: '8px' }} />
                 </div>
-                <div style={{ background: 'rgba(30,41,59,0.5)', borderRadius: '12px', padding: '15px' }}>
-                  <p style={{ color: '#cbd5e1', fontSize: '12px', margin: '0 0 10px 0' }}>After</p>
-                  <img src={result.url} alt="After" style={{ width: '100%', borderRadius: '8px' }} />
+                <div style={{ background: '#fff', borderRadius: '12px', padding: '14px', border: '2px solid #22c55e' }}>
+                  <p style={{ color: '#16a34a', fontSize: '11px', margin: '0 0 10px 0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Après ✅</p>
+                  <img src={result.url} alt="Après" style={{ width: '100%', borderRadius: '8px' }} />
                 </div>
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
-                <button
-                  onClick={handleDownload}
-                  style={{
-                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                    color: '#fff',
-                    padding: '14px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    fontSize: '16px'
-                  }}
-                >
-                  📥 Download
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <button onClick={handleDownload} style={S.btn('linear-gradient(135deg,#22c55e,#16a34a)', { padding: '14px', fontSize: '15px' })}>
+                  📥 Télécharger
                 </button>
                 <button
                   onClick={() => { setFile(null); setPreview(null); setResult(null); setError(null); }}
-                  style={{
-                    background: 'rgba(107,114,128,0.5)',
-                    color: '#fff',
-                    padding: '14px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    fontSize: '16px'
-                  }}
+                  style={S.btn('rgba(71,85,105,.7)', { padding: '14px', fontSize: '15px' })}
                 >
-                  🔄 New
+                  🔄 Nouvelle photo
                 </button>
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* AUTH SECTION */}
+        {/* ─ AUTH / ACHAT ─ */}
         {!isConnected ? (
-          <div style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(168,85,247,0.15) 100%)', border: '2px solid rgba(59,130,246,0.3)', borderRadius: '16px', padding: isMobile ? '25px' : '40px', backdropFilter: 'blur(10px)' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '25px', fontSize: isMobile ? '20px' : '24px', fontWeight: 'bold' }}>Sign Up to Buy Credits</h2>
-
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ padding: '14px', borderRadius: '10px', border: 'none', fontSize: '16px', background: 'rgba(30,41,59,0.8)', color: '#fff', boxSizing: 'border-box' }}
-              />
-              <input
-                type="password"
-                placeholder="Password (min 6)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ padding: '14px', borderRadius: '10px', border: 'none', fontSize: '16px', background: 'rgba(30,41,59,0.8)', color: '#fff', boxSizing: 'border-box' }}
-              />
+          <div style={{ ...S.card({ border: '2px solid rgba(59,130,246,.25)', background: 'linear-gradient(135deg,rgba(59,130,246,.1),rgba(167,139,250,.08))' }) }}>
+            <h2 style={{ textAlign: 'center', fontWeight: 800, fontSize: isMobile ? '19px' : '22px', margin: '0 0 6px 0' }}>
+              Créez un compte gratuit pour acheter des crédits
+            </h2>
+            <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '14px', margin: '0 0 22px 0' }}>
+              Vos crédits sont sauvegardés à vie · Paiement sécurisé Stripe
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+              <input type="email"    placeholder="Votre email"              value={email}    onChange={e => setEmail(e.target.value)}
+                style={{ padding: '14px', borderRadius: '10px', border: '1px solid rgba(59,130,246,.35)', fontSize: '15px', background: 'rgba(15,23,42,.8)', color: '#fff', boxSizing: 'border-box' }} />
+              <input type="password" placeholder="Mot de passe (min. 6 car.)" value={password} onChange={e => setPassword(e.target.value)}
+                style={{ padding: '14px', borderRadius: '10px', border: '1px solid rgba(59,130,246,.35)', fontSize: '15px', background: 'rgba(15,23,42,.8)', color: '#fff', boxSizing: 'border-box' }} />
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px' }}>
-              <button
-                onClick={handleLogin}
-                style={{
-                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                  color: '#fff',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                Login
-              </button>
-              <button
-                onClick={handleRegister}
-                style={{
-                  background: 'linear-gradient(135deg, #f97316 0%, #c2410c 100%)',
-                  color: '#fff',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                Register
-              </button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button onClick={() => handleAuth('login')}    style={S.btn('linear-gradient(135deg,#22c55e,#16a34a)', { padding: '14px', fontSize: '15px' })}>Se connecter</button>
+              <button onClick={() => handleAuth('register')} style={S.btn('linear-gradient(135deg,#f97316,#c2410c)', { padding: '14px', fontSize: '15px' })}>S'inscrire</button>
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', marginTop: '30px' }}>
-            <button
-              onClick={handlePayment}
-              style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                color: '#fff',
-                padding: isMobile ? '16px 40px' : '18px 60px',
-                fontSize: isMobile ? '18px' : '20px',
-                borderRadius: '12px',
-                border: 'none',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)',
-                transition: 'all 0.3s'
-              }}
-            >
-              💳 Buy 100 Credits - €15
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <p style={{ color: '#94a3b8', marginBottom: '18px', fontSize: '15px' }}>
+              Augmentez vos ventes Vinted avec plus de crédits 🚀
+            </p>
+            <button onClick={handlePayment} style={{
+              ...S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)'),
+              padding: isMobile ? '16px 32px' : '20px 56px',
+              fontSize: isMobile ? '17px' : '20px',
+              boxShadow: '0 10px 30px rgba(59,130,246,.35)',
+              borderRadius: '14px'
+            }}>
+              💳 Acheter 100 crédits — 15€
             </button>
-            <p style={{ color: '#64748b', marginTop: '15px', fontSize: '14px' }}>1 credit = €0.15</p>
+            <p style={{ color: '#475569', marginTop: '12px', fontSize: '13px' }}>
+              1 crédit = 1 photo = 0,15€ · Valables à vie · 🔒 Paiement sécurisé
+            </p>
           </div>
         )}
       </div>
     </div>
   );
 }
-
