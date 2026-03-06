@@ -12,7 +12,7 @@ import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 from rembg import remove
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
@@ -37,8 +37,7 @@ DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 stripe.api_key = STRIPE_SECRET_KEY
-pwd_context    = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security       = HTTPBearer(auto_error=False)
+security = HTTPBearer(auto_error=False)
 
 # ─────────────────────────────────────────────
 #  APP  (CORS EN PREMIER — TOUJOURS)
@@ -127,13 +126,14 @@ class AuthBody(BaseModel):
 # ─────────────────────────────────────────────
 #  UTILITAIRES
 # ─────────────────────────────────────────────
-def _truncate(p: str) -> str:
-    """bcrypt accepte max 72 bytes — on tronque silencieusement"""
-    encoded = p.encode("utf-8")
-    return encoded[:72].decode("utf-8", errors="ignore")
+def hash_password(p: str) -> str:
+    # bcrypt limite à 72 bytes — on tronque avant
+    raw = p.encode("utf-8")[:72]
+    return _bcrypt.hashpw(raw, _bcrypt.gensalt(12)).decode("utf-8")
 
-def hash_password(p: str) -> str:    return pwd_context.hash(_truncate(p))
-def verify_password(p: str, h: str) -> bool: return pwd_context.verify(_truncate(p), h)
+def verify_password(p: str, h: str) -> bool:
+    raw = p.encode("utf-8")[:72]
+    return _bcrypt.checkpw(raw, h.encode("utf-8"))
 
 def create_token(email: str) -> str:
     expire = datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS)

@@ -5,7 +5,7 @@ rembg
 onnxruntime
 stripe
 python-dotenv
-passlib[bcrypt]
+bcrypt
 python-jose[cryptography]
 python-multipart
 psycopg2-binary
