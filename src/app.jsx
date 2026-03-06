@@ -1,39 +1,51 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const API_URL = "https://web-production-f1129.up.railway.app";
-const MAX_SIMULTANEOUS = 5; // max photos en même temps
+const MAX_SIMULTANEOUS = 5;
 
 /* ═══════════════════════════════════════════════════════════
    MODAL AUTH — définie EN DEHORS du composant principal
    (évite la perte de focus à chaque frappe)
 ═══════════════════════════════════════════════════════════ */
-function AuthModal({ show, onClose, onSuccess, isMobile }) {
-  const [mode, setMode]         = useState('login');
+function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
+  const [mode, setMode]         = useState(initialMode || 'login');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
   const [errMsg, setErrMsg]     = useState('');
 
+  // Sync le mode si le parent change initialMode
+  useEffect(() => {
+    if (show) {
+      setMode(initialMode || 'login');
+      setErrMsg('');
+    }
+  }, [show, initialMode]);
+
   if (!show) return null;
 
   const handleSubmit = async () => {
     setErrMsg('');
-    if (!email.includes('@'))  { setErrMsg('Entrez un email valide');                         return; }
+    if (!email.includes('@'))  { setErrMsg('Entrez un email valide');                          return; }
     if (password.length < 6)   { setErrMsg('Le mot de passe doit faire minimum 6 caractères'); return; }
     setLoading(true);
     try {
       const res  = await fetch(`${API_URL}/${mode}`, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body:    JSON.stringify({ email: email.trim().toLowerCase(), password })
       });
       const data = await res.json();
-      if (!res.ok) { setErrMsg(data.detail || 'Identifiants incorrects'); setLoading(false); return; }
+      if (!res.ok) {
+        setErrMsg(data.detail || 'Identifiants incorrects');
+        setLoading(false);
+        return;
+      }
       localStorage.setItem('pg_token', data.token);
-      localStorage.setItem('pg_email', email);
-      onSuccess(email, data.credits);
+      localStorage.setItem('pg_email', email.trim().toLowerCase());
+      onSuccess(email.trim().toLowerCase(), data.credits);
     } catch {
-      setErrMsg('Impossible de contacter le serveur. Vérifiez votre connexion.');
+      setErrMsg('Impossible de contacter le serveur. Vérifiez votre connexion internet et réessayez.');
     } finally {
       setLoading(false);
     }
@@ -49,12 +61,15 @@ function AuthModal({ show, onClose, onSuccess, isMobile }) {
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(6px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
     >
       <div style={{ background: 'linear-gradient(135deg,#1e293b,#0f172a)', border: '1px solid rgba(59,130,246,.35)', borderRadius: '20px', padding: isMobile ? '28px 22px' : '40px', width: '100%', maxWidth: '440px', position: 'relative' }}>
-        
+
         {/* Fermer */}
-        <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(71,85,105,.6)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', width: '32px', height: '32px', fontSize: '16px', fontWeight: 700 }}>✕</button>
+        <button onClick={onClose}
+          style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(71,85,105,.6)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', width: '32px', height: '32px', fontSize: '16px', fontWeight: 700 }}>
+          ✕
+        </button>
 
         <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 800, color: '#fff' }}>
           {mode === 'login' ? '👋 Bon retour !' : '🚀 Créer mon compte'}
@@ -73,7 +88,7 @@ function AuthModal({ show, onClose, onSuccess, isMobile }) {
           ))}
         </div>
 
-        {/* Champs — NE PAS mettre dans un sous-composant pour garder le focus */}
+        {/* Champs */}
         <div style={{ marginBottom: '14px' }}>
           <input
             type="email"
@@ -118,80 +133,140 @@ function AuthModal({ show, onClose, onSuccess, isMobile }) {
 ═══════════════════════════════════════════════════════════ */
 export default function PixGlow() {
   const [page, setPage]               = useState('landing');
-  const [files, setFiles]             = useState([]);      // tableau de fichiers
-  const [previews, setPreviews]       = useState([]);      // tableau de previews
-  const [currentIdx, setCurrentIdx]   = useState(0);      // photo affichée
+  const [files, setFiles]             = useState([]);
+  const [previews, setPreviews]       = useState([]);
   const [loading, setLoading]         = useState(false);
-  const [results, setResults]         = useState([]);      // tableau de résultats
+  const [results, setResults]         = useState([]);
   const [error, setError]             = useState(null);
-  const [progress, setProgress]       = useState(0);       // ex: 2/4
+  const [progress, setProgress]       = useState(0);
   const [credits, setCredits]         = useState(null);
-  const [freeLeft, setFreeLeft]       = useState(5);
+  const [freeLeft, setFreeLeft]       = useState(null); // null = pas encore chargé
   const [email, setEmail]             = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isMobile, setIsMobile]       = useState(window.innerWidth < 768);
   const [showAuth, setShowAuth]       = useState(false);
+  const [authMode, setAuthMode]       = useState('login');
   const fileInputRef   = useRef(null);
   const cameraInputRef = useRef(null);
 
-  const getToken = () => localStorage.getItem('pg_token');
+  const getToken    = () => localStorage.getItem('pg_token');
   const authHeaders = () => { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; };
 
+  /* ── Resize ── */
   useEffect(() => {
     const fn = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', fn);
     return () => window.removeEventListener('resize', fn);
   }, []);
 
+  /* ── Init : charge le vrai quota IP depuis le serveur ── */
   useEffect(() => {
-    setFreeLeft(parseInt(localStorage.getItem('pg_free') || '5'));
-    const token = getToken();
+    // 1. Vérifie si l'utilisateur est connecté
+    const token      = getToken();
     const savedEmail = localStorage.getItem('pg_email');
     if (token && savedEmail) {
-      setEmail(savedEmail); setIsConnected(true);
+      setEmail(savedEmail);
+      setIsConnected(true);
       fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); }).catch(() => {});
+        .then(r => r.json())
+        .then(d => { if (d.credits !== undefined) setCredits(d.credits); })
+        .catch(() => {});
     }
+
+    // 2. Récupère le VRAI compteur IP depuis le serveur (source de vérité)
+    fetch(`${API_URL}/free-remaining`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.remaining !== undefined) {
+          setFreeLeft(d.remaining);
+          localStorage.setItem('pg_free', d.remaining); // sync localStorage
+        }
+      })
+      .catch(() => {
+        // Fallback sur localStorage si le serveur est inaccessible
+        const saved = parseInt(localStorage.getItem('pg_free') || '5');
+        setFreeLeft(saved);
+      });
+
+    // 3. Paiement réussi
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
       setTimeout(() => {
         fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.json()).then(d => {
-            if (d.credits !== undefined) { setCredits(d.credits); alert(`✅ Paiement confirmé ! ${d.credits} crédits disponibles.`); window.history.replaceState({}, '', window.location.pathname); }
+          .then(r => r.json())
+          .then(d => {
+            if (d.credits !== undefined) {
+              setCredits(d.credits);
+              alert(`✅ Paiement confirmé ! Vous avez maintenant ${d.credits} crédits.`);
+              window.history.replaceState({}, '', window.location.pathname);
+            }
           });
       }, 2000);
     }
   }, []);
 
+  /* ── Ouvre la modal auth avec le bon mode ── */
+  const openAuth = (mode) => {
+    setAuthMode(mode);
+    setShowAuth(true);
+  };
+
   /* ── Auth callback ── */
   const handleAuthSuccess = (userEmail, userCredits) => {
-    setEmail(userEmail); setCredits(userCredits); setIsConnected(true);
-    setShowAuth(false); setPage('app');
+    setEmail(userEmail);
+    setCredits(userCredits);
+    setIsConnected(true);
+    setShowAuth(false);
+    setPage('app');
   };
 
   const handleLogout = () => {
-    ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k));
+    ['pg_token', 'pg_email'].forEach(k => localStorage.removeItem(k));
     setEmail(''); setCredits(null); setIsConnected(false); setPage('landing');
   };
 
-  /* ── Sélection de fichiers (multi) ── */
+  /* ── Vérifie si on peut sélectionner des photos ── */
+  const canSelectPhoto = () => {
+    if (isConnected) return credits === null || credits > 0; // null = pas encore chargé
+    return freeLeft === null || freeLeft > 0;
+  };
+
+  const getRemainingCount = () => {
+    if (isConnected) return credits ?? 0;
+    return freeLeft ?? 0;
+  };
+
+  /* ── Tentative de sélection bloquée si quota épuisé ── */
+  const handleSelectClick = (useCamera = false) => {
+    if (!canSelectPhoto()) {
+      setError(
+        isConnected
+          ? 'Vos crédits sont épuisés. Rechargez votre compte pour continuer.'
+          : 'Vos 5 photos gratuites ont été utilisées. Créez un compte pour acheter des crédits.'
+      );
+      return;
+    }
+    setError(null);
+    if (useCamera) cameraInputRef.current?.click();
+    else           fileInputRef.current?.click();
+  };
+
+  /* ── Sélection fichiers (multi) ── */
   const handleFilesChange = (e) => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
 
-    // Respect du maximum
-    const available = isConnected ? (credits ?? 0) : freeLeft;
+    const available = getRemainingCount();
     const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, available > 0 ? available : MAX_SIMULTANEOUS);
     const chosen = selected.slice(0, maxAllowed);
 
     if (selected.length > maxAllowed) {
-      setError(`Maximum ${maxAllowed} photos sélectionnées (limite : ${MAX_SIMULTANEOUS} simultanées et crédits disponibles).`);
+      setError(`Maximum ${maxAllowed} photo(s) sélectionnée(s) selon vos crédits disponibles.`);
     } else {
       setError(null);
     }
 
-    setFiles(chosen); setResults([]); setProgress(0); setCurrentIdx(0);
-    // Générer les previews
+    setFiles(chosen); setResults([]); setProgress(0);
     const readers = chosen.map(f => new Promise(resolve => {
       const r = new FileReader();
       r.onload = ev => resolve(ev.target.result);
@@ -200,17 +275,23 @@ export default function PixGlow() {
     Promise.all(readers).then(prev => setPreviews(prev));
   };
 
-  /* ── Upload (toutes les photos, une par une) ── */
+  /* ── Upload ── */
   const handleUpload = async () => {
-    if (!files.length)                                        { setError('Sélectionnez au moins une photo');            return; }
-    if (!isConnected && freeLeft <= 0)                        { setError('Limite gratuite atteinte. Créez un compte.'); return; }
-    if (isConnected && credits !== null && credits < files.length) { setError(`Crédits insuffisants. Vous avez ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
+    if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
+    if (!isConnected && freeLeft !== null && freeLeft <= 0) {
+      setError('Vos 5 photos gratuites ont été utilisées. Créez un compte pour acheter des crédits.');
+      return;
+    }
+    if (isConnected && credits !== null && credits < files.length) {
+      setError(`Crédits insuffisants. Vous avez ${credits} crédit(s) pour ${files.length} photo(s).`);
+      return;
+    }
 
     setLoading(true); setError(null); setResults([]); setProgress(0);
 
-    const newResults = [];
-    let currentFreeLeft = freeLeft;
-    let currentCredits = credits;
+    const newResults       = [];
+    let currentFreeLeft    = freeLeft;
+    let currentCredits     = credits;
 
     for (let i = 0; i < files.length; i++) {
       setProgress(i + 1);
@@ -219,6 +300,7 @@ export default function PixGlow() {
         form.append('file', files[i]);
         const res  = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: authHeaders(), body: form });
         const data = await res.json();
+
         if (!res.ok) {
           newResults.push({ error: data.detail || 'Erreur', original: previews[i] });
         } else {
@@ -227,36 +309,32 @@ export default function PixGlow() {
             currentCredits = data.credits_left;
             setCredits(data.credits_left);
           } else {
-            currentFreeLeft = currentFreeLeft - 1;
+            currentFreeLeft = Math.max(0, currentFreeLeft - 1);
             setFreeLeft(currentFreeLeft);
             localStorage.setItem('pg_free', currentFreeLeft);
           }
         }
       } catch {
-        newResults.push({ error: 'Erreur réseau', original: previews[i] });
+        newResults.push({ error: 'Erreur réseau, réessayez', original: previews[i] });
       }
       setResults([...newResults]);
     }
-    setLoading(false); setCurrentIdx(0);
+    setLoading(false);
   };
 
-  const handleDownload = (r) => {
-    const a = document.createElement('a'); a.href = r.url; a.download = r.filename; a.click();
-  };
-
+  const handleDownload    = (r) => { const a = document.createElement('a'); a.href = r.url; a.download = r.filename; a.click(); };
   const handleDownloadAll = () => results.filter(r => !r.error).forEach(r => handleDownload(r));
+  const reset             = () => { setFiles([]); setPreviews([]); setResults([]); setError(null); setProgress(0); };
 
   const handlePayment = async () => {
     const token = getToken();
-    if (!token) { setShowAuth(true); return; }
+    if (!token) { openAuth('login'); return; }
     try {
-      const res = await fetch(`${API_URL}/create-checkout-session`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const res  = await fetch(`${API_URL}/create-checkout-session`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.checkout_url) window.location.href = data.checkout_url;
     } catch { alert('Erreur paiement, réessayez.'); }
   };
-
-  const reset = () => { setFiles([]); setPreviews([]); setResults([]); setError(null); setProgress(0); };
 
   /* ── Styles ── */
   const S = {
@@ -267,12 +345,16 @@ export default function PixGlow() {
     card: (ex={}) => ({ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(148,163,184,0.12)', borderRadius: '16px', padding: isMobile ? '20px' : '28px', backdropFilter: 'blur(10px)', ...ex }),
   };
 
+  const doneCount  = results.filter(r => !r.error).length;
+  const hasResults = results.length > 0 && results.length === files.length && !loading;
+  const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
+
   /* ════════════════════════════════════════════
      LANDING
   ════════════════════════════════════════════ */
   if (page === 'landing') return (
     <div style={S.page}>
-      <AuthModal show={showAuth} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
+      <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <nav style={S.nav}>
         <h1 style={S.logo}>✨ PixGlow</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -280,9 +362,10 @@ export default function PixGlow() {
           {isConnected
             ? <button onClick={() => setPage('app')} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)')}>Mon espace →</button>
             : <>
-                <button onClick={() => setShowAuth(true)} style={S.btn('rgba(51,65,85,0.8)', { border: '1px solid rgba(148,163,184,0.2)' })}>Connexion</button>
-                <button onClick={() => setPage('app')}    style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)')}>Commencer gratuitement</button>
-              </>}
+                <button onClick={() => openAuth('login')}    style={S.btn('rgba(51,65,85,0.8)', { border: '1px solid rgba(148,163,184,0.2)' })}>Connexion</button>
+                <button onClick={() => setPage('app')}       style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)')}>Commencer gratuitement</button>
+              </>
+          }
         </div>
       </nav>
 
@@ -303,9 +386,9 @@ export default function PixGlow() {
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px', marginBottom: '56px' }}>
           {[
-            { icon: '🎨', titre: 'Fond blanc parfait', desc: 'Ton article ressort comme sur un site e-commerce professionnel', color: '59,130,246' },
-            { icon: '✨', titre: 'Luminosité & netteté', desc: 'Contraste et couleurs optimisés automatiquement à chaque image', color: '167,139,250' },
-            { icon: '⚡', titre: 'Jusqu\'à 5 photos à la fois', desc: 'Traitement simultané pour aller encore plus vite', color: '34,197,94' },
+            { icon: '🎨', titre: 'Fond blanc parfait',        desc: 'Ton article ressort comme sur un site e-commerce professionnel',   color: '59,130,246' },
+            { icon: '✨', titre: 'Luminosité & netteté',      desc: 'Contraste et couleurs optimisés automatiquement à chaque image',    color: '167,139,250' },
+            { icon: '⚡', titre: "Jusqu'à 5 photos à la fois", desc: 'Traitement simultané pour préparer tes annonces encore plus vite', color: '34,197,94' },
           ].map((f, i) => (
             <div key={i} style={{ background: `rgba(${f.color},.07)`, border: `1px solid rgba(${f.color},.22)`, borderRadius: '14px', padding: '24px 20px' }}>
               <div style={{ fontSize: '38px', marginBottom: '14px' }}>{f.icon}</div>
@@ -315,7 +398,7 @@ export default function PixGlow() {
           ))}
         </div>
 
-        {/* Avant / Après */}
+        {/* Avant/Après */}
         <div style={{ ...S.card(), maxWidth: '680px', margin: '0 auto 52px auto' }}>
           <p style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1.5px', margin: '0 0 18px 0', fontWeight: 600 }}>Exemple de résultat</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 36px 1fr', alignItems: 'center', gap: '12px' }}>
@@ -362,7 +445,7 @@ export default function PixGlow() {
             <p style={{ color: '#60a5fa', fontWeight: 700, fontSize: '22px', margin: '0 0 4px 0' }}>15€</p>
             <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 4px 0' }}>100 crédits · 0,15€/photo</p>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 16px 0' }}>Valables à vie</p>
-            <button onClick={() => setShowAuth(true)} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)', { width: '100%' })}>Acheter les crédits</button>
+            <button onClick={() => openAuth('register')} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)', { width: '100%' })}>Acheter les crédits</button>
           </div>
         </div>
         <p style={{ color: '#475569', fontSize: '14px' }}>
@@ -385,14 +468,14 @@ export default function PixGlow() {
         <h1 style={{ fontSize: isMobile ? '28px' : '36px', fontWeight: 800, marginBottom: '32px' }}>Centre d'aide</h1>
         <div style={S.card()}>
           {[
-            { q: "Combien de photos gratuites ?",     r: "5 photos gratuites par adresse IP, sans inscription ni carte bancaire." },
-            { q: "Combien de photos à la fois ?",     r: `Jusqu'à ${MAX_SIMULTANEOUS} photos simultanément. Elles sont traitées automatiquement les unes après les autres.` },
-            { q: "Quel tarif après l'essai ?",        r: "1 crédit = 1 photo = 0,15€. Le pack 100 crédits est à 15€, valable à vie." },
-            { q: "Mes crédits expirent-ils ?",        r: "Non. Vos crédits sont sauvegardés sur nos serveurs et ne disparaissent jamais." },
-            { q: "Quels formats sont acceptés ?",     r: "JPG, PNG, WEBP. Taille recommandée : moins de 10 Mo par photo." },
-            { q: "Est-ce adapté à Vinted ?",          r: "Oui, c'est la raison d'être de PixGlow. Les photos fond blanc augmentent significativement les clics et les ventes sur Vinted." },
-            { q: "Le paiement est-il sécurisé ?",    r: "Oui, 100%. Le paiement est traité par Stripe, le standard mondial de la sécurité bancaire en ligne." },
-            { q: "Comment contacter le support ?",   r: "Écrivez à support@pixglow.app — réponse garantie en moins de 24h." },
+            { q: "Combien de photos gratuites ?",    r: "5 photos gratuites par adresse IP, sans inscription ni carte bancaire." },
+            { q: "Combien de photos à la fois ?",    r: `Jusqu'à ${MAX_SIMULTANEOUS} photos simultanément. Elles sont traitées automatiquement les unes après les autres.` },
+            { q: "Quel tarif après l'essai ?",       r: "1 crédit = 1 photo = 0,15€. Le pack 100 crédits est à 15€, valable à vie." },
+            { q: "Mes crédits expirent-ils ?",       r: "Non. Vos crédits sont sauvegardés sur nos serveurs et ne disparaissent jamais." },
+            { q: "Quels formats sont acceptés ?",    r: "JPG, PNG, WEBP. Taille recommandée : moins de 10 Mo par photo." },
+            { q: "Est-ce adapté à Vinted ?",         r: "Oui, c'est la raison d'être de PixGlow. Les photos fond blanc augmentent significativement les clics et les ventes." },
+            { q: "Le paiement est-il sécurisé ?",   r: "Oui, 100%. Traitement par Stripe, le standard mondial de la sécurité bancaire en ligne." },
+            { q: "Comment contacter le support ?",  r: "Écrivez à support@pixglow.app — réponse garantie en moins de 24h." },
           ].map((faq, i, arr) => (
             <div key={i} style={{ paddingBottom: '20px', marginBottom: '20px', borderBottom: i < arr.length-1 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
               <h3 style={{ color: '#60a5fa', margin: '0 0 8px 0', fontSize: '16px', fontWeight: 700 }}>{faq.q}</h3>
@@ -407,13 +490,9 @@ export default function PixGlow() {
   /* ════════════════════════════════════════════
      APP
   ════════════════════════════════════════════ */
-  const doneCount    = results.filter(r => !r.error).length;
-  const hasResults   = results.length > 0;
-  const allDone      = hasResults && results.length === files.length;
-
   return (
     <div style={S.page}>
-      <AuthModal show={showAuth} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
+      <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
 
       <nav style={S.nav}>
         <h1 style={S.logo} onClick={() => setPage('landing')}>✨ PixGlow</h1>
@@ -422,9 +501,10 @@ export default function PixGlow() {
           {isConnected
             ? <button onClick={handleLogout} style={S.btn('#ef4444')}>Déconnexion</button>
             : <>
-                <button onClick={() => setShowAuth(true)} style={S.btn('rgba(51,65,85,0.8)', { border: '1px solid rgba(148,163,184,0.2)' })}>Connexion</button>
-                <button onClick={() => setPage('landing')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}>← Accueil</button>
-              </>}
+                <button onClick={() => openAuth('login')}    style={S.btn('rgba(51,65,85,0.8)', { border: '1px solid rgba(148,163,184,0.2)' })}>Connexion</button>
+                <button onClick={() => setPage('landing')}   style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}>← Accueil</button>
+              </>
+          }
         </div>
       </nav>
 
@@ -432,66 +512,88 @@ export default function PixGlow() {
 
         {/* ─ COMPTEUR ─ */}
         <div style={{
-          background: credits !== null ? 'linear-gradient(135deg,rgba(34,197,94,.13),rgba(34,197,94,.06))' : freeLeft > 0 ? 'linear-gradient(135deg,rgba(251,146,60,.13),rgba(251,146,60,.06))' : 'linear-gradient(135deg,rgba(239,68,68,.13),rgba(239,68,68,.06))',
-          border: `1px solid ${credits !== null ? 'rgba(34,197,94,.3)' : freeLeft > 0 ? 'rgba(251,146,60,.3)' : 'rgba(239,68,68,.3)'}`,
+          background: credits !== null
+            ? 'linear-gradient(135deg,rgba(34,197,94,.13),rgba(34,197,94,.06))'
+            : limitReached
+              ? 'linear-gradient(135deg,rgba(239,68,68,.13),rgba(239,68,68,.06))'
+              : 'linear-gradient(135deg,rgba(251,146,60,.13),rgba(251,146,60,.06))',
+          border: `1px solid ${credits !== null ? 'rgba(34,197,94,.3)' : limitReached ? 'rgba(239,68,68,.3)' : 'rgba(251,146,60,.3)'}`,
           borderRadius: '16px', padding: '20px', marginBottom: '18px', textAlign: 'center'
         }}>
           <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 600 }}>
-            {credits !== null ? 'Crédits disponibles' : 'Photos gratuites restantes'}
+            {isConnected ? 'Crédits disponibles' : 'Photos gratuites restantes'}
           </p>
-          <p style={{ fontSize: isMobile ? '40px' : '52px', fontWeight: 900, color: credits !== null ? '#22c55e' : freeLeft > 0 ? '#fb923c' : '#ef4444', margin: 0, lineHeight: 1 }}>
-            {credits !== null ? credits : `${freeLeft}/5`}
+          <p style={{ fontSize: isMobile ? '40px' : '52px', fontWeight: 900, margin: 0, lineHeight: 1,
+            color: isConnected ? '#22c55e' : limitReached ? '#ef4444' : '#fb923c' }}>
+            {isConnected
+              ? (credits === null ? '...' : credits)
+              : (freeLeft === null ? '...' : `${freeLeft}/5`)}
           </p>
+          {/* Alerte si limite atteinte */}
+          {limitReached && (
+            <div style={{ marginTop: '12px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '12px 16px' }}>
+              <p style={{ color: '#fca5a5', fontSize: '14px', margin: '0 0 10px 0', fontWeight: 600 }}>
+                🚫 Vos 5 photos gratuites ont été utilisées
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={() => openAuth('register')} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)', { padding: '10px 20px', fontSize: '14px' })}>
+                  🚀 Créer un compte
+                </button>
+                <button onClick={() => openAuth('login')} style={S.btn('rgba(51,65,85,0.8)', { padding: '10px 16px', fontSize: '14px', border: '1px solid rgba(148,163,184,0.2)' })}>
+                  J'ai déjà un compte
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* ─ UPLOAD ─ */}
+        {/* ─ ZONE UPLOAD ─ */}
         <div style={{ ...S.card(), marginBottom: '18px' }}>
-          {/* Input fichiers — MULTIPLE activé */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFilesChange}
-            style={{ display: 'none' }}
-          />
-          {/* Input caméra — UNIQUEMENT mobile, PAS de multiple (limitation hardware) */}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFilesChange}
-            style={{ display: 'none' }}
-          />
+          <input ref={fileInputRef}   type="file" accept="image/*" multiple              onChange={handleFilesChange} style={{ display: 'none' }} />
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFilesChange} style={{ display: 'none' }} />
 
-          {!allDone ? (
+          {!hasResults ? (
             <>
-              {/* Boutons sélection */}
+              {/* Boutons de sélection — désactivés si quota épuisé */}
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: previews.length ? '18px' : '0' }}>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{ background: 'rgba(59,130,246,.12)', border: '2px solid rgba(59,130,246,.4)', borderRadius: '12px', padding: '22px 12px', color: '#60a5fa', cursor: 'pointer', fontWeight: 700, fontSize: '16px' }}>
-                  📁 Choisir {isMobile ? '' : `jusqu'à ${MAX_SIMULTANEOUS} photos`}
+                  onClick={() => handleSelectClick(false)}
+                  disabled={limitReached && !isConnected}
+                  style={{
+                    background:  limitReached && !isConnected ? 'rgba(71,85,105,.3)' : 'rgba(59,130,246,.12)',
+                    border:      `2px solid ${limitReached && !isConnected ? 'rgba(71,85,105,.3)' : 'rgba(59,130,246,.4)'}`,
+                    borderRadius: '12px', padding: '22px 12px',
+                    color:       limitReached && !isConnected ? '#475569' : '#60a5fa',
+                    cursor:      limitReached && !isConnected ? 'not-allowed' : 'pointer',
+                    fontWeight: 700, fontSize: '16px'
+                  }}>
+                  📁 Choisir {!isMobile ? `jusqu'à ${MAX_SIMULTANEOUS} photos` : ''}
                 </button>
-                {/* Caméra : SEULEMENT sur mobile */}
+                {/* Caméra UNIQUEMENT mobile */}
                 {isMobile && (
                   <button
-                    onClick={() => cameraInputRef.current?.click()}
-                    style={{ background: 'rgba(167,139,250,.12)', border: '2px solid rgba(167,139,250,.4)', borderRadius: '12px', padding: '22px 12px', color: '#c4b5fd', cursor: 'pointer', fontWeight: 700, fontSize: '16px' }}>
+                    onClick={() => handleSelectClick(true)}
+                    disabled={limitReached && !isConnected}
+                    style={{
+                      background:  limitReached && !isConnected ? 'rgba(71,85,105,.3)' : 'rgba(167,139,250,.12)',
+                      border:      `2px solid ${limitReached && !isConnected ? 'rgba(71,85,105,.3)' : 'rgba(167,139,250,.4)'}`,
+                      borderRadius: '12px', padding: '22px 12px',
+                      color:       limitReached && !isConnected ? '#475569' : '#c4b5fd',
+                      cursor:      limitReached && !isConnected ? 'not-allowed' : 'pointer',
+                      fontWeight: 700, fontSize: '16px'
+                    }}>
                     📷 Prendre une photo
                   </button>
                 )}
               </div>
 
-              {/* Indication max — desktop seulement */}
-              {!isMobile && (
+              {!isMobile && !limitReached && (
                 <p style={{ color: '#475569', fontSize: '13px', textAlign: 'center', margin: '10px 0 0 0' }}>
                   Maximum {MAX_SIMULTANEOUS} photos simultanément · JPG, PNG, WEBP
                 </p>
               )}
 
-              {/* Grille de previews */}
+              {/* Previews */}
               {previews.length > 0 && (
                 <div style={{ marginTop: '18px' }}>
                   <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 12px 0', fontWeight: 600 }}>
@@ -501,7 +603,6 @@ export default function PixGlow() {
                     {previews.map((src, i) => (
                       <div key={i} style={{ position: 'relative' }}>
                         <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '8px', border: '2px solid rgba(59,130,246,.3)' }} />
-                        {/* Badge progression si en cours */}
                         {loading && i < progress && (
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(34,197,94,.25)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>✅</div>
                         )}
@@ -511,6 +612,7 @@ export default function PixGlow() {
                 </div>
               )}
 
+              {/* Erreur */}
               {error && (
                 <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', color: '#f87171', fontSize: '14px', textAlign: 'center' }}>
                   ⚠️ {error}
@@ -531,16 +633,19 @@ export default function PixGlow() {
                 </div>
               )}
 
-              <button
-                onClick={handleUpload}
-                disabled={!files.length || loading}
-                style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '12px', padding: '18px', fontSize: '18px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#3b82f6,#1d4ed8)' : 'rgba(71,85,105,.6)', color: '#fff' }}>
-                {loading
-                  ? `⏳ Photo ${progress}/${files.length} en cours...`
-                  : files.length
-                    ? `⚡ Améliorer ${files.length} photo${files.length > 1 ? 's' : ''}`
-                    : '← Sélectionnez des photos'}
-              </button>
+              {/* Bouton Améliorer */}
+              {!limitReached && (
+                <button
+                  onClick={handleUpload}
+                  disabled={!files.length || loading}
+                  style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '12px', padding: '18px', fontSize: '18px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#3b82f6,#1d4ed8)' : 'rgba(71,85,105,.6)', color: '#fff' }}>
+                  {loading
+                    ? `⏳ Photo ${progress}/${files.length} en cours...`
+                    : files.length
+                      ? `⚡ Améliorer ${files.length} photo${files.length > 1 ? 's' : ''}`
+                      : '← Sélectionnez des photos'}
+                </button>
+              )}
             </>
           ) : (
             /* ─ RÉSULTATS ─ */
@@ -570,7 +675,8 @@ export default function PixGlow() {
                         </p>
                         {r.error
                           ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.1)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>⚠️</div>
-                          : <img src={r.url} alt="Après" style={{ width: '100%', borderRadius: '6px', background: '#fff' }} />}
+                          : <img src={r.url} alt="Après" style={{ width: '100%', borderRadius: '6px', background: '#fff' }} />
+                        }
                       </div>
                     </div>
                     {!r.error && (
@@ -600,10 +706,12 @@ export default function PixGlow() {
               <strong style={{ color: '#e2e8f0' }}>100 photos à 15€ · Valables à vie · Paiement sécurisé</strong>
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => setShowAuth(true)} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)', { padding: '13px 30px', fontSize: '15px', boxShadow: '0 6px 20px rgba(59,130,246,.3)' })}>
+              {/* Ce bouton → directement sur S'inscrire */}
+              <button onClick={() => openAuth('register')} style={S.btn('linear-gradient(135deg,#3b82f6,#1d4ed8)', { padding: '13px 30px', fontSize: '15px', boxShadow: '0 6px 20px rgba(59,130,246,.3)' })}>
                 🚀 Créer mon compte gratuitement
               </button>
-              <button onClick={() => setShowAuth(true)} style={S.btn('rgba(51,65,85,0.8)', { padding: '13px 24px', fontSize: '15px', border: '1px solid rgba(148,163,184,0.2)' })}>
+              {/* Ce bouton → directement sur Se connecter */}
+              <button onClick={() => openAuth('login')} style={S.btn('rgba(51,65,85,0.8)', { padding: '13px 24px', fontSize: '15px', border: '1px solid rgba(148,163,184,0.2)' })}>
                 J'ai déjà un compte
               </button>
             </div>
