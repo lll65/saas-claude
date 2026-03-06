@@ -127,8 +127,13 @@ class AuthBody(BaseModel):
 # ─────────────────────────────────────────────
 #  UTILITAIRES
 # ─────────────────────────────────────────────
-def hash_password(p):    return pwd_context.hash(p)
-def verify_password(p, h): return pwd_context.verify(p, h)
+def _truncate(p: str) -> str:
+    """bcrypt accepte max 72 bytes — on tronque silencieusement"""
+    encoded = p.encode("utf-8")
+    return encoded[:72].decode("utf-8", errors="ignore")
+
+def hash_password(p: str) -> str:    return pwd_context.hash(_truncate(p))
+def verify_password(p: str, h: str) -> bool: return pwd_context.verify(_truncate(p), h)
 
 def create_token(email: str) -> str:
     expire = datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS)
