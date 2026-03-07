@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { MentionsLegales, PolitiqueConfidentialite, CGV } from './LegalPages';
 
 const API_URL = "https://web-production-f1129.up.railway.app";
 const MAX_SIMULTANEOUS = 5;
@@ -222,6 +223,26 @@ export default function PixGlow() {
   const doneCount  = results.filter(r => !r.error).length;
   const hasResults = results.length > 0 && results.length === files.length && !loading;
 
+  /* ── Pages légales ── */
+  if (page === 'mentions')       return <MentionsLegales onBack={() => setPage('landing')} />;
+  if (page === 'confidentialite') return <PolitiqueConfidentialite onBack={() => setPage('landing')} />;
+  if (page === 'cgv')            return <CGV onBack={() => setPage('landing')} />;
+
+  /* Footer légal réutilisable */
+  const Footer = () => (
+    <div style={{ textAlign: 'center', padding: '32px 16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '24px' }}>
+      <p style={{ color: '#334155', fontSize: '12px', margin: '0 0 8px 0' }}>© {new Date().getFullYear()} PixGlow — Tous droits réservés</p>
+      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {[['mentions','Mentions légales'],['cgv','CGV'],['confidentialite','Confidentialité'],['help','Aide']].map(([p, label]) => (
+          <button key={p} onClick={() => setPage(p)}
+            style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline', padding: 0 }}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   /* ════════════════ LANDING ════════════════ */
   if (page === 'landing') return (
     <div style={S.page}>
@@ -324,6 +345,7 @@ export default function PixGlow() {
           Des questions ? <button onClick={() => setPage('help')} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px' }}>Centre d'aide</button>
         </p>
       </div>
+      <Footer />
     </div>
   );
 
@@ -505,6 +527,7 @@ export default function PixGlow() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

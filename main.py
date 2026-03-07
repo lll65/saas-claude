@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
-import os, uuid, json
+import os, uuid, json, time
 from io import BytesIO
 from PIL import Image, ImageEnhance
 import stripe
@@ -15,6 +15,8 @@ from rembg import remove
 import bcrypt as _bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from collections import defaultdict
+import threading
 
 load_dotenv()
 
@@ -29,10 +31,11 @@ ALGORITHM             = "HS256"
 TOKEN_EXPIRE_DAYS     = 30
 FREE_IMAGES_PER_IP    = 5
 UPLOAD_DIR            = "output"
+MAX_FILE_SIZE_MB      = 15
+ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp"}
+IMAGE_TTL_HOURS       = 24  # supprime les images après 24h
 
-# ── Correction DATABASE_URL : Railway utilise parfois "postgres://"
-# ── mais psycopg2 exige "postgresql://"
-_raw_db_url = os.getenv("DATABASE_URL", "")
+_raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -40,110 +43,129 @@ stripe.api_key = STRIPE_SECRET_KEY
 security = HTTPBearer(auto_error=False)
 
 # ─────────────────────────────────────────────
-#  APP  (CORS EN PREMIER — TOUJOURS)
+#  RATE LIMITER simple en mémoire
 # ─────────────────────────────────────────────
-app = FastAPI(title="PixGlow API", version="2.2")
+_rate_store: dict = defaultdict(list)
+_rate_lock         = threading.Lock()
+
+def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
+    """Bloque une IP si elle dépasse max_calls requêtes dans window_sec."""
+    now = time.time()
+    with _rate_lock:
+        calls = [t for t in _rate_store[ip] if now - t < window_sec]
+        if len(calls) >= max_calls:
+            raise HTTPException(429, "Trop de requêtes. Attendez 1 minute et réessayez.")
+        calls.append(now)
+        _rate_store[ip] = calls
+
+# ─────────────────────────────────────────────
+#  APP + CORS (origine exacte, pas "*")
+# ─────────────────────────────────────────────
+app = FastAPI(title="PixGlow API", version="2.3")
+
+CORS_ORIGINS = [
+    "https://www.pixglow.app",
+    "https://pixglow.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
+CORS_HEADERS = {"Access-Control-Allow-Origin": "https://www.pixglow.app"}
+
 # ─────────────────────────────────────────────
-#  HANDLERS D'ERREUR — renvoient toujours CORS
+#  HANDLERS D'ERREUR
 # ─────────────────────────────────────────────
 @app.exception_handler(Exception)
 async def global_exc(request: Request, exc: Exception):
     print(f"[ERREUR] {type(exc).__name__}: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Erreur serveur: {str(exc)}"},
-        headers={"Access-Control-Allow-Origin": "*"},
-    )
+    return JSONResponse(status_code=500, content={"detail": f"Erreur serveur: {str(exc)}"}, headers=CORS_HEADERS)
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exc(request: Request, exc: StarletteHTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-        headers={"Access-Control-Allow-Origin": "*"},
-    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=CORS_HEADERS)
 
 # ─────────────────────────────────────────────
-#  POSTGRESQL — connexion à la demande
+#  POSTGRESQL
 # ─────────────────────────────────────────────
 def get_db():
     if not DATABASE_URL:
-        raise HTTPException(503, "DATABASE_URL manquante. Ajoutez-la dans les variables Railway.")
+        raise HTTPException(503, "DATABASE_URL manquante dans les variables Railway.")
     try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        return conn
+        return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     except psycopg2.OperationalError as e:
-        print(f"[DB] Connexion impossible: {e}")
-        raise HTTPException(503, f"Base de données inaccessible: {str(e)}")
+        raise HTTPException(503, f"Base de données inaccessible: {e}")
 
-# ── Init tables au démarrage — NE PLANTE PAS l'app si ça échoue
 @app.on_event("startup")
 async def startup_event():
-    print(f"[STARTUP] DATABASE_URL présente: {'OUI' if DATABASE_URL else 'NON'}")
-    print(f"[STARTUP] DATABASE_URL commence par: {DATABASE_URL[:30] if DATABASE_URL else 'VIDE'}")
+    print(f"[STARTUP] PixGlow v2.3 — DB: {'OK' if DATABASE_URL else 'MANQUANTE'}")
     try:
-        conn = get_db()
-        cur  = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id            SERIAL PRIMARY KEY,
-                email         TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                credits       INTEGER DEFAULT 0,
-                created_at    TIMESTAMP DEFAULT NOW()
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS ip_usage (
-                ip    TEXT PRIMARY KEY,
-                count INTEGER DEFAULT 0
-            )
-        """)
-        conn.commit()
-        cur.close(); conn.close()
-        print("[STARTUP] ✅ Tables créées / vérifiées")
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL, credits INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS ip_usage (
+            ip TEXT PRIMARY KEY, count INTEGER DEFAULT 0
+        )""")
+        conn.commit(); cur.close(); conn.close()
+        print("[STARTUP] ✅ Tables OK")
     except Exception as e:
-        # L'app démarre quand même — les routes renverront 503 si la DB est absente
-        print(f"[STARTUP] ⚠️  DB non disponible au démarrage: {e}")
+        print(f"[STARTUP] ⚠️ DB: {e}")
+    # Lance le nettoyage automatique des images
+    _schedule_cleanup()
 
 # ─────────────────────────────────────────────
-#  SCHEMAS
+#  NETTOYAGE AUTO DES IMAGES (toutes les 6h)
+# ─────────────────────────────────────────────
+def _cleanup_images():
+    cutoff = time.time() - IMAGE_TTL_HOURS * 3600
+    try:
+        for fname in os.listdir(UPLOAD_DIR):
+            fpath = os.path.join(UPLOAD_DIR, fname)
+            if os.path.isfile(fpath) and os.path.getmtime(fpath) < cutoff:
+                os.remove(fpath)
+        print(f"[CLEANUP] Images > {IMAGE_TTL_HOURS}h supprimées")
+    except Exception as e:
+        print(f"[CLEANUP] Erreur: {e}")
+
+def _schedule_cleanup():
+    def loop():
+        while True:
+            time.sleep(6 * 3600)
+            _cleanup_images()
+    t = threading.Thread(target=loop, daemon=True)
+    t.start()
+
+# ─────────────────────────────────────────────
+#  UTILITAIRES AUTH
 # ─────────────────────────────────────────────
 class AuthBody(BaseModel):
     email: str
     password: str
 
-# ─────────────────────────────────────────────
-#  UTILITAIRES
-# ─────────────────────────────────────────────
 def hash_password(p: str) -> str:
-    # bcrypt limite à 72 bytes — on tronque avant
-    raw = p.encode("utf-8")[:72]
-    return _bcrypt.hashpw(raw, _bcrypt.gensalt(12)).decode("utf-8")
+    return _bcrypt.hashpw(p.encode("utf-8")[:72], _bcrypt.gensalt(12)).decode()
 
 def verify_password(p: str, h: str) -> bool:
-    raw = p.encode("utf-8")[:72]
-    return _bcrypt.checkpw(raw, h.encode("utf-8"))
+    return _bcrypt.checkpw(p.encode("utf-8")[:72], h.encode())
 
 def create_token(email: str) -> str:
-    expire = datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS)
-    return jwt.encode({"sub": email, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+    exp = datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS)
+    return jwt.encode({"sub": email, "exp": exp}, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not credentials: return None
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("sub")
+        return jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
     except JWTError:
         return None
 
@@ -151,85 +173,73 @@ def get_ip_count(ip: str) -> int:
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
-        row = cur.fetchone()
-        cur.close(); conn.close()
+        row = cur.fetchone(); cur.close(); conn.close()
         return row["count"] if row else 0
-    except Exception:
-        return 0
+    except: return 0
 
-def increment_ip(ip: str) -> tuple:
+def increment_ip(ip: str):
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
     row = cur.fetchone()
-    if row is None:
+    if not row:
         cur.execute("INSERT INTO ip_usage (ip, count) VALUES (%s, 1)", (ip,))
-        conn.commit(); cur.close(); conn.close()
-        return True, 1
+        conn.commit(); cur.close(); conn.close(); return True, 1
     count = row["count"]
     if count >= FREE_IMAGES_PER_IP:
-        cur.close(); conn.close()
-        return False, count
+        cur.close(); conn.close(); return False, count
     cur.execute("UPDATE ip_usage SET count = count + 1 WHERE ip = %s", (ip,))
-    conn.commit(); cur.close(); conn.close()
-    return True, count + 1
+    conn.commit(); cur.close(); conn.close(); return True, count + 1
 
 # ─────────────────────────────────────────────
 #  ROUTES
 # ─────────────────────────────────────────────
-
 @app.get("/")
 def root():
-    return {
-        "status": "ok",
-        "version": "2.2",
-        "db_url_set": bool(DATABASE_URL),
-        "db_url_prefix": DATABASE_URL[:20] if DATABASE_URL else "VIDE"
-    }
+    return {"status": "ok", "version": "2.3", "db": bool(DATABASE_URL)}
 
 @app.get("/health")
 def health():
-    """Vérifie que la DB répond"""
     try:
         conn = get_db(); cur = conn.cursor()
-        cur.execute("SELECT 1")
-        cur.close(); conn.close()
-        return {"status": "ok", "db": "connected"}
+        cur.execute("SELECT COUNT(*) as n FROM users")
+        n = cur.fetchone()["n"]; cur.close(); conn.close()
+        return {"status": "ok", "db": "connected", "users": n}
     except Exception as e:
         return JSONResponse({"status": "error", "db": str(e)}, status_code=503)
 
 @app.get("/free-remaining")
 async def free_remaining(request: Request):
-    ip        = request.client.host
-    used      = get_ip_count(ip)
-    remaining = max(0, FREE_IMAGES_PER_IP - used)
-    return {"remaining": remaining, "used": used, "max": FREE_IMAGES_PER_IP}
+    ip = request.client.host
+    used = get_ip_count(ip)
+    return {"remaining": max(0, FREE_IMAGES_PER_IP - used), "used": used, "max": FREE_IMAGES_PER_IP}
 
 @app.post("/register")
-async def register(body: AuthBody):
-    if "@" not in body.email or "." not in body.email.split("@")[-1]:
+async def register(body: AuthBody, request: Request):
+    # Rate limit : max 5 inscriptions par IP par heure
+    rate_limit(request.client.host, max_calls=5, window_sec=3600)
+    email = body.email.strip().lower()
+    if "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(400, "Email invalide")
     if len(body.password) < 6:
         raise HTTPException(400, "Mot de passe trop court (minimum 6 caractères)")
-    email = body.email.strip().lower()
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT id FROM users WHERE email = %s", (email,))
     if cur.fetchone():
         cur.close(); conn.close()
         raise HTTPException(400, "Cet email est déjà utilisé. Essayez de vous connecter.")
-    cur.execute(
-        "INSERT INTO users (email, password_hash, credits) VALUES (%s, %s, 0)",
-        (email, hash_password(body.password))
-    )
+    cur.execute("INSERT INTO users (email, password_hash, credits) VALUES (%s, %s, 0)",
+                (email, hash_password(body.password)))
     conn.commit(); cur.close(); conn.close()
     return {"status": "success", "token": create_token(email), "credits": 0}
 
 @app.post("/login")
-async def login(body: AuthBody):
+async def login(body: AuthBody, request: Request):
+    # Rate limit : max 10 tentatives par IP par 10 minutes
+    rate_limit(request.client.host, max_calls=10, window_sec=600)
     email = body.email.strip().lower()
-    conn  = get_db(); cur = conn.cursor()
+    conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cur.fetchone()
-    cur.close(); conn.close()
+    user = cur.fetchone(); cur.close(); conn.close()
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(401, "Email ou mot de passe incorrect")
     return {"status": "success", "token": create_token(email), "credits": user["credits"]}
@@ -239,8 +249,7 @@ async def get_me(current_user: str = Depends(get_current_user)):
     if not current_user: raise HTTPException(401, "Non authentifié")
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
-    user = cur.fetchone()
-    cur.close(); conn.close()
+    user = cur.fetchone(); cur.close(); conn.close()
     if not user: raise HTTPException(404, "Utilisateur introuvable")
     return {"email": current_user, "credits": user["credits"]}
 
@@ -250,6 +259,15 @@ async def enhance_photo(
     request: Request = None,
     current_user: str = Depends(get_current_user)
 ):
+    # ── Validation du fichier
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"Format non supporté ({file.content_type}). Utilisez JPG, PNG ou WEBP.")
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(400, f"Fichier trop lourd (max {MAX_FILE_SIZE_MB} Mo).")
+
+    # Vérification crédits / quota IP
     conn = get_db(); cur = conn.cursor()
     if current_user:
         cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
@@ -264,8 +282,10 @@ async def enhance_photo(
             raise HTTPException(429, f"Limite gratuite atteinte ({used}/{FREE_IMAGES_PER_IP}). Créez un compte pour continuer.")
 
     try:
-        contents = await file.read()
         orig = Image.open(BytesIO(contents))
+        # Convertir en RGB si nécessaire
+        if orig.mode not in ("RGB", "RGBA"):
+            orig = orig.convert("RGB")
         w, h = orig.size
         tmp  = orig.copy()
         if w > 2000 or h > 2000:
@@ -296,14 +316,14 @@ async def enhance_photo(
     except Exception as e:
         cur.close(); conn.close()
         print(f"[ERREUR enhance] {e}")
-        raise HTTPException(500, f"Erreur traitement: {str(e)}")
+        raise HTTPException(500, f"Erreur traitement image: {str(e)}")
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
-    filename = os.path.basename(filename)
+    filename = os.path.basename(filename)  # sécurité anti path-traversal
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
-        raise HTTPException(404, "Image introuvable")
+        raise HTTPException(404, "Image introuvable ou expirée")
     return FileResponse(filepath, media_type="image/png")
 
 @app.post("/create-checkout-session")
@@ -314,7 +334,10 @@ async def create_checkout_session(current_user: str = Depends(get_current_user))
             customer_email=current_user,
             payment_method_types=["card"],
             mode="payment",
-            line_items=[{"price_data": {"currency": "eur", "product_data": {"name": "100 Crédits PixGlow"}, "unit_amount": 1500}, "quantity": 1}],
+            line_items=[{"price_data": {"currency": "eur",
+                "product_data": {"name": "100 Crédits PixGlow",
+                    "description": "1 crédit = 1 photo avec fond blanc. Valables à vie."},
+                "unit_amount": 1500}, "quantity": 1}],
             success_url=f"{FRONTEND_URL}/?payment=success",
             cancel_url=f"{FRONTEND_URL}/?payment=cancel",
             metadata={"email": current_user}
@@ -327,20 +350,29 @@ async def create_checkout_session(current_user: str = Depends(get_current_user))
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig     = request.headers.get("stripe-signature")
-    if STRIPE_WEBHOOK_SECRET:
-        try:   event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
-        except: return JSONResponse({"error": "Signature invalide"}, status_code=400)
-    else:
-        try:   event = json.loads(payload)
-        except: return JSONResponse({"error": "Payload invalide"}, status_code=400)
+    # ── Webhook OBLIGATOIREMENT vérifié en production
+    if not STRIPE_WEBHOOK_SECRET:
+        return JSONResponse({"error": "STRIPE_WEBHOOK_SECRET non configuré"}, status_code=500)
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+    except stripe.error.SignatureVerificationError:
+        print("[WEBHOOK] ❌ Signature invalide — tentative de fraude ?")
+        return JSONResponse({"error": "Signature invalide"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
     if event["type"] == "checkout.session.completed":
         obj   = event["data"]["object"]
         email = (obj.get("customer_email") or obj.get("metadata", {}).get("email", "")).strip().lower()
         if email:
-            conn = get_db(); cur = conn.cursor()
-            cur.execute("UPDATE users SET credits = credits + 100 WHERE email = %s", (email,))
-            conn.commit(); cur.close(); conn.close()
-            print(f"[WEBHOOK] ✅ 100 crédits → {email}")
+            try:
+                conn = get_db(); cur = conn.cursor()
+                cur.execute("UPDATE users SET credits = credits + 100 WHERE email = %s RETURNING credits", (email,))
+                result = cur.fetchone()
+                conn.commit(); cur.close(); conn.close()
+                print(f"[WEBHOOK] ✅ 100 crédits → {email} (total: {result['credits'] if result else '?'})")
+            except Exception as e:
+                print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
 
 if __name__ == "__main__":
