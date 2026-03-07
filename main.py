@@ -71,17 +71,10 @@ def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
 # ─────────────────────────────────────────────
 app = FastAPI(title="PixGlow API", version="2.3")
 
-CORS_ORIGINS = [
-    "https://www.pixglow.app",
-    "https://pixglow.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
