@@ -1,5 +1,80 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MentionsLegales, PolitiqueConfidentialite, CGV } from './LegalPages';
+
+/* ─── PAGES LÉGALES (intégrées directement) ─── */
+const LS = {
+  page: { background: 'linear-gradient(135deg,#0a0a0f,#111118)', minHeight: '100vh', color: '#e2e8f0', fontFamily: "'DM Sans',system-ui,sans-serif" },
+  nav:  { padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.05)', background: 'rgba(10,10,15,.95)', position: 'sticky', top: 0, zIndex: 100 },
+  logo: { fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: '#fff' },
+  wrap: { maxWidth: '760px', margin: '0 auto', padding: '40px 20px' },
+  h1:   { fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '32px', fontWeight: 800, color: '#fff', marginBottom: '6px' },
+  h2:   { fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 700, color: '#7c3aed', margin: '28px 0 8px' },
+  p:    { color: '#64748b', lineHeight: 1.8, fontSize: '15px', marginBottom: '12px' },
+  back: { background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: '14px', fontFamily: 'inherit' },
+};
+const LegalLayout = ({ title, onBack, children }) => (
+  <div style={LS.page}>
+    <nav style={LS.nav}>
+      <span style={LS.logo}>✨ PixGlow</span>
+      <button onClick={onBack} style={LS.back}>← Retour</button>
+    </nav>
+    <div style={LS.wrap}>
+      <h1 style={LS.h1}>{title}</h1>
+      <p style={{ ...LS.p, fontSize: '13px', color: '#334155', marginBottom: '28px' }}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</p>
+      {children}
+    </div>
+  </div>
+);
+function MentionsLegales({ onBack }) {
+  return (
+    <LegalLayout title="Mentions légales" onBack={onBack}>
+      <h2 style={LS.h2}>Éditeur du site</h2>
+      <p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p>
+      <h2 style={LS.h2}>Hébergement</h2>
+      <p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p>
+      <h2 style={LS.h2}>Propriété intellectuelle</h2>
+      <p style={LS.p}>L'ensemble du contenu de PixGlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p>
+      <h2 style={LS.h2}>Traitement des paiements</h2>
+      <p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. PixGlow ne stocke aucune donnée bancaire.</p>
+      <h2 style={LS.h2}>Responsabilité</h2>
+      <p style={LS.p}>PixGlow ne saurait être tenu responsable des dommages liés à l'utilisation du service. Le service est fourni "en l'état", sans garantie de disponibilité continue.</p>
+    </LegalLayout>
+  );
+}
+function PolitiqueConfidentialite({ onBack }) {
+  return (
+    <LegalLayout title="Politique de confidentialité" onBack={onBack}>
+      <p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD — Règlement Général sur la Protection des Données</p>
+      <h2 style={LS.h2}>Données collectées</h2>
+      <p style={LS.p}>Lors de la création d'un compte : adresse email, mot de passe (chiffré), adresse IP (quota gratuit), images uploadées (supprimées après 24h).</p>
+      <h2 style={LS.h2}>Finalité du traitement</h2>
+      <p style={LS.p}>Gestion de votre compte et crédits · Traitement des paiements via Stripe · Prévention des abus</p>
+      <h2 style={LS.h2}>Durée de conservation</h2>
+      <p style={LS.p}>Données de compte : conservées tant que le compte est actif · Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées après 24 heures</strong> · Données IP : 30 jours</p>
+      <h2 style={LS.h2}>Partage des données</h2>
+      <p style={LS.p}>Nous ne vendons jamais vos données. Partagées uniquement avec <strong style={{ color: '#e2e8f0' }}>Stripe</strong> (paiements) et <strong style={{ color: '#e2e8f0' }}>Railway</strong> (hébergement).</p>
+      <h2 style={LS.h2}>Vos droits (RGPD)</h2>
+      <p style={LS.p}>Accès, rectification, effacement et portabilité de vos données. Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p>
+      <h2 style={LS.h2}>Cookies</h2>
+      <p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement pour maintenir votre session.</p>
+    </LegalLayout>
+  );
+}
+function CGV({ onBack }) {
+  return (
+    <LegalLayout title="Conditions Générales de Vente" onBack={onBack}>
+      <h2 style={LS.h2}>Service proposé</h2>
+      <p style={LS.p}>PixGlow est un service de traitement automatique d'images (suppression du fond, amélioration luminosité) destiné aux vendeurs de plateformes e-commerce.</p>
+      <h2 style={LS.h2}>Tarifs</h2>
+      <p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 images par adresse IP, sans inscription.<br/><strong style={{ color: '#e2e8f0' }}>Pack Pro :</strong> 100 crédits pour 15€ TTC (0,15€/image). Crédits valables à vie et non remboursables une fois utilisés.</p>
+      <h2 style={LS.h2}>Paiement</h2>
+      <p style={LS.p}>Paiement en une seule fois, par carte bancaire, via Stripe. Les crédits sont ajoutés immédiatement après confirmation du paiement.</p>
+      <h2 style={LS.h2}>Droit de rétractation</h2>
+      <p style={LS.p}>Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux contenus numériques dont l'exécution a commencé. Les crédits non utilisés peuvent être remboursés dans les 14 jours à <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a>.</p>
+      <h2 style={LS.h2}>Litiges</h2>
+      <p style={LS.p}>En cas de litige, contactez-nous d'abord. À défaut d'accord amiable, les tribunaux français sont compétents. Droit applicable : droit français.</p>
+    </LegalLayout>
+  );
+}
 
 const API_URL = "https://web-production-f1129.up.railway.app";
 const MAX_SIMULTANEOUS = 5;
