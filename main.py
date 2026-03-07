@@ -14,6 +14,14 @@ from dotenv import load_dotenv
 from rembg import remove
 import bcrypt as _bcrypt
 from jose import JWTError, jwt
+
+# Support HEIC/HEIF (photos iPhone)
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    print("[STARTUP] ✅ HEIC/HEIF supporté")
+except ImportError:
+    print("[STARTUP] ⚠️ pillow-heif non installé — HEIC non supporté")
 from datetime import datetime, timedelta
 from collections import defaultdict
 import threading
@@ -32,7 +40,7 @@ TOKEN_EXPIRE_DAYS     = 30
 FREE_IMAGES_PER_IP    = 5
 UPLOAD_DIR            = "output"
 MAX_FILE_SIZE_MB      = 15
-ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 IMAGE_TTL_HOURS       = 24  # supprime les images après 24h
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
@@ -283,27 +291,47 @@ async def enhance_photo(
 
     try:
         orig = Image.open(BytesIO(contents))
-        # Convertir en RGB si nécessaire
+        # Convertir en RGB si nécessaire (HEIC, RGBA, palette...)
         if orig.mode not in ("RGB", "RGBA"):
-            orig = orig.convert("RGB")
+            orig = orig.convert("RGBA" if "transparency" in orig.info else "RGB")
+
         w, h = orig.size
-        tmp  = orig.copy()
-        if w > 2000 or h > 2000:
-            tmp.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
-        img = remove(tmp)
-        if img.size != (w, h):
-            img = img.resize((w, h), Image.Resampling.LANCZOS)
-        pad    = 90
+
+        # Pour rembg : on travaille sur une version max 1500px (plus rapide)
+        # mais on garde l'original pour le résultat final en haute qualité
+        PROCESS_MAX = 1500
+        if w > PROCESS_MAX or h > PROCESS_MAX:
+            scale = PROCESS_MAX / max(w, h)
+            proc_w, proc_h = int(w * scale), int(h * scale)
+            tmp = orig.resize((proc_w, proc_h), Image.Resampling.LANCZOS)
+        else:
+            tmp = orig.copy()
+            proc_w, proc_h = w, h
+
+        # Suppression du fond
+        no_bg = remove(tmp)
+
+        # Remettre à la taille originale si on avait réduit
+        if (proc_w, proc_h) != (w, h):
+            no_bg = no_bg.resize((w, h), Image.Resampling.LANCZOS)
+
+        # Fond blanc avec padding proportionnel (5% de chaque côté)
+        pad = max(40, int(min(w, h) * 0.05))
         canvas = Image.new("RGBA", (w + pad*2, h + pad*2), (255, 255, 255, 255))
-        canvas.paste(img, (pad, pad), img)
+        canvas.paste(no_bg, (pad, pad), no_bg if no_bg.mode == "RGBA" else None)
         bg = Image.new("RGB", canvas.size, (255, 255, 255))
         bg.paste(canvas, (0, 0), canvas)
-        bg = ImageEnhance.Brightness(bg).enhance(1.10)
-        bg = ImageEnhance.Contrast(bg).enhance(1.10)
+
+        # Améliorations légères
+        bg = ImageEnhance.Brightness(bg).enhance(1.08)
+        bg = ImageEnhance.Contrast(bg).enhance(1.08)
         bg = ImageEnhance.Color(bg).enhance(1.05)
         bg = ImageEnhance.Sharpness(bg).enhance(1.05)
+
         filename = f"{uuid.uuid4()}.png"
-        bg.save(os.path.join(UPLOAD_DIR, filename), "PNG", quality=95)
+        # Qualité maximale — pas de compression agressive
+        bg.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
+
         credits_left = None
         if current_user:
             cur.execute("UPDATE users SET credits = credits - 1 WHERE email = %s RETURNING credits", (current_user,))
