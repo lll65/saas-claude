@@ -146,29 +146,18 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{
-            role: "user",
-            content: `Tu es un expert en vente sur Vinted et Leboncoin. Génère pour une annonce de vêtement/accessoire occasion sur fond blanc :
-1. Un titre accrocheur max 60 caractères (style Vinted, pas de majuscules inutiles)
-2. Une description 150-250 caractères avec emojis (style vendeur Vinted, mentionne l'état, le style, pourquoi c'est une bonne affaire)
-3. 10 hashtags pertinents séparés par des espaces (ex: #vintedfrançais #modeoccasion etc.)
-4. Un score "potentiel vues" entre 60 et 98 (entier)
-
-Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
-{"titre":"...","description":"...","hashtags":"#tag1 #tag2 ...","score":85}`
-          }]
-        })
+      const token = localStorage.getItem('pg_token');
+      const response = await fetch(`${API_URL}/generate-description`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ image_url: imageUrl })
       });
+      if (!response.ok) throw new Error('API error');
       const data = await response.json();
-      const text = data.content?.map(i => i.text || '').join('') || '';
-      const parsed = JSON.parse(text.trim());
-      setResult(parsed);
+      setResult(data);
     } catch (e) {
       setError("Erreur génération. Réessaie !");
     }
@@ -474,9 +463,9 @@ export default function PixGlow() {
           <>
             {isConnected ? (
               <>
-                {credits !== null && <span style={{ background: 'rgba(124,58,237,.15)', color: '#a78bfa', padding: '4px 12px', borderRadius: '100px', fontWeight: 700, fontSize: '13px' }}>💎 {credits} crédits</span>}
-                <button onClick={handlePayment} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>+ Crédits</button>
-                <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Déco</button>
+                {credits !== null && !isMobile && <span style={{ background: 'rgba(124,58,237,.15)', color: '#a78bfa', padding: '4px 12px', borderRadius: '100px', fontWeight: 700, fontSize: '13px' }}>💎 {credits} crédits</span>}
+                <button onClick={handlePayment} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{isMobile ? '+ Crédits' : '+ Crédits'}</button>
+                <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Déco' : 'Déconnexion'}</button>
               </>
             ) : (
               <>
@@ -574,7 +563,7 @@ export default function PixGlow() {
           <BeforeAfterSlider
             beforeSrc="https://images.unsplash.com/photo-1558171813-1e08d2e1f9b8?w=800&q=80"
             afterSrc="https://images.unsplash.com/photo-1558171813-1e08d2e1f9b8?w=800&q=80&sat=-100&brightness=1.2"
-            beforeLabel="Fond canapé"
+            beforeLabel="Fond encombré"
             afterLabel="Fond blanc PixGlow"
             height={isMobile ? 260 : 340}
           />
@@ -589,10 +578,10 @@ export default function PixGlow() {
           {/* AI Boost preview */}
           <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px' }}>
             <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>🤖 Description AI générée automatiquement</p>
-            <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Robe midi fleurie vintage — état impeccable ✨</p>
-            <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>✨ Robe fleurie vintage taille 38 en parfait état ! Couleurs éclatantes, tissu fluide. Portée 2x. Idéal printemps 🌸 Expédition rapide 📦</p>
+            <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Veste zippée vintage — comme neuve ✨</p>
+            <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>🧥 Veste zippée taille M en parfait état ! Coupe moderne, très bon état. Portée 3x. Idéal hiver/mi-saison 🍂 Expédition rapide 📦</p>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {['#robevintage','#modedurable','#vintedfrançais','#occasionparis','#robefleurie'].map((t,i) => (
+              {['#veste','#vintedfrançais','#modeoccasion','#jacketvintage','#modeautomne'].map((t,i) => (
                 <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>
               ))}
             </div>
@@ -766,7 +755,10 @@ export default function PixGlow() {
                 <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '21px', fontWeight: 700, marginBottom: '6px', color: '#e2e8f0' }}>{limitReached ? 'Limite atteinte' : "Choisir jusqu'à 5 photos"}</p>
                 <p style={{ color: '#334155', fontSize: '13px', marginBottom: limitReached ? 0 : '14px' }}>{limitReached ? 'Créez un compte pour continuer' : 'JPG · PNG · WEBP · HEIC · Glissez vos photos ici'}</p>
                 {!limitReached && isMobile && (
-                  <button onClick={e => { e.stopPropagation(); handleSelectClick(true); }} style={{ marginTop: '4px', background: 'rgba(124,58,237,.12)', border: '1px solid rgba(124,58,237,.25)', color: '#a78bfa', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📷 Prendre une photo</button>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '4px' }}>
+                    <button onClick={e => { e.stopPropagation(); handleSelectClick(false); }} style={{ background: 'rgba(124,58,237,.12)', border: '1px solid rgba(124,58,237,.25)', color: '#a78bfa', borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>🖼️ Galerie</button>
+                    <button onClick={e => { e.stopPropagation(); handleSelectClick(true); }} style={{ background: 'rgba(124,58,237,.12)', border: '1px solid rgba(124,58,237,.25)', color: '#a78bfa', borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📷 Appareil photo</button>
+                  </div>
                 )}
               </div>
 
@@ -859,7 +851,7 @@ export default function PixGlow() {
         ) : (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <button onClick={handlePayment} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '14px', padding: isMobile ? '16px 32px' : '18px 52px', fontWeight: 800, fontSize: isMobile ? '17px' : '19px', cursor: 'pointer', fontFamily: 'inherit' }}>💳 Acheter 100 crédits — 15€</button>
-            <p style={{ color: '#1a1a2e', fontSize: '12px', marginTop: '10px' }}>1 crédit = 1 photo + description AI = 0,15€ · Valables à vie · 🔒 Paiement sécurisé</p>
+            <p style={{ color: '#64748b', fontSize: '12px', marginTop: '10px' }}>1 crédit = 1 photo + description AI = 0,15€ · Valables à vie · 🔒 Paiement sécurisé</p>
           </div>
         )}
       </div>

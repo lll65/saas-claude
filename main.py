@@ -10,6 +10,7 @@ from PIL import Image, ImageEnhance
 import stripe
 import psycopg2
 import psycopg2.extras
+import httpx
 from dotenv import load_dotenv
 from rembg import remove
 import bcrypt as _bcrypt
@@ -42,6 +43,7 @@ UPLOAD_DIR            = "output"
 MAX_FILE_SIZE_MB      = 15
 ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 IMAGE_TTL_HOURS       = 24  # supprime les images après 24h
+ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY", "")
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -190,6 +192,9 @@ def increment_ip(ip: str):
         cur.close(); conn.close(); return False, count
     cur.execute("UPDATE ip_usage SET count = count + 1 WHERE ip = %s", (ip,))
     conn.commit(); cur.close(); conn.close(); return True, count + 1
+
+class DescriptionRequest(BaseModel):
+    image_url: str = ""
 
 # ─────────────────────────────────────────────
 #  ROUTES
@@ -395,6 +400,57 @@ async def stripe_webhook(request: Request):
             except Exception as e:
                 print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
+
+@app.post("/generate-description")
+async def generate_description(
+    body: DescriptionRequest,
+    current_user: str = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(401, "Connexion requise pour générer une description AI")
+
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(503, "ANTHROPIC_API_KEY manquante")
+
+    prompt = """Tu es un expert en vente sur Vinted et Leboncoin. Génère :
+1. Un titre accrocheur max 60 caractères
+2. Une description 150-250 caractères avec emojis
+3. 10 hashtags
+4. Un score potentiel vues entre 60 et 98
+
+Réponds uniquement en JSON :
+{"titre":"...","description":"...","hashtags":"#tag1 #tag2","score":85}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-3-haiku-20240307",
+                    "max_tokens": 400,
+                    "messages": [
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+            )
+
+            data = response.json()
+            text = "".join(block.get("text", "") for block in data.get("content", []))
+            text = text.strip()
+
+            import json as _json
+            parsed = _json.loads(text)
+
+            return parsed
+
+    except Exception as e:
+        print(f"[generate-description] {e}")
+        raise HTTPException(500, "Erreur génération AI")
 
 if __name__ == "__main__":
     import uvicorn
