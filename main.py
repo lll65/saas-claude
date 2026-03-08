@@ -468,26 +468,33 @@ async def generate_description(
         raise HTTPException(401, "Connexion requise pour générer une description AI")
 
     if not GEMINI_API_KEY:
-        raise HTTPException(503, "GEMINI_API_KEY manquante dans les variables Railway. Va sur aistudio.google.com/apikey pour en obtenir une gratuitement.")
+        raise HTTPException(503, "GEMINI_API_KEY manquante — va sur aistudio.google.com/apikey pour en obtenir une gratuitement.")
+
+    # S'assurer que l'URL est absolue (le frontend envoie parfois /image/xxx)
+    image_url = body.image_url
+    if image_url.startswith("/"):
+        image_url = f"https://web-production-f1129.up.railway.app{image_url}"
 
     prompt = """Tu es un expert en vente sur Vinted et Leboncoin. En regardant cette photo de vêtement/accessoire, génère :
 1. Un titre accrocheur max 60 caractères (style Vinted, naturel, pas de majuscules inutiles)
 2. Une description 150-250 caractères avec emojis (mentionne l'état visible, le style, pourquoi c'est une bonne affaire)
 3. 10 hashtags pertinents séparés par des espaces (ex: #vintedfrançais #modeoccasion etc.)
-4. Un score "potentiel vues" entre 60 et 98 (entier, basé sur la qualité de la photo et du vêtement)
+4. Un score entre 60 et 98 (entier)
 
-Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks :
+Réponds UNIQUEMENT en JSON valide sans aucun markdown :
 {"titre":"...","description":"...","hashtags":"#tag1 #tag2 ...","score":85}"""
 
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            # Télécharge l'image depuis Railway pour l'envoyer à Gemini (vision)
-            img_resp = await client.get(body.image_url, timeout=15)
+        async with httpx.AsyncClient(timeout=35) as client:
+            # Télécharge l'image depuis Railway
+            img_resp = await client.get(image_url, timeout=15)
             img_resp.raise_for_status()
             img_b64 = base64.b64encode(img_resp.content).decode()
             img_mime = img_resp.headers.get('content-type', 'image/png').split(';')[0].strip()
+            # Gemini n'accepte que certains mimetypes image
+            if img_mime not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+                img_mime = "image/jpeg"
 
-            # Gemini 2.0 Flash — gratuit, vision incluse
             gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
             payload = {
                 "contents": [{
@@ -498,36 +505,61 @@ Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks :
                 }],
                 "generationConfig": {
                     "temperature": 0.7,
-                    "maxOutputTokens": 500,
-                    "responseMimeType": "application/json"
+                    "maxOutputTokens": 500
+                    # Note: ne pas mettre responseMimeType ici car ça cause des erreurs sur certains modèles
                 }
             }
 
-            resp = await client.post(gemini_url, json=payload, timeout=28)
+            resp = await client.post(gemini_url, json=payload, timeout=30)
+
+            if resp.status_code == 429:
+                raise HTTPException(429, "Quota Gemini atteint. Réessaie dans 1 minute.")
+            if resp.status_code == 400:
+                detail = resp.json().get("error", {}).get("message", "Requête invalide")
+                print(f"[generate-description] Gemini 400: {detail}")
+                raise HTTPException(500, "Erreur envoi image à Gemini")
             resp.raise_for_status()
+
             data = resp.json()
 
-            # Extraction sécurisée du texte
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
-            text = text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+            # Extraction robuste du texte
+            try:
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+            except (KeyError, IndexError) as e:
+                print(f"[generate-description] Structure réponse inattendue: {data}")
+                raise HTTPException(500, "Réponse AI invalide")
+
+            # Nettoyage agressif du markdown
+            text = text.strip()
+            # Retire les blocs ```json ... ``` ou ``` ... ```
+            import re as _re
+            text = _re.sub(r'^```(?:json)?\s*', '', text, flags=_re.MULTILINE)
+            text = _re.sub(r'\s*```$', '', text, flags=_re.MULTILINE)
+            text = text.strip()
+
+            # Cherche le premier objet JSON valide dans la réponse
+            json_match = _re.search(r'\{[^{}]*"titre"[^{}]*\}', text, _re.DOTALL)
+            if json_match:
+                text = json_match.group(0)
 
             parsed = json.loads(text)
 
-            # Validation des clés
-            for key in ("titre", "description", "hashtags", "score"):
-                if key not in parsed:
-                    raise ValueError(f"Clé manquante dans la réponse AI: {key}")
+            # Validation et valeurs par défaut
+            return {
+                "titre": str(parsed.get("titre", "Article en bon état"))[:80],
+                "description": str(parsed.get("description", "Bel article, bon état, expédition rapide 📦"))[:300],
+                "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion #secondhand"))[:500],
+                "score": max(60, min(98, int(parsed.get("score", 75))))
+            }
 
-            return parsed
-
+    except HTTPException:
+        raise
     except httpx.HTTPStatusError as e:
         print(f"[generate-description] HTTP {e.response.status_code}: {e.response.text[:300]}")
-        if e.response.status_code == 429:
-            raise HTTPException(429, "Quota Gemini atteint (15 req/min). Réessaie dans 1 minute.")
         raise HTTPException(502, f"Erreur API Gemini: {e.response.status_code}")
     except json.JSONDecodeError as e:
-        print(f"[generate-description] JSON parse: {e}")
-        raise HTTPException(500, "Erreur parsing réponse AI")
+        print(f"[generate-description] JSON parse error sur: {text[:200] if 'text' in dir() else 'N/A'}")
+        raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
     except Exception as e:
         print(f"[generate-description] {type(e).__name__}: {e}")
         raise HTTPException(500, f"Erreur génération: {str(e)}")
