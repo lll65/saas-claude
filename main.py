@@ -4,9 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
-import os, uuid, json, time
+import os, uuid, json, time, base64
 from io import BytesIO
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter
+import numpy as np
 import stripe
 import psycopg2
 import psycopg2.extras
@@ -42,8 +43,8 @@ FREE_IMAGES_PER_IP    = 5
 UPLOAD_DIR            = "output"
 MAX_FILE_SIZE_MB      = 15
 ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
-IMAGE_TTL_HOURS       = 24  # supprime les images après 24h
-ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY", "")
+IMAGE_TTL_HOURS       = 24
+GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -59,7 +60,6 @@ _rate_store: dict = defaultdict(list)
 _rate_lock         = threading.Lock()
 
 def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
-    """Bloque une IP si elle dépasse max_calls requêtes dans window_sec."""
     now = time.time()
     with _rate_lock:
         calls = [t for t in _rate_store[ip] if now - t < window_sec]
@@ -69,9 +69,9 @@ def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
         _rate_store[ip] = calls
 
 # ─────────────────────────────────────────────
-#  APP + CORS (origine exacte, pas "*")
+#  APP + CORS
 # ─────────────────────────────────────────────
-app = FastAPI(title="PixGlow API", version="2.3")
+app = FastAPI(title="PixGlow API", version="2.4")
 
 app.add_middleware(
     CORSMiddleware,
@@ -108,7 +108,7 @@ def get_db():
 
 @app.on_event("startup")
 async def startup_event():
-    print(f"[STARTUP] PixGlow v2.3 — DB: {'OK' if DATABASE_URL else 'MANQUANTE'}")
+    print(f"[STARTUP] PixGlow v2.4 — DB: {'OK' if DATABASE_URL else 'MANQUANTE'}")
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS users (
@@ -123,7 +123,6 @@ async def startup_event():
         print("[STARTUP] ✅ Tables OK")
     except Exception as e:
         print(f"[STARTUP] ⚠️ DB: {e}")
-    # Lance le nettoyage automatique des images
     _schedule_cleanup()
 
 # ─────────────────────────────────────────────
@@ -147,6 +146,56 @@ def _schedule_cleanup():
             _cleanup_images()
     t = threading.Thread(target=loop, daemon=True)
     t.start()
+
+# ─────────────────────────────────────────────
+#  LISSAGE DES PLIS (sans IA externe, gratuit)
+#  Technique : bilateral-style filter via numpy
+#  → atténue les faux plis sans perdre les détails
+# ─────────────────────────────────────────────
+def reduce_wrinkles(img: Image.Image, strength: float = 0.45) -> Image.Image:
+    """
+    Atténue les plis et froissures d'un vêtement en combinant :
+    - Un filtre de lissage doux (préserve les bords)
+    - Un masque basé sur les hautes fréquences (détecte les plis)
+    - Fusion avec l'original (strength contrôle l'intensité)
+    """
+    # Passe en RGB si besoin
+    mode = img.mode
+    work = img.convert("RGB")
+    
+    arr = np.array(work, dtype=np.float32)
+    
+    # 1. Lissage doux (simule un filtre bilatéral léger)
+    pil_smooth = work.filter(ImageFilter.GaussianBlur(radius=2.5))
+    smooth = np.array(pil_smooth, dtype=np.float32)
+    
+    # 2. Lissage fort pour extraire la structure de base
+    pil_base = work.filter(ImageFilter.GaussianBlur(radius=8))
+    base = np.array(pil_base, dtype=np.float32)
+    
+    # 3. Détection des plis = haute fréquence dans le lissage doux
+    #    Un pli = forte variation locale dans smooth vs base
+    diff = np.abs(smooth - base)
+    # Normalise la "carte de plis" → valeurs 0..1
+    diff_gray = diff.mean(axis=2, keepdims=True)
+    max_diff = diff_gray.max()
+    if max_diff > 0:
+        wrinkle_map = np.clip(diff_gray / (max_diff * 0.6), 0, 1)
+    else:
+        return img  # pas de plis détectés
+    
+    # 4. Dans les zones de plis → on pousse vers lissé
+    #    Dans les zones nettes → on garde l'original
+    blended = arr * (1 - wrinkle_map * strength) + smooth * (wrinkle_map * strength)
+    blended = np.clip(blended, 0, 255).astype(np.uint8)
+    
+    result = Image.fromarray(blended, "RGB")
+    
+    # Restaure le mode original si nécessaire
+    if mode == "RGBA":
+        result = result.convert("RGBA")
+    return result
+
 
 # ─────────────────────────────────────────────
 #  UTILITAIRES AUTH
@@ -201,7 +250,7 @@ class DescriptionRequest(BaseModel):
 # ─────────────────────────────────────────────
 @app.get("/")
 def root():
-    return {"status": "ok", "version": "2.3", "db": bool(DATABASE_URL)}
+    return {"status": "ok", "version": "2.4", "db": bool(DATABASE_URL)}
 
 @app.get("/health")
 def health():
@@ -221,7 +270,6 @@ async def free_remaining(request: Request):
 
 @app.post("/register")
 async def register(body: AuthBody, request: Request):
-    # Rate limit : max 5 inscriptions par IP par heure
     rate_limit(request.client.host, max_calls=5, window_sec=3600)
     email = body.email.strip().lower()
     if "@" not in email or "." not in email.split("@")[-1]:
@@ -240,7 +288,6 @@ async def register(body: AuthBody, request: Request):
 
 @app.post("/login")
 async def login(body: AuthBody, request: Request):
-    # Rate limit : max 10 tentatives par IP par 10 minutes
     rate_limit(request.client.host, max_calls=10, window_sec=600)
     email = body.email.strip().lower()
     conn = get_db(); cur = conn.cursor()
@@ -265,15 +312,13 @@ async def enhance_photo(
     request: Request = None,
     current_user: str = Depends(get_current_user)
 ):
-    # ── Validation du fichier
     if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(400, f"Format non supporté ({file.content_type}). Utilisez JPG, PNG ou WEBP.")
+        raise HTTPException(400, f"Format non supporté ({file.content_type}). Utilisez JPG, PNG, WEBP ou HEIC.")
 
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"Fichier trop lourd (max {MAX_FILE_SIZE_MB} Mo).")
 
-    # Vérification crédits / quota IP
     conn = get_db(); cur = conn.cursor()
     if current_user:
         cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
@@ -289,14 +334,12 @@ async def enhance_photo(
 
     try:
         orig = Image.open(BytesIO(contents))
-        # Convertir en RGB si nécessaire (HEIC, RGBA, palette...)
         if orig.mode not in ("RGB", "RGBA"):
             orig = orig.convert("RGBA" if "transparency" in orig.info else "RGB")
 
         w, h = orig.size
 
-        # Pour rembg : on travaille sur une version max 1500px (plus rapide)
-        # mais on garde l'original pour le résultat final en haute qualité
+        # Redimensionne pour traitement (plus rapide)
         PROCESS_MAX = 1500
         if w > PROCESS_MAX or h > PROCESS_MAX:
             scale = PROCESS_MAX / max(w, h)
@@ -306,28 +349,37 @@ async def enhance_photo(
             tmp = orig.copy()
             proc_w, proc_h = w, h
 
-        # Suppression du fond
-        no_bg = remove(tmp)
+        # ── ÉTAPE 1 : Lissage des plis AVANT suppression du fond
+        #    On lisse d'abord en RGB pour de meilleurs résultats
+        tmp_rgb = tmp.convert("RGB") if tmp.mode == "RGBA" else tmp
+        tmp_smooth = reduce_wrinkles(tmp_rgb, strength=0.45)
+        # Remet l'alpha si on avait un RGBA
+        if tmp.mode == "RGBA":
+            r, g, b = tmp_smooth.split()
+            _, _, _, a = tmp.split()
+            tmp_smooth = Image.merge("RGBA", (r, g, b, a))
+
+        # ── ÉTAPE 2 : Suppression du fond
+        no_bg = remove(tmp_smooth)
 
         # Remettre à la taille originale si on avait réduit
         if (proc_w, proc_h) != (w, h):
             no_bg = no_bg.resize((w, h), Image.Resampling.LANCZOS)
 
-        # Fond blanc avec padding proportionnel (5% de chaque côté)
+        # ── ÉTAPE 3 : Composition sur fond blanc avec padding
         pad = max(40, int(min(w, h) * 0.05))
         canvas = Image.new("RGBA", (w + pad*2, h + pad*2), (255, 255, 255, 255))
         canvas.paste(no_bg, (pad, pad), no_bg if no_bg.mode == "RGBA" else None)
         bg = Image.new("RGB", canvas.size, (255, 255, 255))
         bg.paste(canvas, (0, 0), canvas)
 
-        # Améliorations légères
-        bg = ImageEnhance.Brightness(bg).enhance(1.08)
-        bg = ImageEnhance.Contrast(bg).enhance(1.08)
-        bg = ImageEnhance.Color(bg).enhance(1.05)
-        bg = ImageEnhance.Sharpness(bg).enhance(1.05)
+        # ── ÉTAPE 4 : Améliorations finales légères
+        bg = ImageEnhance.Brightness(bg).enhance(1.06)
+        bg = ImageEnhance.Contrast(bg).enhance(1.10)
+        bg = ImageEnhance.Color(bg).enhance(1.08)
+        bg = ImageEnhance.Sharpness(bg).enhance(1.10)
 
         filename = f"{uuid.uuid4()}.png"
-        # Qualité maximale — pas de compression agressive
         bg.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
 
         credits_left = None
@@ -337,6 +389,7 @@ async def enhance_photo(
             conn.commit()
         cur.close(); conn.close()
         return JSONResponse({"status": "success", "filename": filename, "url": f"/image/{filename}", "credits_left": credits_left})
+
     except HTTPException:
         raise
     except Exception as e:
@@ -346,7 +399,7 @@ async def enhance_photo(
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
-    filename = os.path.basename(filename)  # sécurité anti path-traversal
+    filename = os.path.basename(filename)
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
         raise HTTPException(404, "Image introuvable ou expirée")
@@ -376,13 +429,12 @@ async def create_checkout_session(current_user: str = Depends(get_current_user))
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig     = request.headers.get("stripe-signature")
-    # ── Webhook OBLIGATOIREMENT vérifié en production
     if not STRIPE_WEBHOOK_SECRET:
         return JSONResponse({"error": "STRIPE_WEBHOOK_SECRET non configuré"}, status_code=500)
     try:
         event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
     except stripe.error.SignatureVerificationError:
-        print("[WEBHOOK] ❌ Signature invalide — tentative de fraude ?")
+        print("[WEBHOOK] ❌ Signature invalide")
         return JSONResponse({"error": "Signature invalide"}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
@@ -401,6 +453,12 @@ async def stripe_webhook(request: Request):
                 print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
 
+
+# ─────────────────────────────────────────────
+#  GÉNÉRATION DESCRIPTION AI — GEMINI (GRATUIT)
+#  Quota : 1500 req/jour, 15 req/min
+#  Clé : aistudio.google.com/apikey
+# ─────────────────────────────────────────────
 @app.post("/generate-description")
 async def generate_description(
     body: DescriptionRequest,
@@ -409,48 +467,71 @@ async def generate_description(
     if not current_user:
         raise HTTPException(401, "Connexion requise pour générer une description AI")
 
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(503, "ANTHROPIC_API_KEY manquante")
+    if not GEMINI_API_KEY:
+        raise HTTPException(503, "GEMINI_API_KEY manquante dans les variables Railway. Va sur aistudio.google.com/apikey pour en obtenir une gratuitement.")
 
-    prompt = """Tu es un expert en vente sur Vinted et Leboncoin. Génère :
-1. Un titre accrocheur max 60 caractères
-2. Une description 150-250 caractères avec emojis
-3. 10 hashtags
-4. Un score potentiel vues entre 60 et 98
+    prompt = """Tu es un expert en vente sur Vinted et Leboncoin. En regardant cette photo de vêtement/accessoire, génère :
+1. Un titre accrocheur max 60 caractères (style Vinted, naturel, pas de majuscules inutiles)
+2. Une description 150-250 caractères avec emojis (mentionne l'état visible, le style, pourquoi c'est une bonne affaire)
+3. 10 hashtags pertinents séparés par des espaces (ex: #vintedfrançais #modeoccasion etc.)
+4. Un score "potentiel vues" entre 60 et 98 (entier, basé sur la qualité de la photo et du vêtement)
 
-Réponds uniquement en JSON :
-{"titre":"...","description":"...","hashtags":"#tag1 #tag2","score":85}"""
+Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks :
+{"titre":"...","description":"...","hashtags":"#tag1 #tag2 ...","score":85}"""
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": ANTHROPIC_API_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": "claude-3-haiku-20240307",
-                    "max_tokens": 400,
-                    "messages": [
-                        {"role": "user", "content": prompt}
+            # Télécharge l'image depuis Railway pour l'envoyer à Gemini (vision)
+            img_resp = await client.get(body.image_url, timeout=15)
+            img_resp.raise_for_status()
+            img_b64 = base64.b64encode(img_resp.content).decode()
+            img_mime = img_resp.headers.get('content-type', 'image/png').split(';')[0].strip()
+
+            # Gemini 2.0 Flash — gratuit, vision incluse
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+            payload = {
+                "contents": [{
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": img_mime, "data": img_b64}}
                     ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 500,
+                    "responseMimeType": "application/json"
                 }
-            )
+            }
 
-            data = response.json()
-            text = "".join(block.get("text", "") for block in data.get("content", []))
-            text = text.strip()
+            resp = await client.post(gemini_url, json=payload, timeout=28)
+            resp.raise_for_status()
+            data = resp.json()
 
-            import json as _json
-            parsed = _json.loads(text)
+            # Extraction sécurisée du texte
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            text = text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+
+            parsed = json.loads(text)
+
+            # Validation des clés
+            for key in ("titre", "description", "hashtags", "score"):
+                if key not in parsed:
+                    raise ValueError(f"Clé manquante dans la réponse AI: {key}")
 
             return parsed
 
+    except httpx.HTTPStatusError as e:
+        print(f"[generate-description] HTTP {e.response.status_code}: {e.response.text[:300]}")
+        if e.response.status_code == 429:
+            raise HTTPException(429, "Quota Gemini atteint (15 req/min). Réessaie dans 1 minute.")
+        raise HTTPException(502, f"Erreur API Gemini: {e.response.status_code}")
+    except json.JSONDecodeError as e:
+        print(f"[generate-description] JSON parse: {e}")
+        raise HTTPException(500, "Erreur parsing réponse AI")
     except Exception as e:
-        print(f"[generate-description] {e}")
-        raise HTTPException(500, "Erreur génération AI")
+        print(f"[generate-description] {type(e).__name__}: {e}")
+        raise HTTPException(500, f"Erreur génération: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn
