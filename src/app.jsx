@@ -457,11 +457,11 @@ export default function PixGlow() {
         const data = await res.json();
         if (!res.ok) { newResults.push({ error: data.detail || 'Erreur', original: previews[i] }); }
         else {
-          newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: previews[i] });
+          newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: URL.createObjectURL(files[i]) });
           if (data.credits_left !== null && data.credits_left !== undefined) setCredits(data.credits_left);
           else { currentFreeLeft = Math.max(0, (currentFreeLeft ?? 5) - 1); setFreeLeft(currentFreeLeft); localStorage.setItem('pg_free', currentFreeLeft); }
         }
-      } catch { newResults.push({ error: 'Erreur réseau', original: previews[i] }); }
+      } catch { newResults.push({ error: data.detail || 'Erreur', original: URL.createObjectURL(files[i]) }); }
       setResults([...newResults]);
     }
     setLoading(false);
