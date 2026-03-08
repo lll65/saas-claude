@@ -374,10 +374,10 @@ async def enhance_photo(
         bg.paste(canvas, (0, 0), canvas)
 
         # ── ÉTAPE 4 : Améliorations finales légères
-        bg = ImageEnhance.Brightness(bg).enhance(1.06)
-        bg = ImageEnhance.Contrast(bg).enhance(1.10)
-        bg = ImageEnhance.Color(bg).enhance(1.08)
-        bg = ImageEnhance.Sharpness(bg).enhance(1.10)
+        bg = ImageEnhance.Brightness(bg).enhance(1.04)
+        bg = ImageEnhance.Contrast(bg).enhance(1.04)
+        bg = ImageEnhance.Color(bg).enhance(1.06)
+        bg = ImageEnhance.Sharpness(bg).enhance(1.08)
 
         filename = f"{uuid.uuid4()}.png"
         bg.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
