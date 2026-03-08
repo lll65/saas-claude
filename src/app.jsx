@@ -747,8 +747,8 @@ export default function PixGlow() {
     <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
-      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFilesChange} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFilesChange} />
+      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
+               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
 
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
