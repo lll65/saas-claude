@@ -430,41 +430,18 @@ export default function PixGlow() {
   };
 
   const handleFilesChange = (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
-    const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
-    const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
-    const chosen = selected.slice(0, maxAllowed);
-    if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
-    setFiles(chosen); setResults([]); setProgress(0);
-    // Génère les previews avec fallback canvas pour HEIC/formats exotiques
-    Promise.all(chosen.map(f => new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const dataUrl = ev.target.result;
-        // Vérifie que l'image se charge correctement
-        const img = new Image();
-        img.onload = () => resolve(dataUrl);
-        img.onerror = () => {
-          // Fallback: essayer via URL.createObjectURL + canvas
-          const url = URL.createObjectURL(f);
-          const img2 = new Image();
-          img2.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.min(img2.width, 800);
-            canvas.height = Math.round(img2.height * (canvas.width / img2.width));
-            canvas.getContext('2d').drawImage(img2, 0, 0, canvas.width, canvas.height);
-            URL.revokeObjectURL(url);
-            resolve(canvas.toDataURL('image/jpeg', 0.85));
-          };
-          img2.onerror = () => { URL.revokeObjectURL(url); resolve(dataUrl); };
-          img2.src = url;
-        };
-        img.src = dataUrl;
-      };
-      reader.readAsDataURL(f);
-    }))).then(setPreviews);
-  };
+          const selected = Array.from(e.target.files || []);
+  	 if (!selected.length) return;
+ 	   const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
+  	   const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
+           const chosen = selected.slice(0, maxAllowed);
+           if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
+           setFiles(chosen); setResults([]); setProgress(0);
+
+           // ✅ Fix mobile : URL.createObjectURL directement, pas de FileReader
+          const urls = chosen.map(f => URL.createObjectURL(f));
+          setPreviews(urls);
+    };
 
   const handleUpload = async () => {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
