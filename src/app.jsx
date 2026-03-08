@@ -432,15 +432,17 @@ export default function PixGlow() {
   const handleFilesChange = (e) => {
   const selected = Array.from(e.target.files || []);
   if (!selected.length) return;
+  // ✅ Reset input pour permettre re-sélection du même fichier
+  e.target.value = '';
   const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
   const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
   const chosen = selected.slice(0, maxAllowed);
   if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
-  
-  // ✅ Lire en base64 — survive aux re-renders contrairement aux objectURL
+
   Promise.all(chosen.map(f => new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = ev => resolve(ev.target.result);
+    reader.onerror = () => resolve(URL.createObjectURL(f)); // ✅ fallback si FileReader échoue
     reader.readAsDataURL(f);
   }))).then(base64s => {
     setFiles(chosen);
