@@ -809,7 +809,7 @@ export default function PixGlow() {
                         <img
                           src={src}
                           alt={`Photo ${i+1}`}
-                          style={{ width: '100%', height: isMobile ? '100px' : '120px', objectFit: 'cover', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', display: 'block', background: 'rgba(124,58,237,.08)' }}
+                          style={{ width: '100%', height: isMobile ? '100px' : '120px', objectFit: 'contain', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', display: 'block', background: 'rgba(124,58,237,.08)' }}
                           onError={(e) => {
                             // Si la data URL échoue (ex: HEIC sur Android), tente objectURL depuis files[i]
                             if (files[i] && !e.target.dataset.fallback) {
