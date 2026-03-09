@@ -142,44 +142,30 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [error, setError] = useState(null);
 
   const generateBoost = async () => {
-  if (!isConnected) { onUpgrade(); return; }
-  setLoading(true);
-  setError(null);
-  try {
-    // 1. Récupérer l'image en base64
-    const imgRes = await fetch(imageUrl);
-    const blob = await imgRes.blob();
-    const base64 = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.readAsDataURL(blob);
-    });
-
-    const generateBoost = async () => {
-  if (!isConnected) { onUpgrade(); return; }
-  setLoading(true);
-  setError(null);
-  try {
-    const token = localStorage.getItem('pg_token');
-    const response = await fetch(`${API_URL}/generate-description`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ image_url: imageUrl })
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || `Erreur ${response.status}`);
+    if (!isConnected) { onUpgrade(); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('pg_token');
+      const response = await fetch(`${API_URL}/generate-description`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ image_url: imageUrl })
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `Erreur ${response.status}`);
+      }
+      const data = await response.json();
+      setResult(data);
+    } catch (e) {
+      setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
     }
-    const data = await response.json();
-    setResult(data);
-  } catch (e) {
-    setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
-  }
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   const handleCopy = () => {
     if (!result) return;

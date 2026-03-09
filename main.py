@@ -44,7 +44,7 @@ UPLOAD_DIR            = "output"
 MAX_FILE_SIZE_MB      = 15
 ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 IMAGE_TTL_HOURS       = 24
-GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
+GROQ_API_KEY          = os.getenv("GROQ_API_KEY", "")
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -439,85 +439,50 @@ async def generate_description(
 ):
     if not current_user:
         raise HTTPException(401, "Connexion requise pour générer une description AI")
-
-    if not GEMINI_API_KEY:
-        raise HTTPException(503, "GEMINI_API_KEY manquante.")
+    if not GROQ_API_KEY:
+        raise HTTPException(503, "GROQ_API_KEY manquante.")
 
     image_url = body.image_url
     if image_url.startswith("/"):
         image_url = f"https://web-production-f1129.up.railway.app{image_url}"
 
-    prompt = """Tu es un expert en vente sur Vinted et Leboncoin. En regardant cette photo de vêtement/accessoire, génère :
-1. Un titre accrocheur max 60 caractères (style Vinted, naturel, pas de majuscules inutiles)
-2. Une description 150-250 caractères avec emojis (mentionne l'état visible, le style, pourquoi c'est une bonne affaire)
-3. 10 hashtags pertinents séparés par des espaces (ex: #vintedfrançais #modeoccasion etc.)
-4. Un score entre 60 et 98 (entier)
-
-Réponds UNIQUEMENT en JSON valide sans aucun markdown :
-{"titre":"...","description":"...","hashtags":"#tag1 #tag2 ...","score":85}"""
+    prompt = """Tu es expert vente Vinted France. Analyse ce vêtement et génère UNIQUEMENT ce JSON (sans markdown) :
+{"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":85}"""
 
     try:
         async with httpx.AsyncClient(timeout=35) as client:
-            img_resp = await client.get(image_url, timeout=15)
-            img_resp.raise_for_status()
-            img_b64 = base64.b64encode(img_resp.content).decode()
-            img_mime = img_resp.headers.get('content-type', 'image/png').split(';')[0].strip()
-            if img_mime not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
-                img_mime = "image/jpeg"
-
-            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-            payload = {
-                "contents": [{
-                    "parts": [
-                        {"text": prompt},
-                        {"inline_data": {"mime_type": img_mime, "data": img_b64}}
-                    ]
-                }],
-                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 500}
-            }
-
-            resp = await client.post(gemini_url, json=payload, timeout=30)
-
-            if resp.status_code == 429:
-                raise HTTPException(429, "Service temporairement indisponible. Réessaie dans quelques minutes.")
-            if resp.status_code == 400:
-                detail = resp.json().get("error", {}).get("message", "Requête invalide")
-                print(f"[generate-description] Gemini 400: {detail}")
-                raise HTTPException(500, "Erreur envoi image à Gemini")
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "llama-3.2-11b-vision-preview",
+                    "max_tokens": 500,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "text", "text": prompt}
+                        ]
+                    }]
+                }
+            )
             resp.raise_for_status()
-
             data = resp.json()
-
-            try:
-                text = data["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError):
-                print(f"[generate-description] Structure réponse inattendue: {data}")
-                raise HTTPException(500, "Réponse AI invalide")
-
-            text = text.strip()
+            text = data["choices"][0]["message"]["content"]
             import re as _re
-            text = _re.sub(r'^```(?:json)?\s*', '', text, flags=_re.MULTILINE)
-            text = _re.sub(r'\s*```$', '', text, flags=_re.MULTILINE)
-            text = text.strip()
-
-            json_match = _re.search(r'\{[^{}]*"titre"[^{}]*\}', text, _re.DOTALL)
-            if json_match:
-                text = json_match.group(0)
-
+            text = _re.sub(r'```json|```', '', text).strip()
             parsed = json.loads(text)
-
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
-                "description": str(parsed.get("description", "Bel article, bon état, expédition rapide 📦"))[:300],
-                "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion #secondhand"))[:500],
+                "description": str(parsed.get("description", "Bel article 📦"))[:300],
+                "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion"))[:500],
                 "score": max(60, min(98, int(parsed.get("score", 75))))
             }
-
     except HTTPException:
         raise
-    except httpx.HTTPStatusError as e:
-        print(f"[generate-description] HTTP {e.response.status_code}: {e.response.text[:300]}")
-        raise HTTPException(502, f"Erreur API Gemini: {e.response.status_code}")
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
     except Exception as e:
