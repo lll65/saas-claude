@@ -148,54 +148,29 @@ def _schedule_cleanup():
     t.start()
 
 # ─────────────────────────────────────────────
-#  LISSAGE DES PLIS (sans IA externe, gratuit)
-#  Technique : bilateral-style filter via numpy
-#  → atténue les faux plis sans perdre les détails
+#  LISSAGE DES PLIS
 # ─────────────────────────────────────────────
 def reduce_wrinkles(img: Image.Image, strength: float = 0.45) -> Image.Image:
-    """
-    Atténue les plis et froissures d'un vêtement en combinant :
-    - Un filtre de lissage doux (préserve les bords)
-    - Un masque basé sur les hautes fréquences (détecte les plis)
-    - Fusion avec l'original (strength contrôle l'intensité)
-    """
-    # Passe en RGB si besoin
     mode = img.mode
     work = img.convert("RGB")
-    
     arr = np.array(work, dtype=np.float32)
-    
-    # 1. Lissage doux (simule un filtre bilatéral léger)
     pil_smooth = work.filter(ImageFilter.GaussianBlur(radius=2.5))
     smooth = np.array(pil_smooth, dtype=np.float32)
-    
-    # 2. Lissage fort pour extraire la structure de base
     pil_base = work.filter(ImageFilter.GaussianBlur(radius=8))
     base = np.array(pil_base, dtype=np.float32)
-    
-    # 3. Détection des plis = haute fréquence dans le lissage doux
-    #    Un pli = forte variation locale dans smooth vs base
     diff = np.abs(smooth - base)
-    # Normalise la "carte de plis" → valeurs 0..1
     diff_gray = diff.mean(axis=2, keepdims=True)
     max_diff = diff_gray.max()
     if max_diff > 0:
         wrinkle_map = np.clip(diff_gray / (max_diff * 0.6), 0, 1)
     else:
-        return img  # pas de plis détectés
-    
-    # 4. Dans les zones de plis → on pousse vers lissé
-    #    Dans les zones nettes → on garde l'original
+        return img
     blended = arr * (1 - wrinkle_map * strength) + smooth * (wrinkle_map * strength)
     blended = np.clip(blended, 0, 255).astype(np.uint8)
-    
     result = Image.fromarray(blended, "RGB")
-    
-    # Restaure le mode original si nécessaire
     if mode == "RGBA":
         result = result.convert("RGBA")
     return result
-
 
 # ─────────────────────────────────────────────
 #  UTILITAIRES AUTH
@@ -220,6 +195,13 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
     except JWTError:
         return None
+
+def get_real_ip(request: Request) -> str:
+    return (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP", "")
+        or request.client.host
+    )
 
 def get_ip_count(ip: str) -> int:
     try:
@@ -264,7 +246,7 @@ def health():
 
 @app.get("/free-remaining")
 async def free_remaining(request: Request):
-    ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.headers.get("X-Real-IP", "") or request.client.host
+    ip = get_real_ip(request)
     used = get_ip_count(ip)
     return {"remaining": max(0, FREE_IMAGES_PER_IP - used), "used": used, "max": FREE_IMAGES_PER_IP}
 
@@ -327,8 +309,8 @@ async def enhance_photo(
             cur.close(); conn.close()
             raise HTTPException(402, "Crédits insuffisants. Rechargez votre compte.")
     else:
-        ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.headers.get("X-Real-IP", "") or request.client.host
-allowed, used = increment_ip(ip)
+        ip = get_real_ip(request)
+        allowed, used = increment_ip(ip)
         if not allowed:
             cur.close(); conn.close()
             raise HTTPException(429, f"Limite gratuite atteinte ({used}/{FREE_IMAGES_PER_IP}). Créez un compte pour continuer.")
@@ -340,7 +322,6 @@ allowed, used = increment_ip(ip)
 
         w, h = orig.size
 
-        # Redimensionne pour traitement (plus rapide)
         PROCESS_MAX = 1500
         if w > PROCESS_MAX or h > PROCESS_MAX:
             scale = PROCESS_MAX / max(w, h)
@@ -350,31 +331,24 @@ allowed, used = increment_ip(ip)
             tmp = orig.copy()
             proc_w, proc_h = w, h
 
-        # ── ÉTAPE 1 : Lissage des plis AVANT suppression du fond
-        #    On lisse d'abord en RGB pour de meilleurs résultats
         tmp_rgb = tmp.convert("RGB") if tmp.mode == "RGBA" else tmp
         tmp_smooth = reduce_wrinkles(tmp_rgb, strength=0.45)
-        # Remet l'alpha si on avait un RGBA
         if tmp.mode == "RGBA":
             r, g, b = tmp_smooth.split()
             _, _, _, a = tmp.split()
             tmp_smooth = Image.merge("RGBA", (r, g, b, a))
 
-        # ── ÉTAPE 2 : Suppression du fond
         no_bg = remove(tmp_smooth)
 
-        # Remettre à la taille originale si on avait réduit
         if (proc_w, proc_h) != (w, h):
             no_bg = no_bg.resize((w, h), Image.Resampling.LANCZOS)
 
-        # ── ÉTAPE 3 : Composition sur fond blanc avec padding
         pad = max(40, int(min(w, h) * 0.05))
         canvas = Image.new("RGBA", (w + pad*2, h + pad*2), (255, 255, 255, 255))
         canvas.paste(no_bg, (pad, pad), no_bg if no_bg.mode == "RGBA" else None)
         bg = Image.new("RGB", canvas.size, (255, 255, 255))
         bg.paste(canvas, (0, 0), canvas)
 
-        # ── ÉTAPE 4 : Améliorations finales légères
         bg = ImageEnhance.Brightness(bg).enhance(1.04)
         bg = ImageEnhance.Contrast(bg).enhance(1.04)
         bg = ImageEnhance.Color(bg).enhance(1.06)
@@ -456,9 +430,7 @@ async def stripe_webhook(request: Request):
 
 
 # ─────────────────────────────────────────────
-#  GÉNÉRATION DESCRIPTION AI — GEMINI (GRATUIT)
-#  Quota : 1500 req/jour, 15 req/min
-#  Clé : aistudio.google.com/apikey
+#  GÉNÉRATION DESCRIPTION AI — GEMINI
 # ─────────────────────────────────────────────
 @app.post("/generate-description")
 async def generate_description(
@@ -469,9 +441,8 @@ async def generate_description(
         raise HTTPException(401, "Connexion requise pour générer une description AI")
 
     if not GEMINI_API_KEY:
-        raise HTTPException(503, "GEMINI_API_KEY manquante — va sur aistudio.google.com/apikey pour en obtenir une gratuitement.")
+        raise HTTPException(503, "GEMINI_API_KEY manquante.")
 
-    # S'assurer que l'URL est absolue (le frontend envoie parfois /image/xxx)
     image_url = body.image_url
     if image_url.startswith("/"):
         image_url = f"https://web-production-f1129.up.railway.app{image_url}"
@@ -487,12 +458,10 @@ Réponds UNIQUEMENT en JSON valide sans aucun markdown :
 
     try:
         async with httpx.AsyncClient(timeout=35) as client:
-            # Télécharge l'image depuis Railway
             img_resp = await client.get(image_url, timeout=15)
             img_resp.raise_for_status()
             img_b64 = base64.b64encode(img_resp.content).decode()
             img_mime = img_resp.headers.get('content-type', 'image/png').split(';')[0].strip()
-            # Gemini n'accepte que certains mimetypes image
             if img_mime not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
                 img_mime = "image/jpeg"
 
@@ -504,17 +473,13 @@ Réponds UNIQUEMENT en JSON valide sans aucun markdown :
                         {"inline_data": {"mime_type": img_mime, "data": img_b64}}
                     ]
                 }],
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 500
-                    # Note: ne pas mettre responseMimeType ici car ça cause des erreurs sur certains modèles
-                }
+                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 500}
             }
 
             resp = await client.post(gemini_url, json=payload, timeout=30)
 
             if resp.status_code == 429:
-                raise HTTPException(429, "Quota Gemini atteint. Réessaie dans 1 minute.")
+                raise HTTPException(429, "Service temporairement indisponible. Réessaie dans quelques minutes.")
             if resp.status_code == 400:
                 detail = resp.json().get("error", {}).get("message", "Requête invalide")
                 print(f"[generate-description] Gemini 400: {detail}")
@@ -523,29 +488,24 @@ Réponds UNIQUEMENT en JSON valide sans aucun markdown :
 
             data = resp.json()
 
-            # Extraction robuste du texte
             try:
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError) as e:
+            except (KeyError, IndexError):
                 print(f"[generate-description] Structure réponse inattendue: {data}")
                 raise HTTPException(500, "Réponse AI invalide")
 
-            # Nettoyage agressif du markdown
             text = text.strip()
-            # Retire les blocs ```json ... ``` ou ``` ... ```
             import re as _re
             text = _re.sub(r'^```(?:json)?\s*', '', text, flags=_re.MULTILINE)
             text = _re.sub(r'\s*```$', '', text, flags=_re.MULTILINE)
             text = text.strip()
 
-            # Cherche le premier objet JSON valide dans la réponse
             json_match = _re.search(r'\{[^{}]*"titre"[^{}]*\}', text, _re.DOTALL)
             if json_match:
                 text = json_match.group(0)
 
             parsed = json.loads(text)
 
-            # Validation et valeurs par défaut
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
                 "description": str(parsed.get("description", "Bel article, bon état, expédition rapide 📦"))[:300],
@@ -558,8 +518,7 @@ Réponds UNIQUEMENT en JSON valide sans aucun markdown :
     except httpx.HTTPStatusError as e:
         print(f"[generate-description] HTTP {e.response.status_code}: {e.response.text[:300]}")
         raise HTTPException(502, f"Erreur API Gemini: {e.response.status_code}")
-    except json.JSONDecodeError as e:
-        print(f"[generate-description] JSON parse error sur: {text[:200] if 'text' in dir() else 'N/A'}")
+    except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
     except Exception as e:
         print(f"[generate-description] {type(e).__name__}: {e}")
