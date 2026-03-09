@@ -593,8 +593,7 @@ export default function PixGlow() {
           <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '20px' }}>Glisse le curseur pour voir la transformation</p>
 
           {/* SLIDER PRINCIPAL */}
-          <BeforeAfterSlider
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+          <BeforeAfterSlider>
 
 /* ─── PAGES LÉGALES ─── */
 const LS = {
