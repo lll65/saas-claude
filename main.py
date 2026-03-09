@@ -264,7 +264,7 @@ def health():
 
 @app.get("/free-remaining")
 async def free_remaining(request: Request):
-    ip = request.client.host
+    ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.headers.get("X-Real-IP", "") or request.client.host
     used = get_ip_count(ip)
     return {"remaining": max(0, FREE_IMAGES_PER_IP - used), "used": used, "max": FREE_IMAGES_PER_IP}
 
@@ -327,7 +327,8 @@ async def enhance_photo(
             cur.close(); conn.close()
             raise HTTPException(402, "Crédits insuffisants. Rechargez votre compte.")
     else:
-        allowed, used = increment_ip(request.client.host)
+        ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.headers.get("X-Real-IP", "") or request.client.host
+allowed, used = increment_ip(ip)
         if not allowed:
             cur.close(); conn.close()
             raise HTTPException(429, f"Limite gratuite atteinte ({used}/{FREE_IMAGES_PER_IP}). Créez un compte pour continuer.")
