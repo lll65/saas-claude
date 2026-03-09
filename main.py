@@ -451,6 +451,15 @@ async def generate_description(
 
     try:
         async with httpx.AsyncClient(timeout=35) as client:
+            # ✅ Télécharger l'image et la convertir en base64
+            img_resp = await client.get(image_url, timeout=15)
+            img_resp.raise_for_status()
+            img_b64 = base64.b64encode(img_resp.content).decode()
+            img_mime = img_resp.headers.get('content-type', 'image/png').split(';')[0].strip()
+            if img_mime not in ("image/jpeg", "image/png", "image/webp"):
+                img_mime = "image/png"
+            data_url = f"data:{img_mime};base64,{img_b64}"
+
             resp = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={
@@ -463,7 +472,7 @@ async def generate_description(
                     "messages": [{
                         "role": "user",
                         "content": [
-                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "image_url", "image_url": {"url": data_url}},
                             {"type": "text", "text": prompt}
                         ]
                     }]
