@@ -142,31 +142,47 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [error, setError] = useState(null);
 
   const generateBoost = async () => {
-    if (!isConnected) { onUpgrade(); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      // Appel via le backend FastAPI (évite CORS + clé API sécurisée)
-      const token = localStorage.getItem('pg_token');
-      const response = await fetch(`${API_URL}/generate-description`, {
+  if (!isConnected) { onUpgrade(); return; }
+  setLoading(true);
+  setError(null);
+  try {
+    // 1. Récupérer l'image en base64
+    const imgRes = await fetch(imageUrl);
+    const blob = await imgRes.blob();
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(blob);
+    });
+
+    // 2. Appel Gemini
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyC8-Z4f12wOM-YsgGxPJ3qJDIrZrrz2PBE`,
+      {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ image_url: imageUrl })
-      });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || `Erreur ${response.status}`);
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: `Tu es expert vente Vinted France. Analyse ce vêtement et génère UNIQUEMENT ce JSON (sans markdown, sans explication) :
+{"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5","score":85}` },
+              { inlineData: { mimeType: blob.type || 'image/jpeg', data: base64 } }
+            ]
+          }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+        })
       }
-      const data = await response.json();
-      setResult(data);
-    } catch (e) {
-      setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
-    }
-    setLoading(false);
-  };
+    );
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text;
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    setResult(parsed);
+  } catch (e) {
+    setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
+  }
+  setLoading(false);
+};
 
   const handleCopy = () => {
     if (!result) return;
