@@ -430,27 +430,21 @@ export default function PixGlow() {
   };
 
   const handleFilesChange = (e) => {
-  const selected = Array.from(e.target.files || []);
-  if (!selected.length) return;
-  // ✅ Reset input pour permettre re-sélection du même fichier
-  e.target.value = '';
-  const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
-  const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
-  const chosen = selected.slice(0, maxAllowed);
-  if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
+         const selected = Array.from(e.target.files || []);
+ 	 if (!selected.length) return;
+     e.target.value = '';
+          const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
+          const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
+          const chosen = selected.slice(0, maxAllowed);
+          if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
 
-  Promise.all(chosen.map(f => new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = ev => resolve(ev.target.result);
-    reader.onerror = () => resolve(URL.createObjectURL(f)); // ✅ fallback si FileReader échoue
-    reader.readAsDataURL(f);
-  }))).then(base64s => {
-    setFiles(chosen);
-    setPreviews(base64s);
-    setResults([]);
-    setProgress(0);
-  });
-};
+           // ✅ URL.createObjectURL au lieu de FileReader — plus rapide et fiable sur Android
+           const objectUrls = chosen.map(f => URL.createObjectURL(f));
+           setFiles(chosen);
+           setPreviews(objectUrls);
+           setResults([]);
+           setProgress(0);
+      };
 
   const handleUpload = async () => {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
@@ -478,7 +472,7 @@ export default function PixGlow() {
 
   const handleDownload = (r) => { const a = document.createElement('a'); a.href = r.url; a.download = r.filename; a.click(); };
   const handleDownloadAll = () => results.filter(r => !r.error).forEach(handleDownload);
-  const reset = () => { setFiles([]); setPreviews([]); setResults([]); setError(null); setProgress(0); };
+  const reset = () => { previews.forEach(url => URL.revokeObjectURL(url)); // ✅ libère mémoire setFiles([]); setPreviews([]); setResults([]); setError(null); setProgress(0); };
   const handlePayment = async () => {
     const token = getToken(); if (!token) { openAuth('login'); return; }
     try { const res = await fetch(`${API_URL}/create-checkout-session`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }); const data = await res.json(); if (data.checkout_url) window.location.href = data.checkout_url; }
@@ -812,14 +806,7 @@ export default function PixGlow() {
                           src={src}
                           alt={`Photo ${i+1}`}
                           style={{ width: '100%', height: isMobile ? '100px' : '120px', objectFit: 'contain', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', display: 'block', background: 'rgba(124,58,237,.08)' }}
-                          onError={(e) => {
-                            // Si la data URL échoue (ex: HEIC sur Android), tente objectURL depuis files[i]
-                            if (files[i] && !e.target.dataset.fallback) {
-                              e.target.dataset.fallback = '1';
-                              const url = URL.createObjectURL(files[i]);
-                              e.target.src = url;
-                            }
-                          }}
+                          
                         />
                         {loading && i < progress && <div className="pg-check" style={{ position: 'absolute', inset: 0, background: 'rgba(16,185,129,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✅</div>}
                       </div>
