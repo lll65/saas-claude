@@ -197,9 +197,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return None
 
 def get_real_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        ips = [ip.strip() for ip in forwarded.split(",")]
+        # Filtrer les IPs internes Railway (100.64.x.x) et privées
+        public_ips = [
+            ip for ip in ips
+            if not ip.startswith("100.64.")
+            and not ip.startswith("10.")
+            and not ip.startswith("172.")
+            and not ip.startswith("192.168.")
+            and not ip.startswith("127.")
+        ]
+        if public_ips:
+            return public_ips[0]
     return (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.headers.get("X-Real-IP", "")
+        request.headers.get("X-Real-IP", "")
         or request.client.host
     )
 
