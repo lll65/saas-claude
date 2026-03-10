@@ -751,21 +751,19 @@ export default function PixGlow() {
     </div>
   );
 
-  /* ══ APP ══ */
+/* ══ APP ══ */
   return (
     <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
-               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
 
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
 
-        {/* Upsell Banner — seulement si non connecté et quota presque épuisé */}
         {!isConnected && <UpsellBanner freeLeft={freeLeft} onRegister={() => openAuth('register')} onLogin={() => openAuth('login')} />}
 
-        {/* Compteur */}
         {!isConnected && freeLeft !== null && (
           <div className="pg-anim" style={{ background: limitReached ? 'rgba(239,68,68,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${limitReached ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.05)'}`, borderRadius: '16px', padding: '18px 22px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
@@ -782,7 +780,6 @@ export default function PixGlow() {
           </div>
         )}
 
-        {/* Zone upload / résultats */}
         <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '20px', padding: isMobile ? '18px' : '28px', marginBottom: '14px' }}>
           {!hasResults ? (
             <>
@@ -808,12 +805,7 @@ export default function PixGlow() {
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(previews.length, isMobile ? 3 : 5)},1fr)`, gap: '8px' }}>
                     {previews.map((src, i) => (
                       <div key={i} style={{ position: 'relative' }}>
-                        <img
-                          src={src}
-                          alt={`Photo ${i+1}`}
-                          style={{ width: '100%', height: isMobile ? '100px' : '120px', objectFit: 'contain', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', display: 'block', background: 'rgba(124,58,237,.08)' }}
-                          
-                        />
+                        <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: isMobile ? '100px' : '120px', objectFit: 'contain', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', display: 'block', background: 'rgba(124,58,237,.08)' }} />
                         {loading && i < progress && <div className="pg-check" style={{ position: 'absolute', inset: 0, background: 'rgba(16,185,129,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✅</div>}
                       </div>
                     ))}
@@ -847,7 +839,10 @@ export default function PixGlow() {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                 <h3 className="pg-check" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800, color: '#10b981', margin: 0 }}>✅ {doneCount}/{results.length} photo{doneCount > 1 ? 's' : ''} améliorée{doneCount > 1 ? 's' : ''}</h3>
-                {doneCount > 1 && <button onClick={handleDownloadAll} className="pg-btn" style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Tout télécharger</button>}
+                {/* Bouton "Tout télécharger" — desktop uniquement, sticky bar gère le mobile */}
+                {doneCount > 1 && !isMobile && (
+                  <button onClick={handleDownloadAll} className="pg-btn" style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Tout télécharger</button>
+                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '14px' }}>
                 {results.map((r, i) => (
@@ -866,19 +861,21 @@ export default function PixGlow() {
                     </div>
                     {!r.error && (
                       <>
-                        <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '0' }}>📥 Télécharger</button>
-                        <VintedBoostPanel
-                          imageUrl={r.url}
-                          isConnected={isConnected}
-                          onUpgrade={() => openAuth('register')}
-                        />
+                        {/* Bouton télécharger individuel — desktop uniquement */}
+                        {!isMobile && (
+                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '0' }}>📥 Télécharger</button>
+                        )}
+                        <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => openAuth('register')} />
                       </>
                     )}
                     {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                   </div>
                 ))}
               </div>
-              <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', color: '#475569', borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
+              {/* Bouton reset — desktop uniquement, sticky bar gère le mobile */}
+              {!isMobile && (
+                <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', color: '#475569', borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
+              )}
             </>
           )}
         </div>
@@ -915,7 +912,6 @@ export default function PixGlow() {
     </div>
   );
 }
-
 /*
 ══════════════════════════════════════════════════════════════
   CHANGELOG v2 — MODIFICATIONS APPORTÉES
