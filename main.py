@@ -197,14 +197,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return None
 
 def get_real_ip(request: Request) -> str:
-    # X-Real-IP est le plus fiable sur Railway
-    real_ip = request.headers.get("X-Real-IP", "").strip()
-    if real_ip and not real_ip.startswith("100.64."):
-        return real_ip
-    
     forwarded = request.headers.get("X-Forwarded-For", "")
     if forwarded:
         ips = [ip.strip() for ip in forwarded.split(",")]
+        # Filtrer les IPs internes Railway (100.64.x.x) et privées
         public_ips = [
             ip for ip in ips
             if not ip.startswith("100.64.")
@@ -215,8 +211,10 @@ def get_real_ip(request: Request) -> str:
         ]
         if public_ips:
             return public_ips[0]
-    
-    return request.client.host
+    return (
+        request.headers.get("X-Real-IP", "")
+        or request.client.host
+    )
 
 def get_ip_count(ip: str) -> int:
     try:
@@ -395,21 +393,32 @@ async def get_image(filename: str):
         raise HTTPException(404, "Image introuvable ou expirée")
     return FileResponse(filepath, media_type="image/png")
 
+class CheckoutRequest(BaseModel):
+    plan: str = "pro"
+
+PLANS = {
+    "starter": {"credits": 30,  "amount": 700,  "name": "30 Crédits PixGlow — Starter"},
+    "pro":     {"credits": 100, "amount": 1500, "name": "100 Crédits PixGlow — Pro"},
+    "elite":   {"credits": 300, "amount": 3500, "name": "300 Crédits PixGlow — Elite"},
+}
+
 @app.post("/create-checkout-session")
-async def create_checkout_session(current_user: str = Depends(get_current_user)):
+async def create_checkout_session(body: CheckoutRequest = CheckoutRequest(), current_user: str = Depends(get_current_user)):
     if not current_user: raise HTTPException(401, "Connexion requise")
+    plan = PLANS.get(body.plan)
+    if not plan: raise HTTPException(400, f"Plan inconnu : {body.plan}. Valeurs : starter, pro, elite.")
     try:
         session = stripe.checkout.Session.create(
             customer_email=current_user,
             payment_method_types=["card"],
             mode="payment",
             line_items=[{"price_data": {"currency": "eur",
-                "product_data": {"name": "100 Crédits PixGlow",
-                    "description": "1 crédit = 1 photo avec fond blanc. Valables à vie."},
-                "unit_amount": 1500}, "quantity": 1}],
+                "product_data": {"name": plan["name"],
+                    "description": f"{plan['credits']} crédits = {plan['credits']} photos avec fond blanc. Valables à vie."},
+                "unit_amount": plan["amount"]}, "quantity": 1}],
             success_url=f"{FRONTEND_URL}/?payment=success",
             cancel_url=f"{FRONTEND_URL}/?payment=cancel",
-            metadata={"email": current_user}
+            metadata={"email": current_user, "plan": body.plan, "credits": str(plan["credits"])}
         )
         return {"checkout_url": session.url}
     except Exception as e:
@@ -432,13 +441,19 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         obj   = event["data"]["object"]
         email = (obj.get("customer_email") or obj.get("metadata", {}).get("email", "")).strip().lower()
+        meta  = obj.get("metadata", {})
+        try:
+            credits_to_add = int(meta.get("credits", 100))
+        except (ValueError, TypeError):
+            credits_to_add = 100
+        plan_name = meta.get("plan", "pro")
         if email:
             try:
                 conn = get_db(); cur = conn.cursor()
-                cur.execute("UPDATE users SET credits = credits + 100 WHERE email = %s RETURNING credits", (email,))
+                cur.execute("UPDATE users SET credits = credits + %s WHERE email = %s RETURNING credits", (credits_to_add, email))
                 result = cur.fetchone()
                 conn.commit(); cur.close(); conn.close()
-                print(f"[WEBHOOK] ✅ 100 crédits → {email} (total: {result['credits'] if result else '?'})")
+                print(f"[WEBHOOK] ✅ +{credits_to_add} crédits ({plan_name}) → {email} (total: {result['credits'] if result else '?'})")
             except Exception as e:
                 print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
