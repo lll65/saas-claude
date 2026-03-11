@@ -73,15 +73,32 @@ def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
 # ─────────────────────────────────────────────
 app = FastAPI(title="PixGlow API", version="2.4")
 
+ALLOWED_ORIGINS = [
+    "https://pixglow.app",
+    "https://www.pixglow.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-CORS_HEADERS = {"Access-Control-Allow-Origin": "https://www.pixglow.app"}
+# Used in exception handlers — must match Allow-Origin for the actual request origin
+def _cors_headers(request: Request) -> dict:
+    origin = request.headers.get("origin", "")
+    allowed = origin if origin in ALLOWED_ORIGINS else "https://www.pixglow.app"
+    return {
+        "Access-Control-Allow-Origin": allowed,
+        "Access-Control-Allow-Credentials": "true",
+    }
+
+# Kept for backwards compatibility where Request is unavailable
+CORS_HEADERS = {"Access-Control-Allow-Origin": "https://www.pixglow.app", "Access-Control-Allow-Credentials": "true"}
 
 # ─────────────────────────────────────────────
 #  HANDLERS D'ERREUR
@@ -89,11 +106,11 @@ CORS_HEADERS = {"Access-Control-Allow-Origin": "https://www.pixglow.app"}
 @app.exception_handler(Exception)
 async def global_exc(request: Request, exc: Exception):
     print(f"[ERREUR] {type(exc).__name__}: {exc}")
-    return JSONResponse(status_code=500, content={"detail": f"Erreur serveur: {str(exc)}"}, headers=CORS_HEADERS)
+    return JSONResponse(status_code=500, content={"detail": f"Erreur serveur: {str(exc)}"}, headers=_cors_headers(request))
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exc(request: Request, exc: StarletteHTTPException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=CORS_HEADERS)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=_cors_headers(request))
 
 # ─────────────────────────────────────────────
 #  POSTGRESQL
@@ -534,26 +551,46 @@ async def generate_description(
     prompt = """Tu es expert vente Vinted France. Analyse ce vêtement et génère UNIQUEMENT ce JSON (sans markdown) :
 {"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":85,"categorie":"vetement|chaussures|accessoires|sacs|bijoux"}"""
 
+    # Vision models to try in order (fallback if first is unavailable)
+    VISION_MODELS = [
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "llama-3.2-11b-vision-preview",
+        "llama-3.2-90b-vision-preview",
+    ]
+
     try:
+        last_error = None
+        resp = None
         async with httpx.AsyncClient(timeout=45) as client:
-            resp = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {GROQ_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-                    "max_tokens": 500,
-                    "messages": [{
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": image_data_url}},
-                            {"type": "text", "text": prompt}
-                        ]
-                    }]
-                }
-            )
+            for model in VISION_MODELS:
+                try:
+                    resp = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {GROQ_API_KEY}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": model,
+                            "max_tokens": 500,
+                            "messages": [{
+                                "role": "user",
+                                "content": [
+                                    {"type": "image_url", "image_url": {"url": image_data_url}},
+                                    {"type": "text", "text": prompt}
+                                ]
+                            }]
+                        }
+                    )
+                    if resp.status_code == 200:
+                        break
+                    last_error = f"Model {model} → HTTP {resp.status_code}"
+                    resp = None
+                except Exception as me:
+                    last_error = f"Model {model} → {me}"
+                    resp = None
+            if resp is None:
+                raise HTTPException(503, f"Tous les modèles vision indisponibles: {last_error}")
             resp.raise_for_status()
             data = resp.json()
             text = data["choices"][0]["message"]["content"]
@@ -704,22 +741,35 @@ Génère UNIQUEMENT ce JSON (sans markdown) :
 {{"titre":"titre avec mot-tendance max 60 caractères","description":"2-3 phrases naturelles avec emojis et mots tendance","hashtags":"#tag1 #tag2 ... (inclure les mots tendance comme hashtags)","score":{min(98, body.current_score + 8)},"amelioration":"+{min(98, body.current_score + 8) - body.current_score} pts — mots tendance intégrés"}}"""
 
     try:
+        last_error = None
+        resp = None
         async with httpx.AsyncClient(timeout=45) as client:
-            resp = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-                    "max_tokens": 500,
-                    "messages": [{
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": image_data_url}},
-                            {"type": "text", "text": prompt}
-                        ]
-                    }]
-                }
-            )
+            for model in ["meta-llama/llama-4-scout-17b-16e-instruct", "llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]:
+                try:
+                    resp = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                        json={
+                            "model": model,
+                            "max_tokens": 500,
+                            "messages": [{
+                                "role": "user",
+                                "content": [
+                                    {"type": "image_url", "image_url": {"url": image_data_url}},
+                                    {"type": "text", "text": prompt}
+                                ]
+                            }]
+                        }
+                    )
+                    if resp.status_code == 200:
+                        break
+                    last_error = f"Model {model} → HTTP {resp.status_code}"
+                    resp = None
+                except Exception as me:
+                    last_error = f"Model {model} → {me}"
+                    resp = None
+            if resp is None:
+                raise HTTPException(503, f"Modèles vision indisponibles: {last_error}")
             resp.raise_for_status()
             text = resp.json()["choices"][0]["message"]["content"]
             import re as _re
