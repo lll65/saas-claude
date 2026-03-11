@@ -463,21 +463,33 @@ export default function PixGlow() {
   };
 
   const handleFilesChange = (e) => {
-         const selected = Array.from(e.target.files || []);
- 	 if (!selected.length) return;
-     e.target.value = '';
-          const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
-          const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
-          const chosen = selected.slice(0, maxAllowed);
-          if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
+    const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
+    const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
+    const chosen = selected.slice(0, maxAllowed);
+    if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
+    e.target.value = '';
 
-           // ✅ URL.createObjectURL au lieu de FileReader — plus rapide et fiable sur Android
-           const objectUrls = chosen.map(f => URL.createObjectURL(f));
-           setFiles(chosen);
-           setPreviews(objectUrls);
-           setResults([]);
-           setProgress(0);
-      };
+    // FileReader est plus fiable sur Android (content:// URIs, HEIC, etc.)
+    // On lit chaque fichier en base64 pour l'aperçu
+    const readFile = (file) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.onerror = () => resolve(null); // aperçu cassé → null géré en affichage
+      reader.readAsDataURL(file);
+    });
+
+    setFiles(chosen);
+    setResults([]);
+    setProgress(0);
+    // Afficher des placeholders gris pendant le chargement
+    setPreviews(chosen.map(() => null));
+
+    Promise.all(chosen.map(readFile)).then((urls) => {
+      setPreviews(urls);
+    });
+  };
 
   const handleUpload = async () => {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
@@ -506,7 +518,6 @@ export default function PixGlow() {
   const handleDownload = (r) => { const a = document.createElement('a'); a.href = r.url; a.download = r.filename; a.click(); };
   const handleDownloadAll = () => results.filter(r => !r.error).forEach(handleDownload);
   const reset = () => {
-    previews.forEach(url => URL.revokeObjectURL(url)); // libère mémoire
     setFiles([]);
     setPreviews([]);
     setResults([]);
@@ -870,8 +881,11 @@ export default function PixGlow() {
                   <p style={{ color: '#475569', fontSize: '13px', marginBottom: '10px', fontWeight: 600 }}>{previews.length} photo{previews.length > 1 ? 's' : ''} sélectionnée{previews.length > 1 ? 's' : ''}</p>
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(previews.length, isMobile ? 3 : 5)},1fr)`, gap: '8px' }}>
                     {previews.map((src, i) => (
-                      <div key={i} style={{ position: 'relative' }}>
-                        <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: isMobile ? '100px' : '120px', objectFit: 'contain', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', display: 'block', background: 'rgba(124,58,237,.08)' }} />
+                      <div key={i} style={{ position: 'relative', width: '100%', height: isMobile ? '100px' : '120px', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', background: 'rgba(124,58,237,.08)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {src
+                          ? <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+                          : <span style={{ fontSize: '22px', opacity: 0.4 }}>⏳</span>
+                        }
                         {loading && i < progress && <div className="pg-check" style={{ position: 'absolute', inset: 0, background: 'rgba(16,185,129,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✅</div>}
                       </div>
                     ))}
