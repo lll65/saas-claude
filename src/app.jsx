@@ -459,7 +459,12 @@ export default function PixGlow() {
       setUserEmail(savedEmail); setIsConnected(true);
       fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); }).catch(() => {});
     }
-    fetch(`${API_URL}/free-remaining`).then(r => r.json()).then(d => { if (d.remaining !== undefined) { setFreeLeft(d.remaining); localStorage.setItem('pg_free', d.remaining); } }).catch(() => setFreeLeft(parseInt(localStorage.getItem('pg_free') || '5')));
+    fetch(`${API_URL}/free-remaining`).then(r => r.json()).then(d => { if (d.remaining !== undefined) { setFreeLeft(d.remaining); localStorage.setItem('pg_free', String(d.remaining)); } }).catch(() => {
+      // En cas d'échec réseau, on lit le localStorage SANS jamais remettre à 5 par défaut.
+      // Si la clé n'existe pas, on suppose 0 (plus sûr que de redonner des crédits gratuits).
+      const stored = localStorage.getItem('pg_free');
+      setFreeLeft(stored !== null ? parseInt(stored, 10) : 0);
+    });
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
       setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { setCredits(d.credits); alert(`✅ Paiement confirmé ! ${d.credits} crédits disponibles.`); window.history.replaceState({}, '', window.location.pathname); } }); }, 2000);
@@ -523,7 +528,7 @@ export default function PixGlow() {
         else {
           newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: previews[i] });
           if (data.credits_left !== null && data.credits_left !== undefined) setCredits(data.credits_left);
-          else { currentFreeLeft = Math.max(0, (currentFreeLeft ?? 5) - 1); setFreeLeft(currentFreeLeft); localStorage.setItem('pg_free', currentFreeLeft); }
+          else { currentFreeLeft = Math.max(0, (currentFreeLeft ?? 0) - 1); setFreeLeft(currentFreeLeft); localStorage.setItem('pg_free', String(currentFreeLeft)); }
         }
       } catch { newResults.push({ error: 'Erreur réseau', original: previews[i] }); }
       setResults([...newResults]);
