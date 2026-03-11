@@ -163,6 +163,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
   const generateBoost = async () => {
     if (!isConnected) { onUpgrade(); return; }
@@ -183,11 +185,11 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
         throw new Error(err.detail || `Erreur ${response.status}`);
       }
       const data = await response.json();
-      setResult(data);
+      if (mountedRef.current) setResult(data);
     } catch (e) {
-      setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
+      if (mountedRef.current) setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
     }
-    setLoading(false);
+    if (mountedRef.current) setLoading(false);
   };
 
   const handleCopy = () => {
@@ -304,11 +306,12 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
 /* ══ UPSELL BANNER ══ */
 function UpsellBanner({ freeLeft, onRegister, onLogin }) {
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('pg_upsell_dismissed') === '1');
+  const dismiss = () => { sessionStorage.setItem('pg_upsell_dismissed', '1'); setDismissed(true); };
   if (dismissed || freeLeft === null || freeLeft > 1) return null;
   return (
     <div className="pg-slide-up" style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.12),rgba(16,185,129,.06))', border: '1px solid rgba(124,58,237,.3)', borderRadius: '16px', padding: '18px 20px', marginBottom: '14px', position: 'relative' }}>
-      <button onClick={() => setDismissed(true)} style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
+      <button onClick={dismiss} style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
           <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '15px', color: '#fff', marginBottom: '4px' }}>
@@ -463,7 +466,6 @@ export default function PixGlow() {
   const [authMode, setAuthMode] = useState('login');
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(null); // crédits affichés après paiement réussi
-  const [paymentSuccess, setPaymentSuccess] = useState(null); // stores credit count after successful payment
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -491,7 +493,7 @@ export default function PixGlow() {
   }, []);
 
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
-  const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
+  const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setFreeLeft(null); setShowAuth(false); setPage('app'); };
   const handleLogout = () => { ['pg_token','pg_email','pg_free'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setFreeLeft(null); setPage('landing'); };
   const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
   const canSelect = () => isConnected || freeLeft === null || freeLeft > 0;
@@ -957,7 +959,7 @@ description auto</span><br/>
               )}
 
               {!limitReached && (
-                <button onClick={handleUpload} disabled={!files.length || loading} className={files.length && !loading ? 'pg-btn' : ''}
+                <button onClick={handleUpload} disabled={!files.length || loading || previews.some(p => p === null)} className={files.length && !loading && !previews.some(p => p === null) ? 'pg-btn' : ''}
                   style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '18px', fontSize: isMobile ? '17px' : '19px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.03)', color: files.length && !loading ? '#fff' : '#1e293b', fontFamily: 'inherit', transition: 'all .2s' }}>
                   {loading ? `⏳ Photo ${progress}/${files.length} en cours...` : files.length ? `⚡ Améliorer ${files.length} photo${files.length > 1 ? 's' : ''}` : '← Sélectionnez des photos ci-dessus'}
                 </button>
