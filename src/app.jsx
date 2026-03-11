@@ -396,17 +396,20 @@ function PlanModal({ show, onClose, onSelect, isMobile }) {
 }
 
 /* ══ STICKY BOTTOM BAR (mobile) ══ */
-function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits, isConnected, isMobile }) {
+function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits, isConnected, isMobile, zipping }) {
   if (!show || !isMobile) return null;
   return (
     <div className="pg-slide-up" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(10,8,20,.97)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(124,58,237,.2)', padding: '12px 16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
       {doneCount > 0 && (
-        <button onClick={onDownloadAll} className="pg-btn" style={{ flex: 2, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>
-          📥 Télécharger ({doneCount})
+        <button onClick={onDownloadAll} disabled={zipping} className="pg-btn" style={{ flex: 3, background: zipping ? 'rgba(16,185,129,.3)' : 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: zipping ? 'wait' : 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: zipping ? .8 : 1 }}>
+          {zipping
+            ? <><span style={{ display: 'inline-block', animation: 'pg-pulse-score 1s infinite' }}>⏳</span> Compression...</>
+            : <>{doneCount > 1 ? '📦' : '📥'} {doneCount > 1 ? `Tout télécharger (${doneCount}) — ZIP` : 'Télécharger'}</>
+          }
         </button>
       )}
       <button onClick={onReset} className="pg-ghost" style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '12px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>🔄</button>
-      <button onClick={onBuyCredits} className="pg-btn" style={{ flex: 2, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>💎 Crédits</button>
+      <button onClick={onBuyCredits} className="pg-btn" style={{ flex: 2, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>💎</button>
     </div>
   );
 }
@@ -616,8 +619,63 @@ export default function PixGlow() {
     setLoading(false);
   };
 
-  const handleDownload = (r) => { const a = document.createElement('a'); a.href = r.url; a.download = r.filename; a.click(); };
-  const handleDownloadAll = () => results.filter(r => !r.error).forEach(handleDownload);
+  // Téléchargement via blob — évite la navigation hors de l'app sur mobile
+  const handleDownload = async (r) => {
+    try {
+      const res = await fetch(r.url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = r.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+    } catch {
+      // Fallback si fetch échoue (CORS)
+      const a = document.createElement('a');
+      a.href = r.url; a.download = r.filename;
+      a.target = '_blank'; a.rel = 'noopener'; a.click();
+    }
+  };
+
+  // Télécharge toutes les photos en un seul ZIP — 1 clic, 0 navigation
+  const [zipping, setZipping] = useState(false);
+  const handleDownloadAll = async () => {
+    const done = results.filter(r => !r.error);
+    if (!done.length) return;
+    if (done.length === 1) { handleDownload(done[0]); return; }
+    setZipping(true);
+    try {
+      if (!window.JSZip) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      const zip = new window.JSZip();
+      await Promise.all(done.map(async (r, i) => {
+        const res = await fetch(r.url);
+        const blob = await res.blob();
+        zip.file(r.filename || `pixglow_${i+1}.jpg`, blob);
+      }));
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const blobUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `pixglow_photos_${done.length}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    } catch {
+      done.forEach(r => handleDownload(r));
+    }
+    setZipping(false);
+  };
   const reset = () => {
     setFiles([]);
     setPreviews([]);
@@ -1071,7 +1129,9 @@ description auto</span><br/>
                   <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>Prêtes à être publiées sur Vinted & Leboncoin</p>
                 </div>
                 {doneCount > 1 && !isMobile && (
-                  <button onClick={handleDownloadAll} className="pg-btn" style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Tout télécharger ({doneCount})</button>
+                  <button onClick={handleDownloadAll} disabled={zipping} className="pg-btn" style={{ background: zipping ? 'rgba(16,185,129,.4)' : 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: zipping ? 'wait' : 'pointer', fontSize: '14px', fontFamily: 'inherit', opacity: zipping ? .8 : 1 }}>
+                    {zipping ? '⏳ Compression ZIP...' : `📦 Tout télécharger (${doneCount}) — ZIP`}
+                  </button>
                 )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '14px' }}>
@@ -1093,7 +1153,7 @@ description auto</span><br/>
                       <>
                         {/* Bouton télécharger individuel — desktop uniquement */}
                         {!isMobile && (
-                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '0' }}>📥 Télécharger</button>
+                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '8px' }}>📥 Télécharger</button>
                         )}
                         <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => openAuth('register')} />
                       </>
@@ -1144,6 +1204,7 @@ description auto</span><br/>
         onBuyCredits={isConnected ? () => setShowPlanModal(true) : () => openAuth('register')}
         isConnected={isConnected}
         isMobile={isMobile}
+        zipping={zipping}
       />
     </div>
   );
