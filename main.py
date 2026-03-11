@@ -532,7 +532,7 @@ async def generate_description(
     image_data_url = f"data:image/png;base64,{image_b64}"
 
     prompt = """Tu es expert vente Vinted France. Analyse ce vêtement et génère UNIQUEMENT ce JSON (sans markdown) :
-{"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":85}"""
+{"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":85,"categorie":"vetement|chaussures|accessoires|sacs|bijoux"}"""
 
     try:
         async with httpx.AsyncClient(timeout=45) as client:
@@ -564,7 +564,8 @@ async def generate_description(
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
                 "description": str(parsed.get("description", "Bel article 📦"))[:300],
                 "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion"))[:500],
-                "score": max(60, min(98, int(parsed.get("score", 75))))
+                "score": max(60, min(98, int(parsed.get("score", 75)))),
+                "categorie": str(parsed.get("categorie", "vetement"))
             }
     except HTTPException:
         raise
@@ -573,6 +574,169 @@ async def generate_description(
     except Exception as e:
         print(f"[generate-description] {type(e).__name__}: {e}")
         raise HTTPException(500, f"Erreur génération: {str(e)}")
+
+
+# ─────────────────────────────────────────────
+#  TRENDING KEYWORDS (simulé via LLM — mise à jour hebdo)
+# ─────────────────────────────────────────────
+import hashlib as _hashlib
+from datetime import date as _date
+
+# Cache en mémoire — évite de rappeler Groq pour chaque utilisateur
+# clé = semaine ISO + catégorie, valeur = {trends, expires_at}
+_trends_cache: dict = {}
+_trends_lock = threading.Lock()
+
+def _week_key(category: str) -> str:
+    week = _date.today().isocalendar()  # (year, week, day)
+    return f"{week[0]}-W{week[1]:02d}-{category.lower()[:20]}"
+
+class TrendRequest(BaseModel):
+    category: str = "mode"   # catégorie détectée par l'IA dans le titre/desc
+    force_refresh: bool = False
+
+@app.post("/trending")
+async def get_trending(
+    body: TrendRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Retourne les 6 mots-tendance de la semaine pour une catégorie mode.
+    Cache 7 jours par catégorie — un seul appel Groq par semaine par catégorie.
+    """
+    if not current_user:
+        raise HTTPException(401, "Connexion requise.")
+    if not GROQ_API_KEY:
+        raise HTTPException(503, "GROQ_API_KEY manquante.")
+
+    cache_key = _week_key(body.category)
+    now = time.time()
+
+    # Retourner depuis le cache si valide et pas de force_refresh
+    with _trends_lock:
+        cached = _trends_cache.get(cache_key)
+        if cached and not body.force_refresh and now < cached["expires_at"]:
+            return cached["data"]
+
+    # Générer via Groq — connaissance mode France 2024-2025
+    prompt = f"""Tu es expert tendances mode Vinted France.
+Semaine du {_date.today().strftime('%d/%m/%Y')}.
+Catégorie : {body.category}
+
+Liste les 6 mots-clés qui explosent EN CE MOMENT sur Vinted/Depop France pour "{body.category}".
+Mix : esthétiques viraux (TikTok/Pinterest), coupes tendance, matières, couleurs saison.
+
+Réponds UNIQUEMENT avec ce JSON (sans markdown) :
+{{"trends":[{{"mot":"exemple","boost":"+420%","raison":"Viral TikTok cette semaine","score_avant":80,"score_apres":93}},{{"mot":"exemple2","boost":"+180%","raison":"Tendance saison","score_avant":80,"score_apres":89}},...6 items total],"categorie_detectee":"{body.category}","maj":"{_date.today().isoformat()}"}}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "max_tokens": 600,
+                    "temperature": 0.7,
+                    "messages": [{"role": "user", "content": prompt}]
+                }
+            )
+            resp.raise_for_status()
+            text = resp.json()["choices"][0]["message"]["content"]
+            import re as _re
+            text = _re.sub(r"```json|```", "", text).strip()
+            parsed = json.loads(text)
+
+            result = {
+                "trends": parsed.get("trends", [])[:6],
+                "categorie": parsed.get("categorie_detectee", body.category),
+                "maj": parsed.get("maj", str(_date.today())),
+                "cache_key": cache_key
+            }
+
+            # Mettre en cache 7 jours
+            with _trends_lock:
+                _trends_cache[cache_key] = {
+                    "data": result,
+                    "expires_at": now + 7 * 24 * 3600
+                }
+
+            return result
+
+    except json.JSONDecodeError:
+        raise HTTPException(500, "Erreur parsing tendances — réessaie")
+    except Exception as e:
+        print(f"[trending] {type(e).__name__}: {e}")
+        raise HTTPException(500, f"Erreur tendances: {str(e)}")
+
+
+class BoostRequest(BaseModel):
+    image_url: str
+    trend_words: list  # mots-tendance à injecter
+    current_score: int = 75
+
+@app.post("/generate-boosted")
+async def generate_boosted(
+    body: BoostRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """Régénère titre/desc/hashtags en injectant les mots-tendance."""
+    if not current_user:
+        raise HTTPException(401, "Connexion requise.")
+    if not GROQ_API_KEY:
+        raise HTTPException(503, "GROQ_API_KEY manquante.")
+
+    filename = os.path.basename(body.image_url.split("?")[0])
+    local_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(local_path):
+        raise HTTPException(404, "Image introuvable. Retraitez la photo.")
+
+    with open(local_path, "rb") as f:
+        image_b64 = base64.b64encode(f.read()).decode("utf-8")
+    image_data_url = f"data:image/png;base64,{image_b64}"
+
+    mots = ", ".join(body.trend_words[:6])
+    prompt = f"""Tu es expert vente Vinted France. Score actuel : {body.current_score}/100.
+Mots-tendance à INTÉGRER naturellement : {mots}
+Ces mots sont viraux cette semaine. Intègre-les dans le titre et les hashtags obligatoirement.
+
+Génère UNIQUEMENT ce JSON (sans markdown) :
+{{"titre":"titre avec mot-tendance max 60 caractères","description":"2-3 phrases naturelles avec emojis et mots tendance","hashtags":"#tag1 #tag2 ... (inclure les mots tendance comme hashtags)","score":{min(98, body.current_score + 8)},"amelioration":"+{min(98, body.current_score + 8) - body.current_score} pts — mots tendance intégrés"}}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=45) as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+                    "max_tokens": 500,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": image_data_url}},
+                            {"type": "text", "text": prompt}
+                        ]
+                    }]
+                }
+            )
+            resp.raise_for_status()
+            text = resp.json()["choices"][0]["message"]["content"]
+            import re as _re
+            text = _re.sub(r"```json|```", "", text).strip()
+            parsed = json.loads(text)
+            return {
+                "titre": str(parsed.get("titre", ""))[:80],
+                "description": str(parsed.get("description", ""))[:300],
+                "hashtags": str(parsed.get("hashtags", ""))[:500],
+                "score": max(body.current_score, min(98, int(parsed.get("score", body.current_score + 8)))),
+                "amelioration": str(parsed.get("amelioration", f"+8 pts"))
+            }
+    except json.JSONDecodeError:
+        raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
+    except Exception as e:
+        print(f"[generate-boosted] {type(e).__name__}: {e}")
+        raise HTTPException(500, f"Erreur boost: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
