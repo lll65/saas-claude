@@ -197,10 +197,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return None
 
 def get_real_ip(request: Request) -> str:
-    # Log pour debug
-    print(f"[IP DEBUG] X-Forwarded-For: {request.headers.get('X-Forwarded-For', 'ABSENT')}")
-    print(f"[IP DEBUG] X-Real-IP: {request.headers.get('X-Real-IP', 'ABSENT')}")
-    print(f"[IP DEBUG] client.host: {request.client.host}")
+    # X-Real-IP est le plus fiable sur Railway
+    real_ip = request.headers.get("X-Real-IP", "").strip()
+    if real_ip and not real_ip.startswith("100.64."):
+        return real_ip
     
     forwarded = request.headers.get("X-Forwarded-For", "")
     if forwarded:
@@ -215,14 +215,8 @@ def get_real_ip(request: Request) -> str:
         ]
         if public_ips:
             return public_ips[0]
-        # Si que des IPs internes, prendre la première quand même
-        # (chaque user Railway a une IP 100.64.x.x différente)
-        if ips:
-            return ips[0]
-    return (
-        request.headers.get("X-Real-IP", "")
-        or request.client.host
-    )
+    
+    return request.client.host
 
 def get_ip_count(ip: str) -> int:
     try:
