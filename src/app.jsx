@@ -320,25 +320,41 @@ function PlanModal({ show, onClose, onSelect, isMobile }) {
     { id: 'elite',   icon: '🚀', label: 'Elite',   credits: 300, price: '35€', pricePerPhoto: '0,12€', color: '96,165,250',  highlight: false, badge: '💰 MEILLEUR PRIX/PHOTO' },
   ];
   return (
-    <div onClick={e => e.target === e.currentTarget && onClose()} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div className="pg-anim" style={{ background: 'linear-gradient(160deg,#16102a,#0d0d1a)', border: '1px solid rgba(124,58,237,.35)', borderRadius: '24px', padding: isMobile ? '24px 16px' : '40px 36px', width: '100%', maxWidth: '640px', position: 'relative' }}>
+    <div onClick={e => e.target === e.currentTarget && onClose()} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? '0' : '16px' }}>
+      <div className="pg-anim" style={{ background: 'linear-gradient(160deg,#16102a,#0d0d1a)', border: '1px solid rgba(124,58,237,.35)', borderRadius: isMobile ? '24px 24px 0 0' : '24px', padding: isMobile ? '20px 16px 32px' : '40px 36px', width: '100%', maxWidth: isMobile ? '100%' : '640px', position: 'relative', maxHeight: isMobile ? '92vh' : '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(255,255,255,.08)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', width: '34px', height: '34px', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '20px' : '24px', fontWeight: 800, color: '#fff', marginBottom: '4px', textAlign: 'center' }}>Choisir une offre</h2>
-        <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '24px', textAlign: 'center' }}>Crédits valables à vie · Sans abonnement · 🔒 Paiement sécurisé</p>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '12px' }}>
+        {isMobile && <div style={{ width: '36px', height: '4px', background: 'rgba(255,255,255,.15)', borderRadius: '2px', margin: '0 auto 16px' }} />}
+        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '24px', fontWeight: 800, color: '#fff', marginBottom: '4px', textAlign: 'center' }}>Choisir une offre</h2>
+        <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '20px', textAlign: 'center' }}>Crédits valables à vie · Sans abonnement · 🔒 Paiement sécurisé</p>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: isMobile ? '10px' : '12px' }}>
           {plans.map(p => (
-            <div key={p.id} style={{ position: 'relative', background: p.highlight ? 'linear-gradient(160deg,rgba(124,58,237,.15),rgba(79,70,229,.08))' : 'rgba(255,255,255,.03)', border: `2px solid ${p.highlight ? 'rgba(124,58,237,.55)' : `rgba(${p.color},.22)`}`, borderRadius: '18px', padding: '22px 18px', textAlign: 'center' }}>
-              {p.badge && <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: p.highlight ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : `rgba(${p.color},.85)`, color: '#fff', fontSize: '9px', fontWeight: 800, padding: '3px 10px', borderRadius: '100px', whiteSpace: 'nowrap' }}>{p.badge}</div>}
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{p.icon}</div>
-              <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '2px' }}>{p.label}</div>
-              <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '36px', color: `rgb(${p.color})`, lineHeight: 1, marginBottom: '4px' }}>{p.price}</div>
-              <div style={{ color: `rgba(${p.color},.9)`, fontWeight: 700, fontSize: '14px', marginBottom: '2px' }}>{p.credits} crédits</div>
-              <div style={{ color: '#334155', fontSize: '11px', marginBottom: '16px' }}>{p.pricePerPhoto}/photo · Description AI incluse</div>
-              <button onClick={() => onSelect(p.id)} className="pg-btn" style={{ width: '100%', background: p.highlight ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : `rgba(${p.color},.15)`, border: p.highlight ? 'none' : `1px solid rgba(${p.color},.3)`, color: '#fff', borderRadius: '10px', padding: '11px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir {p.label}</button>
+            <div key={p.id} style={{ position: 'relative', background: p.highlight ? 'linear-gradient(160deg,rgba(124,58,237,.15),rgba(79,70,229,.08))' : 'rgba(255,255,255,.03)', border: `2px solid ${p.highlight ? 'rgba(124,58,237,.55)' : `rgba(${p.color},.22)`}`, borderRadius: '16px', padding: isMobile ? '16px 14px' : '22px 18px', textAlign: 'center' }}>
+              {p.badge && <div style={{ position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)', background: p.highlight ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : `rgba(${p.color},.85)`, color: '#fff', fontSize: '9px', fontWeight: 800, padding: '3px 10px', borderRadius: '100px', whiteSpace: 'nowrap' }}>{p.badge}</div>}
+              {isMobile
+                ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
+                    <div style={{ fontSize: '24px', flexShrink: 0 }}>{p.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '15px', color: '#fff' }}>{p.label}</div>
+                      <div style={{ color: '#64748b', fontSize: '11px' }}>{p.credits} crédits · {p.pricePerPhoto}/photo</div>
+                    </div>
+                    <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '24px', color: `rgb(${p.color})`, flexShrink: 0 }}>{p.price}</div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '28px', marginBottom: '8px' }}>{p.icon}</div>
+                    <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '2px' }}>{p.label}</div>
+                    <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '36px', color: `rgb(${p.color})`, lineHeight: 1, marginBottom: '4px' }}>{p.price}</div>
+                    <div style={{ color: `rgba(${p.color},.9)`, fontWeight: 700, fontSize: '14px', marginBottom: '2px' }}>{p.credits} crédits</div>
+                    <div style={{ color: '#334155', fontSize: '11px', marginBottom: '16px' }}>{p.pricePerPhoto}/photo · Description AI incluse</div>
+                  </>
+                )
+              }
+              <button onClick={() => onSelect(p.id)} className="pg-btn" style={{ width: '100%', marginTop: isMobile ? '10px' : '0', background: p.highlight ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : `rgba(${p.color},.15)`, border: p.highlight ? 'none' : `1px solid rgba(${p.color},.3)`, color: '#fff', borderRadius: '10px', padding: isMobile ? '10px' : '11px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir {p.label}</button>
             </div>
           ))}
         </div>
-        <p style={{ color: '#1e293b', fontSize: '11px', textAlign: 'center', marginTop: '16px' }}>🤖 Description AI illimitée incluse avec chaque crédit</p>
+        <p style={{ color: '#1e293b', fontSize: '11px', textAlign: 'center', marginTop: '14px' }}>🤖 Description AI illimitée incluse avec chaque crédit</p>
       </div>
     </div>
   );
