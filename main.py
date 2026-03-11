@@ -197,24 +197,38 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return None
 
 def get_real_ip(request: Request) -> str:
+    """
+    Extracts the real client IP from proxy headers.
+    Priority: CF-Connecting-IP (Cloudflare) > X-Forwarded-For (leftmost public IP) > X-Real-IP > direct host.
+    Filters out private/internal IPs from proxy chains.
+    """
+    PRIVATE_PREFIXES = ("100.64.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
+                        "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
+                        "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
+                        "192.168.", "127.", "::1", "fc", "fd")
+
+    def is_public(ip: str) -> bool:
+        return ip and not any(ip.startswith(p) for p in PRIVATE_PREFIXES)
+
+    # Cloudflare — most reliable when behind CF
+    cf_ip = request.headers.get("CF-Connecting-IP", "").strip()
+    if is_public(cf_ip):
+        return cf_ip
+
+    # X-Forwarded-For — take the first public IP (real client is leftmost)
     forwarded = request.headers.get("X-Forwarded-For", "")
     if forwarded:
-        ips = [ip.strip() for ip in forwarded.split(",")]
-        # Filtrer les IPs internes Railway (100.64.x.x) et privées
-        public_ips = [
-            ip for ip in ips
-            if not ip.startswith("100.64.")
-            and not ip.startswith("10.")
-            and not ip.startswith("172.")
-            and not ip.startswith("192.168.")
-            and not ip.startswith("127.")
-        ]
-        if public_ips:
-            return public_ips[0]
-    return (
-        request.headers.get("X-Real-IP", "")
-        or request.client.host
-    )
+        for ip in (ip.strip() for ip in forwarded.split(",")):
+            if is_public(ip):
+                return ip
+
+    # X-Real-IP fallback
+    real_ip = request.headers.get("X-Real-IP", "").strip()
+    if is_public(real_ip):
+        return real_ip
+
+    # Last resort: direct connection (works in dev / no proxy)
+    return request.client.host if request.client else "unknown"
 
 def get_ip_count(ip: str) -> int:
     try:
@@ -225,17 +239,36 @@ def get_ip_count(ip: str) -> int:
     except: return 0
 
 def increment_ip(ip: str):
+    """
+    Atomically increments the usage counter for an IP using a single SQL statement.
+    Returns (allowed: bool, new_count: int).
+    Uses INSERT ... ON CONFLICT to avoid race conditions.
+    """
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
-    row = cur.fetchone()
-    if not row:
-        cur.execute("INSERT INTO ip_usage (ip, count) VALUES (%s, 1)", (ip,))
-        conn.commit(); cur.close(); conn.close(); return True, 1
-    count = row["count"]
-    if count >= FREE_IMAGES_PER_IP:
-        cur.close(); conn.close(); return False, count
-    cur.execute("UPDATE ip_usage SET count = count + 1 WHERE ip = %s", (ip,))
-    conn.commit(); cur.close(); conn.close(); return True, count + 1
+    try:
+        # Atomic upsert: only increment if count is strictly below the limit
+        cur.execute("""
+            INSERT INTO ip_usage (ip, count) VALUES (%s, 1)
+            ON CONFLICT (ip) DO UPDATE
+                SET count = ip_usage.count + 1
+            WHERE ip_usage.count < %s
+            RETURNING count
+        """, (ip, FREE_IMAGES_PER_IP))
+        row = cur.fetchone()
+        conn.commit()
+        if row:
+            # Row was updated/inserted → request is allowed
+            return True, row["count"]
+        else:
+            # WHERE clause blocked the update → limit already reached
+            cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
+            current = cur.fetchone()
+            return False, current["count"] if current else FREE_IMAGES_PER_IP
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close(); conn.close()
 
 class DescriptionRequest(BaseModel):
     image_url: str = ""
@@ -393,32 +426,21 @@ async def get_image(filename: str):
         raise HTTPException(404, "Image introuvable ou expirée")
     return FileResponse(filepath, media_type="image/png")
 
-class CheckoutRequest(BaseModel):
-    plan: str = "pro"
-
-PLANS = {
-    "starter": {"credits": 30,  "amount": 700,  "name": "30 Crédits PixGlow — Starter"},
-    "pro":     {"credits": 100, "amount": 1500, "name": "100 Crédits PixGlow — Pro"},
-    "elite":   {"credits": 300, "amount": 3500, "name": "300 Crédits PixGlow — Elite"},
-}
-
 @app.post("/create-checkout-session")
-async def create_checkout_session(body: CheckoutRequest = CheckoutRequest(), current_user: str = Depends(get_current_user)):
+async def create_checkout_session(current_user: str = Depends(get_current_user)):
     if not current_user: raise HTTPException(401, "Connexion requise")
-    plan = PLANS.get(body.plan)
-    if not plan: raise HTTPException(400, f"Plan inconnu : {body.plan}. Valeurs : starter, pro, elite.")
     try:
         session = stripe.checkout.Session.create(
             customer_email=current_user,
             payment_method_types=["card"],
             mode="payment",
             line_items=[{"price_data": {"currency": "eur",
-                "product_data": {"name": plan["name"],
-                    "description": f"{plan['credits']} crédits = {plan['credits']} photos avec fond blanc. Valables à vie."},
-                "unit_amount": plan["amount"]}, "quantity": 1}],
+                "product_data": {"name": "100 Crédits PixGlow",
+                    "description": "1 crédit = 1 photo avec fond blanc. Valables à vie."},
+                "unit_amount": 1500}, "quantity": 1}],
             success_url=f"{FRONTEND_URL}/?payment=success",
             cancel_url=f"{FRONTEND_URL}/?payment=cancel",
-            metadata={"email": current_user, "plan": body.plan, "credits": str(plan["credits"])}
+            metadata={"email": current_user}
         )
         return {"checkout_url": session.url}
     except Exception as e:
@@ -441,19 +463,13 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         obj   = event["data"]["object"]
         email = (obj.get("customer_email") or obj.get("metadata", {}).get("email", "")).strip().lower()
-        meta  = obj.get("metadata", {})
-        try:
-            credits_to_add = int(meta.get("credits", 100))
-        except (ValueError, TypeError):
-            credits_to_add = 100
-        plan_name = meta.get("plan", "pro")
         if email:
             try:
                 conn = get_db(); cur = conn.cursor()
-                cur.execute("UPDATE users SET credits = credits + %s WHERE email = %s RETURNING credits", (credits_to_add, email))
+                cur.execute("UPDATE users SET credits = credits + 100 WHERE email = %s RETURNING credits", (email,))
                 result = cur.fetchone()
                 conn.commit(); cur.close(); conn.close()
-                print(f"[WEBHOOK] ✅ +{credits_to_add} crédits ({plan_name}) → {email} (total: {result['credits'] if result else '?'})")
+                print(f"[WEBHOOK] ✅ 100 crédits → {email} (total: {result['credits'] if result else '?'})")
             except Exception as e:
                 print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
