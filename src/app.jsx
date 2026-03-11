@@ -403,8 +403,8 @@ function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits
       {doneCount > 0 && (
         <button onClick={onDownloadAll} disabled={zipping} className="pg-btn" style={{ flex: 3, background: zipping ? 'rgba(16,185,129,.3)' : 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: zipping ? 'wait' : 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: zipping ? .8 : 1 }}>
           {zipping
-            ? <><span style={{ display: 'inline-block', animation: 'pg-pulse-score 1s infinite' }}>⏳</span> Compression...</>
-            : <>{doneCount > 1 ? '📦' : '📥'} {doneCount > 1 ? `Tout télécharger (${doneCount}) — ZIP` : 'Télécharger'}</>
+            ? <><span style={{ display: 'inline-block', animation: 'pg-pulse-score 1s infinite' }}>⏳</span> Préparation...</>
+            : <>{doneCount > 1 ? '📦' : '📥'} {doneCount > 1 ? `Tout télécharger (${doneCount})` : 'Télécharger'}</>
           }
         </button>
       )}
@@ -528,6 +528,7 @@ export default function PixGlow() {
   const [authMode, setAuthMode] = useState('login');
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(null); // crédits affichés après paiement réussi
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -557,6 +558,7 @@ export default function PixGlow() {
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setFreeLeft(null); setShowAuth(false); setPage('app'); };
   const handleLogout = () => { ['pg_token','pg_email','pg_free'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setFreeLeft(null); setPage('landing'); };
+  const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
   const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
   const canSelect = () => isConnected || freeLeft === null || freeLeft > 0;
 
@@ -619,24 +621,27 @@ export default function PixGlow() {
     setLoading(false);
   };
 
+  // Détection iOS — Safari ne supporte pas a.download sur blob, il faut window.open
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
   // Téléchargement via blob — évite la navigation hors de l'app sur mobile
   const handleDownload = async (r) => {
     try {
       const res = await fetch(r.url);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = r.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+      if (isIOS) {
+        // Sur iOS : window.open ouvre l'image dans un onglet → l'utilisateur appuie longuement pour sauvegarder
+        window.open(blobUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+      } else {
+        const a = document.createElement('a');
+        a.href = blobUrl; a.download = r.filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+      }
     } catch {
-      // Fallback si fetch échoue (CORS)
-      const a = document.createElement('a');
-      a.href = r.url; a.download = r.filename;
-      a.target = '_blank'; a.rel = 'noopener'; a.click();
+      window.open(r.url, '_blank');
     }
   };
 
@@ -645,7 +650,13 @@ export default function PixGlow() {
   const handleDownloadAll = async () => {
     const done = results.filter(r => !r.error);
     if (!done.length) return;
+    // Photo unique → téléchargement direct
     if (done.length === 1) { handleDownload(done[0]); return; }
+    // iOS : le ZIP ne peut pas être téléchargé directement → ouvrir chaque photo
+    if (isIOS) {
+      done.forEach((r, i) => setTimeout(() => handleDownload(r), i * 400));
+      return;
+    }
     setZipping(true);
     try {
       if (!window.JSZip) {
@@ -667,9 +678,7 @@ export default function PixGlow() {
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = `pixglow_photos_${done.length}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     } catch {
       done.forEach(r => handleDownload(r));
@@ -696,11 +705,40 @@ export default function PixGlow() {
   if (page === 'confidentialite') return <><InjectCSS /><PolitiqueConfidentialite onBack={() => setPage('landing')} /></>;
   if (page === 'cgv') return <><InjectCSS /><CGV onBack={() => setPage('landing')} /></>;
 
+  // Tokens de thème — tous les styles conditionnels passent par T
+  const T = darkMode ? {
+    pageBg:     '#0a0a0f',
+    cardBg:     'rgba(255,255,255,.02)',
+    cardBorder: 'rgba(255,255,255,.05)',
+    navBg:      'rgba(10,10,15,.95)',
+    text:       '#e2e8f0',
+    textMuted:  '#475569',
+    textSub:    '#334155',
+    inputBg:    'rgba(15,10,30,.8)',
+    inputBorder:'rgba(124,58,237,.3)',
+    dropBg:     'rgba(124,58,237,.02)',
+    dropBorder: 'rgba(124,58,237,.28)',
+    sectionBg:  'linear-gradient(135deg,#0a0a0f,#111118)',
+  } : {
+    pageBg:     '#f8f9fc',
+    cardBg:     '#ffffff',
+    cardBorder: 'rgba(0,0,0,.08)',
+    navBg:      'rgba(255,255,255,.97)',
+    text:       '#111118',
+    textMuted:  '#4b5563',
+    textSub:    '#6b7280',
+    inputBg:    '#ffffff',
+    inputBorder:'rgba(124,58,237,.4)',
+    dropBg:     'rgba(124,58,237,.03)',
+    dropBorder: 'rgba(124,58,237,.3)',
+    sectionBg:  'linear-gradient(135deg,#f0f0f8,#f8f8ff)',
+  };
+
   const Nav = ({ showBack = false }) => (
-    <nav style={{ padding: isMobile ? '14px 16px' : '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.05)', background: 'rgba(10,10,15,.95)', backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100 }}>
+    <nav style={{ padding: isMobile ? '14px 16px' : '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)'}`, background: T.navBg, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setPage('landing')}>
         <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>✨</div>
-        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: '#fff' }}>PixGlow</span>
+        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {showBack ? (
@@ -721,6 +759,9 @@ export default function PixGlow() {
         ) : (
           <>
             {!isMobile && <button onClick={() => setPage('help')} className="pg-navlink" style={{ color: '#64748b', fontSize: '14px', padding: '0 6px' }}>Aide</button>}
+            <button onClick={toggleTheme} title={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'} style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', flexShrink: 0, transition: 'all .2s' }}>
+              {darkMode ? '☀️' : '🌙'}
+            </button>
             {isConnected
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
@@ -746,7 +787,7 @@ export default function PixGlow() {
 
   /* ══ LANDING ══ */
   if (page === 'landing') return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', overflowX: 'hidden' }}>
+    <div style={{ background: darkMode ? '#0a0a0f' : '#f8f9fc', minHeight: '100vh', color: darkMode ? '#e2e8f0' : '#111118', overflowX: 'hidden' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <Nav />
@@ -760,7 +801,7 @@ export default function PixGlow() {
             🛍️ Le spécialiste photo pour vendeurs Vinted, Leboncoin & Vestiaire
           </div>
           {/* Title SEO-optimisé */}
-          <h1 className="pg-hero" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '40px' : '72px', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-1.5px', color: '#fff', marginBottom: '20px' }}>
+          <h1 className="pg-hero" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '40px' : '72px', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-1.5px', color: T.text, marginBottom: '20px' }}>
             Double tes vues Vinted<br/>
             <span style={{ background: 'linear-gradient(135deg,#7c3aed,#60a5fa,#10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>fond blanc +
 description auto</span><br/>
@@ -808,7 +849,7 @@ description auto</span><br/>
             { step: '2', icon: '⚡', title: 'PixGlow traite en 10s', desc: 'Fond blanc parfait + lumière corrigée automatiquement' },
             { step: '3', icon: '🚀', title: 'Publie & vends', desc: '+38% de vues en moyenne sur tes annonces Vinted' },
           ].map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '16px', padding: '18px' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '16px', padding: '18px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '14px', color: '#fff', flexShrink: 0 }}>{s.step}</div>
               <div>
                 <p style={{ fontSize: '22px', margin: '0 0 4px' }}>{s.icon}</p>
@@ -822,7 +863,7 @@ description auto</span><br/>
 
       {/* AVANT/APRÈS SLIDER */}
       <section style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
-        <div style={{ background: 'linear-gradient(160deg,#111118,#0d0d18)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
+        <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
           <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Résultat en temps réel · améliorer photo Vinted</p>
           <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '20px' }}>Glisse le curseur pour voir la transformation</p>
 
@@ -878,7 +919,7 @@ description auto</span><br/>
             { icon: '🤖', titre: 'Description auto pour Vinted', desc: "Titre, description émoji-optimisée et hashtags générés automatiquement. Plus jamais la page blanche.", col: '96,165,250', badge: 'NOUVEAU' },
             { icon: '⚡', titre: "Jusqu'à 5 photos à la fois", desc: "Traitement en batch — prépare toute une annonce en moins d'une minute depuis ton téléphone.", col: '16,185,129' },
           ].map((f,i) => (
-            <div key={i} className="pg-card" style={{ background: 'rgba(255,255,255,.02)', border: `1px solid rgba(${f.col},.16)`, borderRadius: '20px', padding: '28px 24px', position: 'relative' }}>
+            <div key={i} className="pg-card" style={{ background: T.cardBg, border: `1px solid rgba(${f.col},.2)`, borderRadius: '20px', padding: '28px 24px', position: 'relative' }}>
               {f.badge && <div style={{ position: 'absolute', top: '16px', right: '16px', background: `rgba(${f.col},.2)`, color: `rgb(${f.col})`, fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '100px' }}>{f.badge}</div>}
               <div style={{ width: '52px', height: '52px', background: `rgba(${f.col},.1)`, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', marginBottom: '18px', border: `1px solid rgba(${f.col},.18)` }}>{f.icon}</div>
               <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 700, marginBottom: '10px', color: '#fff' }}>{f.titre}</h3>
@@ -891,7 +932,7 @@ description auto</span><br/>
       {/* TÉMOIGNAGES */}
       <section style={{ background: 'linear-gradient(180deg,transparent,rgba(124,58,237,.03),transparent)', padding: isMobile ? '36px 16px' : '56px 40px' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: '#fff' }}>Ils vendent mieux avec PixGlow</h2>
+          <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text }}>Ils vendent mieux avec PixGlow</h2>
           <p style={{ color: '#334155', textAlign: 'center', marginBottom: '36px', fontSize: '15px' }}>Rejoins +18 742 vendeurs Vinted et Leboncoin</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '14px' }}>
             {[
@@ -899,7 +940,7 @@ description auto</span><br/>
               { nom: 'Karim B.',  tag: 'Vendeur confirmé · 180 ventes', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face', txt: "Simple, rapide, bluffant. Je prépare 20 fiches produit en 5 minutes. Le titre AI est souvent meilleur que ce que j'aurais écrit." },
               { nom: 'Léa F.',   tag: 'Vendeuse Vestiaire · 95 ventes',  avatar: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=80&h=80&fit=crop&crop=face', txt: "Enfin un outil pensé pour nous. Le fond blanc + la description IA = mes annonces se vendent en 24h maintenant." },
             ].map((t,i) => (
-              <div key={i} className="pg-card" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '20px', padding: '22px' }}>
+              <div key={i} className="pg-card" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '20px', padding: '22px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                   <img src={t.avatar} alt={t.nom} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(124,58,237,.25)', flexShrink: 0, display: 'block' }} />
                   <div style={{ flex: 1 }}>
@@ -917,12 +958,12 @@ description auto</span><br/>
 
       {/* PRICING */}
       <section style={{ maxWidth: '900px', margin: '0 auto', padding: isMobile ? '36px 16px 60px' : '56px 40px 80px' }}>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: '#fff' }}>Tarifs simples et transparents</h2>
+        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text }}>Tarifs simples et transparents</h2>
         <p style={{ color: '#334155', textAlign: 'center', marginBottom: '36px', fontSize: '15px' }}>Commence gratuit, paye seulement si tu en veux plus · Crédits valables à vie</p>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4,1fr)', gap: '14px', alignItems: 'start' }}>
 
           {/* Gratuit */}
-          <div className="pg-card" style={{ background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center' }}>
+          <div className="pg-card" style={{ background: T.cardBg, border: '1px solid rgba(16,185,129,.2)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center' }}>
             <p style={{ fontSize: '28px', marginBottom: '8px' }}>🎁</p>
             <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800, marginBottom: '4px', color: '#fff' }}>Gratuit</h3>
             <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '38px', fontWeight: 800, color: '#10b981', marginBottom: '2px' }}>5</div>
@@ -932,7 +973,7 @@ description auto</span><br/>
           </div>
 
           {/* Starter */}
-          <div className="pg-card" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(245,158,11,.22)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center' }}>
+          <div className="pg-card" style={{ background: T.cardBg, border: '1px solid rgba(245,158,11,.22)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center' }}>
             <p style={{ fontSize: '28px', marginBottom: '8px' }}>⚡</p>
             <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800, marginBottom: '4px', color: '#fff' }}>Starter</h3>
             <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '38px', fontWeight: 800, color: '#f59e0b', marginBottom: '2px' }}>7€</div>
@@ -959,7 +1000,7 @@ description auto</span><br/>
           </div>
 
           {/* Elite */}
-          <div className="pg-card" style={{ background: 'rgba(96,165,250,.03)', border: '1px solid rgba(96,165,250,.2)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center', position: 'relative' }}>
+          <div className="pg-card" style={{ background: T.cardBg, border: '1px solid rgba(96,165,250,.2)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center', position: 'relative' }}>
             <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(96,165,250,.8)', borderRadius: '100px', padding: '4px 14px', fontSize: '10px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>💰 MEILLEUR PRIX/PHOTO</div>
             <p style={{ fontSize: '28px', marginBottom: '8px' }}>🚀</p>
             <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800, marginBottom: '4px', color: '#fff' }}>Elite</h3>
@@ -986,7 +1027,7 @@ description auto</span><br/>
       <InjectCSS />
       <Nav />
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '32px 16px' : '60px 40px' }}>
-        <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '28px' : '40px', fontWeight: 800, marginBottom: '6px', color: '#fff' }}>Centre d'aide</h1>
+        <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '28px' : '40px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Centre d'aide</h1>
         <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur PixGlow</p>
         {[
           { q: 'Comment fonctionnent les 5 photos gratuites ?', r: "Chaque adresse IP bénéficie de 5 traitements gratuits, sans inscription ni carte bancaire. Ils sont comptés sur nos serveurs et ne se réinitialisent jamais." },
@@ -996,7 +1037,7 @@ description auto</span><br/>
           { q: 'Comment fonctionnent les crédits ?', r: "Les crédits sont liés à votre compte email et valables à vie. Ils ne périment jamais." },
           { q: 'Est-ce que mes photos sont conservées ?', r: "Non. Vos photos sont supprimées automatiquement de nos serveurs après 24 heures." },
         ].map((item,i) => (
-          <div key={i} style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '14px', padding: '20px 22px', marginBottom: '10px' }}>
+          <div key={i} style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '14px', padding: '20px 22px', marginBottom: '10px' }}>
             <p style={{ fontWeight: 700, color: '#e2e8f0', marginBottom: '8px', fontSize: '15px' }}>❓ {item.q}</p>
             <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, margin: 0 }}>{item.r}</p>
           </div>
