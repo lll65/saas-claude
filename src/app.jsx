@@ -174,6 +174,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
+  // ⚠️ generateBoost N'EST JAMAIS appelé automatiquement —
+  // uniquement sur clic explicite de l'utilisateur.
   const generateBoost = async () => {
     if (!isConnected) { onUpgrade(); return; }
     setLoading(true);
@@ -182,10 +184,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       const token = localStorage.getItem('pg_token');
       const response = await fetch(`${API_URL}/generate-description`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image_url: imageUrl })
       });
       if (!response.ok) {
@@ -203,39 +202,47 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const handleCopy = () => {
     if (!result) return;
     const text = `${result.titre}\n\n${result.description}\n\n${result.hashtags}`;
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   };
-
   const copyField = (text, field) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(field);
-      setTimeout(() => setCopied(false), 1500);
-    });
+    navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(false), 1500); });
   };
-
-
 
   return (
-    <div style={{ marginTop: '12px', borderRadius: '12px', border: '1px solid rgba(124,58,237,.25)', overflow: 'hidden' }}>
-      <button onClick={() => { setOpen(!open); if (!open && !result) generateBoost(); }}
-        style={{ width: '100%', background: open ? 'rgba(124,58,237,.12)' : 'rgba(124,58,237,.06)', border: 'none', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontFamily: 'inherit' }}>
+    <div style={{ marginTop: '12px', borderRadius: '12px', border: `1px solid ${open ? 'rgba(124,58,237,.4)' : 'rgba(124,58,237,.2)'}`, overflow: 'hidden', transition: 'border-color .2s' }}>
+
+      {/* ── EN-TÊTE DÉROULANT — simple toggle, SANS lancer la génération ── */}
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', background: open ? 'rgba(124,58,237,.1)' : 'transparent', border: 'none', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontFamily: 'inherit' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a78bfa', fontWeight: 700, fontSize: '14px' }}>
-          <span>🤖</span> Prêt pour Vinted ? — Titre + Description
+          <span style={{ fontSize: '16px' }}>🤖</span>
+          Générer titre + description Vinted
           {!isConnected && <span style={{ background: 'rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>PRO</span>}
+          {result && <span style={{ background: 'rgba(16,185,129,.15)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>✓ Prêt</span>}
         </span>
-        <span style={{ color: '#64748b', fontSize: '12px' }}>{open ? '▲' : '▼'}</span>
+        <span style={{ color: '#475569', fontSize: '18px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span>
       </button>
 
       {open && (
-        <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.6)' }}>
+        <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.7)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
           {!isConnected ? (
             <div style={{ textAlign: 'center', padding: '12px 0' }}>
               <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>🔒 Fonctionnalité Pro — Crée un compte pour générer les textes</p>
               <button onClick={onUpgrade} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>🚀 Créer un compte gratuit</button>
             </div>
+
+          ) : !result && !loading && !error ? (
+            /* ── ÉTAT INITIAL : bouton "Générer" explicite ── */
+            <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
+              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
+                Génère un titre accrocheur, une description optimisée<br/>et les hashtags parfaits pour ton annonce Vinted.
+              </p>
+              <button onClick={generateBoost} className="pg-btn pg-glow" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '11px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <span>✨</span> Générer la description IA
+              </button>
+              <p style={{ color: '#1e293b', fontSize: '11px', marginTop: '10px' }}>~15 secondes · Gratuit avec ton compte</p>
+            </div>
+
           ) : loading ? (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <div style={{ fontSize: '28px', marginBottom: '8px' }}>⚡</div>
