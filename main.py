@@ -154,7 +154,7 @@ def reduce_wrinkles(img: Image.Image, strength: float = 0.45) -> Image.Image:
     mode = img.mode
     work = img.convert("RGB")
     arr = np.array(work, dtype=np.float32)
-    pil_smooth = work.filter(ImageFilter.GaussianBlur(radius=2.5))
+    pil_smooth = work.filter(ImageFilter.GaussianBlur(radius=4))
     smooth = np.array(pil_smooth, dtype=np.float32)
     pil_base = work.filter(ImageFilter.GaussianBlur(radius=8))
     base = np.array(pil_base, dtype=np.float32)
@@ -378,7 +378,7 @@ async def enhance_photo(
             proc_w, proc_h = w, h
 
         tmp_rgb = tmp.convert("RGB") if tmp.mode == "RGBA" else tmp
-        tmp_smooth = reduce_wrinkles(tmp_rgb, strength=0.45)
+        tmp_smooth = reduce_wrinkles(tmp_rgb, strength=0.75)
         if tmp.mode == "RGBA":
             r, g, b = tmp_smooth.split()
             _, _, _, a = tmp.split()
