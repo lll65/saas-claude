@@ -75,9 +75,21 @@ function InjectCSS() {
 function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false }) {
   const [pos, setPos] = useState(50);
   const [dragging, setDragging] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef(null);
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+    setContainerWidth(containerRef.current.offsetWidth);
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setContainerWidth(entry.contentRect.width);
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   const getPos = (clientX) => {
+    if (!containerRef.current) return 50;
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     return Math.round((x / rect.width) * 100);
@@ -86,12 +98,12 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
   const onMouseDown = (e) => { e.preventDefault(); setDragging(true); };
   const onMouseMove = useCallback((e) => { if (dragging) setPos(getPos(e.clientX)); }, [dragging]);
   const onMouseUp   = useCallback(() => setDragging(false), []);
-  const onTouchMove = useCallback((e) => { if (dragging) setPos(getPos(e.touches[0].clientX)); }, [dragging]);
+  const onTouchMove = useCallback((e) => { if (dragging) { e.preventDefault(); setPos(getPos(e.touches[0].clientX)); } }, [dragging]);
 
   useEffect(() => {
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onMouseUp);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
@@ -109,7 +121,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
       {/* BEFORE (clipped left portion) */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${pos}%` }}>
         <img src={beforeSrc} alt="Avant" draggable={false}
-          style={{ position: 'absolute', inset: 0, width: containerRef.current ? `${containerRef.current.offsetWidth}px` : '100%', height: '100%', objectFit: 'contain', maxWidth: 'none', background: '#e8e8e8' }} />
+          style={{ position: 'absolute', inset: 0, width: containerWidth > 0 ? `${containerWidth}px` : '100%', height: '100%', objectFit: 'contain', maxWidth: 'none', background: '#e8e8e8' }} />
       </div>
       {/* Labels */}
       <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: '#f87171', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -130,6 +142,17 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
         ← Glisse pour comparer →
       </div>
     </div>
+  );
+}
+
+/* ══ MINI COPY BUTTON ══ */
+function MiniCopyBtn({ text, field, copied, onCopy, children }) {
+  return (
+    <button
+      onClick={() => onCopy(text, field)}
+      style={{ background: copied === field ? 'rgba(16,185,129,.2)' : 'rgba(255,255,255,.06)', border: `1px solid ${copied === field ? 'rgba(16,185,129,.4)' : 'rgba(255,255,255,.1)'}`, color: copied === field ? '#10b981' : '#64748b', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit', fontWeight: 700, transition: 'all .15s', whiteSpace: 'nowrap' }}>
+      {copied === field ? '✓' : '📋'} {children}
+    </button>
   );
 }
 
@@ -183,13 +206,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
     });
   };
 
-  const MiniCopyBtn = ({ text, field, children }) => (
-    <button
-      onClick={() => copyField(text, field)}
-      style={{ background: copied === field ? 'rgba(16,185,129,.2)' : 'rgba(255,255,255,.06)', border: `1px solid ${copied === field ? 'rgba(16,185,129,.4)' : 'rgba(255,255,255,.1)'}`, color: copied === field ? '#10b981' : '#64748b', borderRadius: '6px', padding: '2px 8px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit', fontWeight: 700, transition: 'all .15s', whiteSpace: 'nowrap' }}>
-      {copied === field ? '✓' : '📋'} {children}
-    </button>
-  );
+
 
   return (
     <div style={{ marginTop: '12px', borderRadius: '12px', border: '1px solid rgba(124,58,237,.25)', overflow: 'hidden' }}>
@@ -239,7 +256,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               <div style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Titre (Vinted)</p>
-                  <MiniCopyBtn text={result.titre} field="titre">Copier</MiniCopyBtn>
+                  <MiniCopyBtn text={result.titre} field="titre" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 12px' }}>
                   <p style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 600, margin: 0 }}>{result.titre}</p>
@@ -250,7 +267,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               <div style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Description</p>
-                  <MiniCopyBtn text={result.description} field="desc">Copier</MiniCopyBtn>
+                  <MiniCopyBtn text={result.description} field="desc" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 12px' }}>
                   <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>{result.description}</p>
@@ -261,7 +278,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags</p>
-                  <MiniCopyBtn text={result.hashtags} field="tags">Copier</MiniCopyBtn>
+                  <MiniCopyBtn text={result.hashtags} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {result.hashtags.split(' ').filter(Boolean).map((tag, i) => (
@@ -441,10 +458,12 @@ export default function PixGlow() {
   const [freeLeft, setFreeLeft] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [isConnected, setIsConnected] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(null); // crédits affichés après paiement réussi
+  const [paymentSuccess, setPaymentSuccess] = useState(null); // stores credit count after successful payment
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -467,13 +486,13 @@ export default function PixGlow() {
     });
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
-      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { setCredits(d.credits); alert(`✅ Paiement confirmé ! ${d.credits} crédits disponibles.`); window.history.replaceState({}, '', window.location.pathname); } }); }, 2000);
+      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { setCredits(d.credits); setPaymentSuccess(d.credits); window.history.replaceState({}, '', window.location.pathname); } }); }, 2000);
     }
   }, []);
 
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
-  const handleLogout = () => { ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setPage('landing'); };
+  const handleLogout = () => { ['pg_token','pg_email','pg_free'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setFreeLeft(null); setPage('landing'); };
   const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
   const canSelect = () => isConnected || freeLeft === null || freeLeft > 0;
 
@@ -486,11 +505,11 @@ export default function PixGlow() {
   const handleFilesChange = (e) => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
-    const available = isConnected ? (credits ?? 999) : (freeLeft ?? 5);
+    const available = isConnected ? (credits ?? 999) : (freeLeft ?? 0);
     const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
     const chosen = selected.slice(0, maxAllowed);
     if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
-    e.target.value = '';
+    if (e.target.value !== undefined) { try { e.target.value = ''; } catch(_) {} }
 
     // FileReader est plus fiable sur Android (content:// URIs, HEIC, etc.)
     // On lit chaque fichier en base64 pour l'aperçu
@@ -858,6 +877,13 @@ description auto</span><br/>
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
+
+      {paymentSuccess !== null && (
+        <div className="pg-slide-up" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.3)', borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <p style={{ color: '#10b981', fontWeight: 700, fontSize: '14px', margin: 0 }}>✅ Paiement confirmé ! {paymentSuccess} crédits ajoutés à votre compte.</p>
+          <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
+        </div>
+      )}
 
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
 
