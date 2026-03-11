@@ -196,7 +196,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       <button onClick={() => { setOpen(!open); if (!open && !result) generateBoost(); }}
         style={{ width: '100%', background: open ? 'rgba(124,58,237,.12)' : 'rgba(124,58,237,.06)', border: 'none', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontFamily: 'inherit' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a78bfa', fontWeight: 700, fontSize: '14px' }}>
-          <span>🤖</span> Prêt pour Vinted ? — Titre + Description AI
+          <span>🤖</span> Prêt pour Vinted ? — Titre + Description
           {!isConnected && <span style={{ background: 'rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>PRO</span>}
         </span>
         <span style={{ color: '#64748b', fontSize: '12px' }}>{open ? '▲' : '▼'}</span>
@@ -206,13 +206,13 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
         <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.6)' }}>
           {!isConnected ? (
             <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>🔒 Fonctionnalité Pro — Crée un compte pour générer les textes AI</p>
+              <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>🔒 Fonctionnalité Pro — Crée un compte pour générer les textes</p>
               <button onClick={onUpgrade} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>🚀 Créer un compte gratuit</button>
             </div>
           ) : loading ? (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <div style={{ fontSize: '28px', marginBottom: '8px' }}>⚡</div>
-              <p style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 600 }}>Génération AI en cours...</p>
+              <p style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 600 }}>Génération en cours...</p>
               <p style={{ color: '#334155', fontSize: '12px' }}>Analyse de ta photo · Optimisation Vinted</p>
             </div>
           ) : error ? (
@@ -346,7 +346,7 @@ function PlanModal({ show, onClose, onSelect, isMobile }) {
                     <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '16px', color: '#fff', marginBottom: '2px' }}>{p.label}</div>
                     <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '36px', color: `rgb(${p.color})`, lineHeight: 1, marginBottom: '4px' }}>{p.price}</div>
                     <div style={{ color: `rgba(${p.color},.9)`, fontWeight: 700, fontSize: '14px', marginBottom: '2px' }}>{p.credits} crédits</div>
-                    <div style={{ color: '#334155', fontSize: '11px', marginBottom: '16px' }}>{p.pricePerPhoto}/photo · Description AI incluse</div>
+                    <div style={{ color: '#334155', fontSize: '11px', marginBottom: '16px' }}>{p.pricePerPhoto}/photo · Description auto incluse</div>
                   </>
                 )
               }
@@ -354,7 +354,7 @@ function PlanModal({ show, onClose, onSelect, isMobile }) {
             </div>
           ))}
         </div>
-        <p style={{ color: '#1e293b', fontSize: '11px', textAlign: 'center', marginTop: '14px' }}>🤖 Description AI illimitée incluse avec chaque crédit</p>
+        <p style={{ color: '#1e293b', fontSize: '11px', textAlign: 'center', marginTop: '14px' }}>✍️ Titre + description optimisés inclus avec chaque crédit</p>
       </div>
     </div>
   );
@@ -408,7 +408,7 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
       <div className="pg-anim" style={{ background: 'linear-gradient(160deg,#16102a,#0d0d1a)', border: '1px solid rgba(124,58,237,.35)', borderRadius: '24px', padding: isMobile ? '28px 20px' : '44px', width: '100%', maxWidth: '420px', position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(255,255,255,.08)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', width: '34px', height: '34px', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
         <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>{mode === 'login' ? '👋 Bon retour !' : '🚀 Créer mon compte'}</h2>
-        <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '22px' }}>{mode === 'login' ? 'Accédez à vos crédits et vos photos' : 'Gratuit · Crédits sauvegardés à vie · Titre+Description AI'}</p>
+        <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '22px' }}>{mode === 'login' ? 'Accédez à vos crédits et vos photos' : 'Gratuit · Crédits sauvegardés à vie · Titre+Description auto'}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,.4)', borderRadius: '12px', padding: '4px', marginBottom: '22px' }}>
           {['login','register'].map(m => (
             <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
@@ -619,7 +619,8 @@ export default function PixGlow() {
           {/* Title SEO-optimisé */}
           <h1 className="pg-hero" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '40px' : '72px', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-1.5px', color: '#fff', marginBottom: '20px' }}>
             Double tes vues Vinted<br/>
-            <span style={{ background: 'linear-gradient(135deg,#7c3aed,#60a5fa,#10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>fond blanc + description AI</span><br/>
+            <span style={{ background: 'linear-gradient(135deg,#7c3aed,#60a5fa,#10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>fond blanc +
+description auto</span><br/>
             en 3 secondes
           </h1>
           <p className="pg-anim-2" style={{ fontSize: isMobile ? '16px' : '20px', color: '#475569', maxWidth: '580px', margin: '0 auto 10px', lineHeight: 1.65 }}>
@@ -627,7 +628,7 @@ export default function PixGlow() {
           </p>
           {/* NEW : AI description badge */}
           <div className="pg-anim-2" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '100px', padding: '5px 14px', marginBottom: '28px', fontSize: '12px', color: '#34d399', fontWeight: 600 }}>
-            🤖 Nouveau : Titre + Description + Hashtags générés par IA pour chaque photo
+            ✨ Nouveau : Titre + Description + Hashtags optimisés pour chaque photo
           </div>
           <div className="pg-anim-3" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '36px' }}>
             <button onClick={() => setPage('app')} className="pg-btn pg-glow" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '14px', padding: isMobile ? '16px 24px' : '18px 36px', fontWeight: 800, cursor: 'pointer', fontSize: isMobile ? '16px' : '18px', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '10px', maxWidth: isMobile ? 'calc(100vw - 40px)' : 'none', boxSizing: 'border-box' }}>
@@ -678,7 +679,7 @@ export default function PixGlow() {
 
           {/* AI Boost preview */}
           <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px' }}>
-            <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>🤖 Description AI générée automatiquement</p>
+            <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>✍️ Texte généré automatiquement</p>
             <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Veste zippée vintage — comme neuve ✨</p>
             <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>🧥 Veste zippée taille M en parfait état ! Coupe moderne, très bon état. Portée 3x. Idéal hiver/mi-saison 🍂 Expédition rapide 📦</p>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
@@ -708,8 +709,8 @@ export default function PixGlow() {
         <p style={{ color: '#334155', textAlign: 'center', marginBottom: '44px', fontSize: '16px' }}>Le seul outil pensé 100% pour les vendeurs Vinted/Leboncoin français</p>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
           {[
-            { icon: '🎨', titre: 'Fond blanc parfait', desc: "Suppression IA du fond en 1 clic. Ton article ressort comme sur un site e-commerce pro. Idéal pour supprimer fond Leboncoin.", col: '124,58,237' },
-            { icon: '🤖', titre: 'Description AI pour Vinted', desc: "Titre, description émoji-optimisée et hashtags générés automatiquement par IA. Plus jamais la page blanche.", col: '96,165,250', badge: 'NOUVEAU' },
+            { icon: '🎨', titre: 'Fond blanc parfait', desc: "Suppression automatique du fond en 1 clic. Ton article ressort comme sur un site e-commerce pro. Idéal pour supprimer fond Leboncoin.", col: '124,58,237' },
+            { icon: '🤖', titre: 'Description auto pour Vinted', desc: "Titre, description émoji-optimisée et hashtags générés automatiquement. Plus jamais la page blanche.", col: '96,165,250', badge: 'NOUVEAU' },
             { icon: '⚡', titre: "Jusqu'à 5 photos à la fois", desc: "Traitement en batch — prépare toute une annonce en moins d'une minute depuis ton téléphone.", col: '16,185,129' },
           ].map((f,i) => (
             <div key={i} className="pg-card" style={{ background: 'rgba(255,255,255,.02)', border: `1px solid rgba(${f.col},.16)`, borderRadius: '20px', padding: '28px 24px', position: 'relative' }}>
@@ -729,7 +730,7 @@ export default function PixGlow() {
           <p style={{ color: '#334155', textAlign: 'center', marginBottom: '36px', fontSize: '15px' }}>Rejoins +18 742 vendeurs Vinted et Leboncoin</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '14px' }}>
             {[
-              { nom: 'Sophie M.', tag: 'Vendeuse Vinted · 312 ventes', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face', txt: "Mes vues ont doublé depuis que j'utilise PixGlow. Et la description AI me fait gagner 10 min par annonce !" },
+              { nom: 'Sophie M.', tag: 'Vendeuse Vinted · 312 ventes', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face', txt: "Mes vues ont doublé depuis que j'utilise PixGlow. Et la description auto me fait gagner 10 min par annonce !" },
               { nom: 'Karim B.',  tag: 'Vendeur confirmé · 180 ventes', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face', txt: "Simple, rapide, bluffant. Je prépare 20 fiches produit en 5 minutes. Le titre AI est souvent meilleur que ce que j'aurais écrit." },
               { nom: 'Léa F.',   tag: 'Vendeuse Vestiaire · 95 ventes',  avatar: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=80&h=80&fit=crop&crop=face', txt: "Enfin un outil pensé pour nous. Le fond blanc + la description IA = mes annonces se vendent en 24h maintenant." },
             ].map((t,i) => (
@@ -773,7 +774,7 @@ export default function PixGlow() {
             <p style={{ color: '#f59e0b', fontWeight: 700, marginBottom: '2px', fontSize: '13px' }}>30 crédits</p>
             <p style={{ color: '#475569', fontSize: '11px', marginBottom: '10px' }}>0,23€/photo</p>
             <div style={{ background: 'rgba(245,158,11,.07)', border: '1px solid rgba(245,158,11,.15)', borderRadius: '8px', padding: '7px', marginBottom: '14px' }}>
-              <p style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600, margin: 0 }}>🤖 Description AI incluse</p>
+              <p style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600, margin: 0 }}>🤖 Description auto incluse</p>
             </div>
             <button onClick={() => openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '12px', padding: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Démarrer →</button>
           </div>
@@ -787,7 +788,7 @@ export default function PixGlow() {
             <p style={{ color: '#a78bfa', fontWeight: 700, marginBottom: '2px', fontSize: '13px' }}>100 crédits</p>
             <p style={{ color: '#7c3aed', fontSize: '11px', marginBottom: '10px' }}>0,15€/photo</p>
             <div style={{ background: 'rgba(96,165,250,.08)', border: '1px solid rgba(96,165,250,.15)', borderRadius: '8px', padding: '7px', marginBottom: '14px' }}>
-              <p style={{ color: '#93c5fd', fontSize: '11px', fontWeight: 600, margin: 0 }}>🤖 Description AI illimitée</p>
+              <p style={{ color: '#93c5fd', fontSize: '11px', fontWeight: 600, margin: 0 }}>✍️ Texte auto inclus</p>
             </div>
             <button onClick={() => openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir Pro →</button>
           </div>
@@ -801,7 +802,7 @@ export default function PixGlow() {
             <p style={{ color: '#60a5fa', fontWeight: 700, marginBottom: '2px', fontSize: '13px' }}>300 crédits</p>
             <p style={{ color: '#475569', fontSize: '11px', marginBottom: '10px' }}>0,12€/photo</p>
             <div style={{ background: 'rgba(96,165,250,.07)', border: '1px solid rgba(96,165,250,.15)', borderRadius: '8px', padding: '7px', marginBottom: '14px' }}>
-              <p style={{ color: '#93c5fd', fontSize: '11px', fontWeight: 600, margin: 0 }}>🤖 Description AI illimitée</p>
+              <p style={{ color: '#93c5fd', fontSize: '11px', fontWeight: 600, margin: 0 }}>✍️ Texte auto inclus</p>
             </div>
             <button onClick={() => openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'rgba(96,165,250,.15)', border: '1px solid rgba(96,165,250,.3)', color: '#60a5fa', borderRadius: '12px', padding: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir Elite →</button>
           </div>
@@ -824,9 +825,9 @@ export default function PixGlow() {
         <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur PixGlow</p>
         {[
           { q: 'Comment fonctionnent les 5 photos gratuites ?', r: "Chaque adresse IP bénéficie de 5 traitements gratuits, sans inscription ni carte bancaire. Ils sont comptés sur nos serveurs et ne se réinitialisent jamais." },
-          { q: 'Comment fonctionne la description AI ?', r: "Après traitement de ta photo, un bouton \"Prêt pour Vinted ?\" apparaît. En 1 clic, l'IA génère titre, description avec emojis et hashtags optimisés pour Vinted et Leboncoin. Fonctionnalité réservée aux comptes créés." },
+          { q: 'Comment fonctionne la description automatique ?', r: "Après traitement de ta photo, un bouton \"Prêt pour Vinted ?\" apparaît. En 1 clic, un texte optimisé est généré : titre, description avec emojis et hashtags pour Vinted et Leboncoin. Fonctionnalité réservée aux comptes créés." },
           { q: 'Quel format de photo acceptez-vous ?', r: "JPG, PNG, WEBP et HEIC (iPhone). Taille max 15 Mo par photo." },
-          { q: "Quel tarif après l'essai gratuit ?", r: "3 offres disponibles : Starter 30 crédits à 7€ (0,23€/photo), Pro 100 crédits à 15€ (0,15€/photo), Elite 300 crédits à 35€ (0,12€/photo). Crédits valables à vie, sans abonnement. La description AI est incluse avec chaque crédit." },
+          { q: "Quel tarif après l'essai gratuit ?", r: "3 offres disponibles : Starter 30 crédits à 7€ (0,23€/photo), Pro 100 crédits à 15€ (0,15€/photo), Elite 300 crédits à 35€ (0,12€/photo). Crédits valables à vie, sans abonnement. Les textes auto sont inclus avec chaque crédit." },
           { q: 'Comment fonctionnent les crédits ?', r: "Les crédits sont liés à votre compte email et valables à vie. Ils ne périment jamais." },
           { q: 'Est-ce que mes photos sont conservées ?', r: "Non. Vos photos sont supprimées automatiquement de nos serveurs après 24 heures." },
         ].map((item,i) => (
@@ -914,7 +915,7 @@ export default function PixGlow() {
               {loading && (
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: '#475569', fontSize: '13px', fontWeight: 600 }}>Traitement IA en cours...</span>
+                    <span style={{ color: '#475569', fontSize: '13px', fontWeight: 600 }}>Traitement en cours...</span>
                     <span style={{ color: '#7c3aed', fontWeight: 800, fontSize: '14px' }}>{progress}/{files.length}</span>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: '100px', height: '8px', overflow: 'hidden' }}>
@@ -979,7 +980,7 @@ export default function PixGlow() {
         {/* CTA bas */}
         {!isConnected ? (
           <div style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.07),rgba(79,70,229,.04))', border: '1px solid rgba(124,58,237,.18)', borderRadius: '20px', padding: isMobile ? '22px 18px' : '30px 36px', textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '22px', fontWeight: 800, marginBottom: '8px', color: '#fff' }}>💎 Envie de plus de photos + descriptions AI ?</h3>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '22px', fontWeight: 800, marginBottom: '8px', color: '#fff' }}>💎 Envie de plus de photos + descriptions optimisées ?</h3>
             <p style={{ color: '#475569', fontSize: '14px', marginBottom: '20px', lineHeight: 1.65 }}>Créez un compte gratuit et achetez des crédits.<br/><strong style={{ color: '#e2e8f0' }}>3 offres dès 7€ · 30, 100 ou 300 crédits · Valables à vie · Paiement sécurisé</strong></p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => openAuth('register')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🚀 Créer mon compte</button>
@@ -1034,7 +1035,8 @@ export default function PixGlow() {
    paddingBottom ajouté au container pour ne pas cacher le contenu.
 
 ✅ Feature 7 — Copy & SEO tweaks
-   - Hero : "Double tes vues Vinted · fond blanc + description AI"
+   - Hero : "Double tes vues Vinted · fond blanc +
+description auto"
    - Sous-titre : mots-clés "supprimer fond Leboncoin", "améliorer photo Vinted"
    - Badge "Nouveau : Titre + Description + Hashtags par IA"
    - Stats : +18 742 vendeurs, 4.9/5 · 1 234 avis
