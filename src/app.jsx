@@ -164,40 +164,84 @@ function MiniCopyBtn({ text, field, copied, onCopy, children }) {
   );
 }
 
-/* ══ AI BOOST VINTED PANEL ══ */
+/* ══ AI BOOST VINTED PANEL — avec Trend Radar ══ */
 function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(null);
+  const [open, setOpen]           = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [result, setResult]       = useState(null);
+  const [copied, setCopied]       = useState(false);
+  const [error, setError]         = useState(null);
+  // Trend Radar
+  const [trends, setTrends]       = useState(null);
+  const [trendLoading, setTrendLoading] = useState(false);
+  const [trendError, setTrendError]     = useState(null);
+  const [boostLoading, setBoostLoading] = useState(false);
+  const [selectedTrends, setSelectedTrends] = useState([]);
+  const [boosted, setBoosted]     = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
-  // ⚠️ generateBoost N'EST JAMAIS appelé automatiquement —
-  // uniquement sur clic explicite de l'utilisateur.
+  const authHeaders = () => {
+    const t = localStorage.getItem('pg_token');
+    return t ? { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  };
+
+  // Génération description standard
   const generateBoost = async () => {
     if (!isConnected) { onUpgrade(); return; }
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      const token = localStorage.getItem('pg_token');
-      const response = await fetch(`${API_URL}/generate-description`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      const res = await fetch(`${API_URL}/generate-description`, {
+        method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ image_url: imageUrl })
       });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || `Erreur ${response.status}`);
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
+      const data = await res.json();
+      if (mountedRef.current) {
+        setResult(data);
+        setBoosted(false);
+        setTrends(null);
+        setSelectedTrends([]);
       }
-      const data = await response.json();
-      if (mountedRef.current) setResult(data);
-    } catch (e) {
-      if (mountedRef.current) setError(`⚠️ ${e.message || 'Erreur génération. Réessaie !'}`);
-    }
+    } catch(e) { if (mountedRef.current) setError(`⚠️ ${e.message}`); }
     if (mountedRef.current) setLoading(false);
   };
+
+  // Charger les tendances de la semaine
+  const loadTrends = async () => {
+    if (!result) return;
+    setTrendLoading(true); setTrendError(null);
+    try {
+      const res = await fetch(`${API_URL}/trending`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ category: result.categorie || 'vetement' })
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
+      const data = await res.json();
+      if (mountedRef.current) { setTrends(data); setSelectedTrends(data.trends.slice(0,3).map(t => t.mot)); }
+    } catch(e) { if (mountedRef.current) setTrendError(`⚠️ ${e.message}`); }
+    if (mountedRef.current) setTrendLoading(false);
+  };
+
+  // Appliquer le boost tendance
+  const applyTrendBoost = async () => {
+    if (!result || !selectedTrends.length) return;
+    setBoostLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/generate-boosted`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ image_url: imageUrl, trend_words: selectedTrends, current_score: result.score })
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
+      const data = await res.json();
+      if (mountedRef.current) { setResult({ ...result, ...data }); setBoosted(true); }
+    } catch(e) { if (mountedRef.current) setTrendError(`⚠️ ${e.message}`); }
+    if (mountedRef.current) setBoostLoading(false);
+  };
+
+  const toggleTrend = (mot) => setSelectedTrends(prev =>
+    prev.includes(mot) ? prev.filter(m => m !== mot) : prev.length < 4 ? [...prev, mot] : prev
+  );
 
   const handleCopy = () => {
     if (!result) return;
@@ -208,23 +252,30 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
     navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(false), 1500); });
   };
 
-  return (
-    <div style={{ marginTop: '12px', borderRadius: '12px', border: `1px solid ${open ? 'rgba(124,58,237,.4)' : 'rgba(124,58,237,.2)'}`, overflow: 'hidden', transition: 'border-color .2s' }}>
+  // Calcul du score potentiel selon les trends sélectionnées
+  const potentialScore = result
+    ? Math.min(98, result.score + selectedTrends.length * 3)
+    : 0;
 
-      {/* ── EN-TÊTE DÉROULANT — simple toggle, SANS lancer la génération ── */}
+  return (
+    <div style={{ marginTop: '12px', borderRadius: '14px', border: `1px solid ${open ? 'rgba(124,58,237,.45)' : 'rgba(124,58,237,.2)'}`, overflow: 'hidden', transition: 'border-color .2s' }}>
+
+      {/* ── HEADER ── */}
       <button onClick={() => setOpen(o => !o)}
         style={{ width: '100%', background: open ? 'rgba(124,58,237,.1)' : 'transparent', border: 'none', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontFamily: 'inherit' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a78bfa', fontWeight: 700, fontSize: '14px' }}>
-          <span style={{ fontSize: '16px' }}>🤖</span>
-          Générer titre + description Vinted
+          <span>🤖</span> Générer titre + description Vinted
           {!isConnected && <span style={{ background: 'rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>PRO</span>}
-          {result && <span style={{ background: 'rgba(16,185,129,.15)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>✓ Prêt</span>}
+          {boosted && <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>🔥 Boosté</span>}
+          {result && !boosted && <span style={{ background: 'rgba(16,185,129,.15)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>✓ Prêt</span>}
         </span>
         <span style={{ color: '#475569', fontSize: '18px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span>
       </button>
 
       {open && (
-        <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.7)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
+        <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.75)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
+
+          {/* ── NON CONNECTÉ ── */}
           {!isConnected ? (
             <div style={{ textAlign: 'center', padding: '12px 0' }}>
               <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>🔒 Fonctionnalité Pro — Crée un compte pour générer les textes</p>
@@ -232,7 +283,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
             </div>
 
           ) : !result && !loading && !error ? (
-            /* ── ÉTAT INITIAL : bouton "Générer" explicite ── */
+            /* ── ÉTAT INITIAL ── */
             <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
                 Génère un titre accrocheur, une description optimisée<br/>et les hashtags parfaits pour ton annonce Vinted.
@@ -240,36 +291,47 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               <button onClick={generateBoost} className="pg-btn pg-glow" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '11px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                 <span>✨</span> Générer la description IA
               </button>
-              <p style={{ color: '#1e293b', fontSize: '11px', marginTop: '10px' }}>~15 secondes · Gratuit avec ton compte</p>
+              <p style={{ color: '#334155', fontSize: '11px', marginTop: '10px' }}>~15 secondes · Gratuit avec ton compte</p>
             </div>
 
-          ) : loading ? (
+          ) : loading || boostLoading ? (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>⚡</div>
-              <p style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 600 }}>Génération en cours...</p>
-              <p style={{ color: '#334155', fontSize: '12px' }}>Analyse de ta photo · Optimisation Vinted</p>
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{boostLoading ? '🔥' : '⚡'}</div>
+              <p style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 600 }}>{boostLoading ? 'Application du boost tendance...' : 'Génération en cours...'}</p>
+              <p style={{ color: '#334155', fontSize: '12px' }}>{boostLoading ? `Intégration des mots : ${selectedTrends.join(', ')}` : 'Analyse de ta photo · Optimisation Vinted'}</p>
             </div>
+
           ) : error ? (
             <div style={{ textAlign: 'center' }}>
-              <p style={{ color: '#f87171', fontSize: '14px', marginBottom: '8px' }}>⚠️ {error}</p>
+              <p style={{ color: '#f87171', fontSize: '14px', marginBottom: '8px' }}>{error}</p>
               <button onClick={generateBoost} style={{ background: 'rgba(124,58,237,.15)', border: '1px solid rgba(124,58,237,.3)', color: '#a78bfa', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '13px' }}>↺ Réessayer</button>
             </div>
+
           ) : result ? (
             <div>
-              {/* Score */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '10px', padding: '10px 14px' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 2px' }}>Score potentiel vues</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${result.score}%`, background: result.score >= 80 ? 'linear-gradient(90deg,#10b981,#34d399)' : 'linear-gradient(90deg,#f59e0b,#fbbf24)', borderRadius: '100px', transition: 'width 1s ease' }} />
-                    </div>
-                    <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '18px', color: result.score >= 80 ? '#10b981' : '#f59e0b' }}>{result.score}/100</span>
-                  </div>
+              {/* ── SCORE + INDICATEUR BOOST POTENTIEL ── */}
+              <div style={{ marginBottom: '14px', background: 'rgba(16,185,129,.05)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Score potentiel vues</p>
+                  {boosted && result.amelioration && (
+                    <span className="pg-pop" style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '100px' }}>🔥 {result.amelioration}</span>
+                  )}
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 80 ? 'linear-gradient(90deg,#10b981,#34d399)' : 'linear-gradient(90deg,#f59e0b,#fbbf24)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
+                  </div>
+                  <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: boosted ? '#f59e0b' : result.score >= 80 ? '#10b981' : '#f59e0b', minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
+                </div>
+                {/* Preview score si on applique toutes les trends sélectionnées */}
+                {trends && selectedTrends.length > 0 && !boosted && (
+                  <p style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', margin: '6px 0 0' }}>
+                    ⚡ Avec le boost tendance → score estimé <strong style={{ color: '#c4b5fd' }}>{potentialScore}/100</strong>
+                  </p>
+                )}
               </div>
 
-              {/* Titre */}
+              {/* ── TITRE ── */}
               <div style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Titre (Vinted)</p>
@@ -280,7 +342,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 </div>
               </div>
 
-              {/* Description */}
+              {/* ── DESCRIPTION ── */}
               <div style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Description</p>
@@ -291,7 +353,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 </div>
               </div>
 
-              {/* Hashtags */}
+              {/* ── HASHTAGS ── */}
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags</p>
@@ -304,7 +366,83 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 </div>
               </div>
 
-              {/* Boutons */}
+              {/* ══ TREND RADAR ══ */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '14px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '16px' }}>📡</span>
+                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Trend Radar</p>
+                    <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>CETTE SEMAINE</span>
+                  </div>
+                  {!trends && !trendLoading && (
+                    <button onClick={loadTrends} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      Scanner →
+                    </button>
+                  )}
+                  {trends && (
+                    <span style={{ color: '#334155', fontSize: '11px' }}>Maj. {trends.maj}</span>
+                  )}
+                </div>
+
+                {trendLoading && (
+                  <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                    <div className="pg-pulse" style={{ color: '#f59e0b', fontSize: '13px', fontWeight: 600 }}>📡 Scan des tendances Vinted en cours...</div>
+                    <p style={{ color: '#334155', fontSize: '11px', marginTop: '4px' }}>Analyse des recherches de la semaine</p>
+                  </div>
+                )}
+
+                {trendError && (
+                  <p style={{ color: '#f87171', fontSize: '12px' }}>{trendError} — <button onClick={loadTrends} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '12px' }}>Réessayer</button></p>
+                )}
+
+                {trends && (
+                  <>
+                    <p style={{ color: '#475569', fontSize: '12px', marginBottom: '10px' }}>
+                      Coche les mots à intégrer dans ta description (max 4) :
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '12px' }}>
+                      {trends.trends.map((t, i) => {
+                        const sel = selectedTrends.includes(t.mot);
+                        return (
+                          <div key={i} onClick={() => toggleTrend(t.mot)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sel ? 'rgba(245,158,11,.08)' : 'rgba(255,255,255,.02)', border: `1px solid ${sel ? 'rgba(245,158,11,.35)' : 'rgba(255,255,255,.06)'}`, borderRadius: '10px', padding: '9px 12px', cursor: 'pointer', transition: 'all .15s' }}>
+                            {/* Checkbox */}
+                            <div style={{ width: '18px', height: '18px', borderRadius: '5px', background: sel ? '#f59e0b' : 'transparent', border: `2px solid ${sel ? '#f59e0b' : 'rgba(255,255,255,.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
+                              {sel && <span style={{ color: '#000', fontSize: '12px', fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: sel ? '#fbbf24' : '#e2e8f0', fontWeight: 700, fontSize: '13px' }}>{t.mot}</span>
+                                <span style={{ background: 'rgba(239,68,68,.15)', color: '#f87171', fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '100px' }}>{t.boost}</span>
+                              </div>
+                              <p style={{ color: '#334155', fontSize: '11px', margin: '1px 0 0' }}>{t.raison}</p>
+                            </div>
+                            {/* Score impact */}
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, margin: 0 }}>+{t.score_apres - t.score_avant} pts</p>
+                              <p style={{ color: '#334155', fontSize: '10px', margin: 0 }}>→ {t.score_apres}/100</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bouton Appliquer boost */}
+                    <button
+                      onClick={applyTrendBoost}
+                      disabled={!selectedTrends.length || boostLoading}
+                      className={selectedTrends.length ? 'pg-btn' : ''}
+                      style={{ width: '100%', background: selectedTrends.length ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,.03)', color: selectedTrends.length ? '#000' : '#334155', border: 'none', borderRadius: '11px', padding: '13px', fontWeight: 800, cursor: selectedTrends.length ? 'pointer' : 'not-allowed', fontSize: '14px', fontFamily: 'inherit', transition: 'all .2s' }}>
+                      {selectedTrends.length
+                        ? `🔥 Appliquer le boost tendance (${selectedTrends.length} mot${selectedTrends.length > 1 ? 's' : ''}) — +${potentialScore - result.score} pts estimés`
+                        : '← Coche au moins un mot tendance'
+                      }
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* ── BOUTONS FINAUX ── */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button onClick={handleCopy} className="pg-btn" style={{ flex: 1, background: copied === true ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', minWidth: '140px' }}>
                   {copied === true ? '✅ Tout copié !' : '📋 Tout copier pour Vinted'}
