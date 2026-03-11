@@ -488,15 +488,23 @@ async def generate_description(
     if not GROQ_API_KEY:
         raise HTTPException(503, "GROQ_API_KEY manquante.")
 
-    image_url = body.image_url
-    if image_url.startswith("/"):
-        image_url = f"https://web-production-f1129.up.railway.app{image_url}"
+    # Extraire le nom de fichier depuis /image/<filename> ou chemin relatif
+    filename = os.path.basename(body.image_url.split("?")[0])
+    local_path = os.path.join(UPLOAD_DIR, filename)
+
+    # Lire l'image localement et encoder en base64
+    # Plus fiable que passer une URL externe à Groq (évite les 400/403 réseau)
+    if not os.path.exists(local_path):
+        raise HTTPException(404, "Image introuvable sur le serveur (expirée ?). Retraitez la photo.")
+    with open(local_path, "rb") as f:
+        image_b64 = base64.b64encode(f.read()).decode("utf-8")
+    image_data_url = f"data:image/png;base64,{image_b64}"
 
     prompt = """Tu es expert vente Vinted France. Analyse ce vêtement et génère UNIQUEMENT ce JSON (sans markdown) :
 {"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":85}"""
 
     try:
-        async with httpx.AsyncClient(timeout=35) as client:
+        async with httpx.AsyncClient(timeout=45) as client:
             resp = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={
@@ -509,7 +517,7 @@ async def generate_description(
                     "messages": [{
                         "role": "user",
                         "content": [
-                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "image_url", "image_url": {"url": image_data_url}},
                             {"type": "text", "text": prompt}
                         ]
                     }]
