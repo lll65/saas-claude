@@ -218,7 +218,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
-      if (mountedRef.current) { setTrends(data); setSelectedTrends(data.trends.slice(0,3).map(t => t.mot)); }
+      if (mountedRef.current) { setTrends(data); setSelectedTrends(data.trends.slice(0,3).map(t => t.mot || t.word || '')); }
     } catch(e) { if (mountedRef.current) setTrendError(`⚠️ ${e.message}`); }
     if (mountedRef.current) setTrendLoading(false);
   };
@@ -366,17 +366,17 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 </div>
               </div>
 
-              {/* ══ TREND RADAR ══ */}
+              {/* ══ BOOST TENDANCE ══ */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '14px', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '16px' }}>📡</span>
-                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Trend Radar</p>
+                    <span style={{ fontSize: '16px' }}>🔥</span>
+                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Boost Tendance</p>
                     <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>CETTE SEMAINE</span>
                   </div>
                   {!trends && !trendLoading && (
                     <button onClick={loadTrends} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      Scanner →
+                      Analyser →
                     </button>
                   )}
                   {trends && (
@@ -386,8 +386,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
                 {trendLoading && (
                   <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                    <div className="pg-pulse" style={{ color: '#f59e0b', fontSize: '13px', fontWeight: 600 }}>📡 Scan des tendances Vinted en cours...</div>
-                    <p style={{ color: '#334155', fontSize: '11px', marginTop: '4px' }}>Analyse des recherches de la semaine</p>
+                    <div className="pg-pulse" style={{ color: '#f59e0b', fontSize: '13px', fontWeight: 600 }}>🔥 Analyse des tendances en cours...</div>
+                    <p style={{ color: '#334155', fontSize: '11px', marginTop: '4px' }}>Mots viraux Vinted / TikTok / Instagram cette semaine</p>
                   </div>
                 )}
 
@@ -402,9 +402,12 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '12px' }}>
                       {trends.trends.map((t, i) => {
-                        const sel = selectedTrends.includes(t.mot);
+                        const word = t.mot || t.word || '';
+                        const impact = t.boost || t.impact || '';
+                        const scorePlus = t.score_plus || (t.score_apres && t.score_avant ? `+${t.score_apres - t.score_avant}` : '');
+                        const sel = selectedTrends.includes(word);
                         return (
-                          <div key={i} onClick={() => toggleTrend(t.mot)}
+                          <div key={i} onClick={() => toggleTrend(word)}
                             style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sel ? 'rgba(245,158,11,.08)' : 'rgba(255,255,255,.02)', border: `1px solid ${sel ? 'rgba(245,158,11,.35)' : 'rgba(255,255,255,.06)'}`, borderRadius: '10px', padding: '9px 12px', cursor: 'pointer', transition: 'all .15s' }}>
                             {/* Checkbox */}
                             <div style={{ width: '18px', height: '18px', borderRadius: '5px', background: sel ? '#f59e0b' : 'transparent', border: `2px solid ${sel ? '#f59e0b' : 'rgba(255,255,255,.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
@@ -412,16 +415,17 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ color: sel ? '#fbbf24' : '#e2e8f0', fontWeight: 700, fontSize: '13px' }}>{t.mot}</span>
-                                <span style={{ background: 'rgba(239,68,68,.15)', color: '#f87171', fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '100px' }}>{t.boost}</span>
+                                <span style={{ color: sel ? '#fbbf24' : '#e2e8f0', fontWeight: 700, fontSize: '13px' }}>{word}</span>
+                                {impact && <span style={{ background: 'rgba(239,68,68,.15)', color: '#f87171', fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '100px' }}>{impact}</span>}
                               </div>
                               <p style={{ color: '#334155', fontSize: '11px', margin: '1px 0 0' }}>{t.raison}</p>
                             </div>
                             {/* Score impact */}
-                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                              <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, margin: 0 }}>+{t.score_apres - t.score_avant} pts</p>
-                              <p style={{ color: '#334155', fontSize: '10px', margin: 0 }}>→ {t.score_apres}/100</p>
-                            </div>
+                            {scorePlus && (
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, margin: 0 }}>{scorePlus} pts</p>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -434,7 +438,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                       className={selectedTrends.length ? 'pg-btn' : ''}
                       style={{ width: '100%', background: selectedTrends.length ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,.03)', color: selectedTrends.length ? '#000' : '#334155', border: 'none', borderRadius: '11px', padding: '13px', fontWeight: 800, cursor: selectedTrends.length ? 'pointer' : 'not-allowed', fontSize: '14px', fontFamily: 'inherit', transition: 'all .2s' }}>
                       {selectedTrends.length
-                        ? `🔥 Appliquer le boost tendance (${selectedTrends.length} mot${selectedTrends.length > 1 ? 's' : ''}) — +${potentialScore - result.score} pts estimés`
+                        ? `🔥 Booster avec ${selectedTrends.length} mot${selectedTrends.length > 1 ? 's' : ''} tendance — +${potentialScore - result.score} pts estimés`
                         : '← Coche au moins un mot tendance'
                       }
                     </button>
