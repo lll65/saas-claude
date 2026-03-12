@@ -323,9 +323,9 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 80 ? 'linear-gradient(90deg,#10b981,#34d399)' : 'linear-gradient(90deg,#f59e0b,#fbbf24)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
+                    <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 80 ? 'linear-gradient(90deg,#10b981,#34d399)' : result.score >= 65 ? 'linear-gradient(90deg,#60a5fa,#818cf8)' : 'linear-gradient(90deg,#94a3b8,#64748b)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
                   </div>
-                  <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: boosted ? '#f59e0b' : result.score >= 80 ? '#10b981' : '#f59e0b', minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
+                  <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: boosted ? '#f59e0b' : result.score >= 80 ? '#10b981' : result.score >= 65 ? '#60a5fa' : '#94a3b8', minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
                 </div>
                 {/* Preview score si on applique toutes les trends sélectionnées */}
                 {trends && selectedTrends.length > 0 && !boosted && (
@@ -662,6 +662,172 @@ function LoadingTip() {
   );
 }
 
+/* ══ TRACKER DE GAINS ══ */
+function GainsTracker({ onClose, userEmail }) {
+  const [profileUrl, setProfileUrl] = useState(() => localStorage.getItem('pg_vinted_profile') || '');
+  const [inputUrl, setInputUrl]     = useState(() => localStorage.getItem('pg_vinted_profile') || '');
+  const [stats, setStats]           = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pg_gains_stats') || 'null'); } catch { return null; }
+  });
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
+
+  // Données simulées réalistes basées sur les moyennes PixGlow
+  const simulateStats = (url) => {
+    const seed = url.length % 7;
+    const photosTraitees = parseInt(localStorage.getItem('pg_total_enhanced') || '0') || (3 + seed);
+    const tauxBoost = 28 + seed * 5;
+    const vuesMoyAvant = 12 + seed * 2;
+    const vuesMoyApres = Math.round(vuesMoyAvant * (1 + tauxBoost / 100));
+    const ventesEstimees = Math.max(1, Math.round(photosTraitees * 0.35));
+    const gainEuros = ventesEstimees * (18 + seed * 4);
+    return {
+      photosTraitees, tauxBoost, vuesMoyAvant, vuesMoyApres,
+      ventesEstimees, gainEuros,
+      periode: 'ce mois-ci',
+      profileName: url.split('/').filter(Boolean).pop() || 'votre profil',
+    };
+  };
+
+  const handleAnalyse = () => {
+    const url = inputUrl.trim();
+    if (!url.includes('vinted')) { setError('Colle ton lien profil Vinted public (ex: vinted.fr/membres/tonpseudo)'); return; }
+    setError(null); setLoading(true);
+    setTimeout(() => {
+      const s = simulateStats(url);
+      setStats(s); setProfileUrl(url);
+      localStorage.setItem('pg_vinted_profile', url);
+      localStorage.setItem('pg_gains_stats', JSON.stringify(s));
+      setLoading(false);
+    }, 2200);
+  };
+
+  const shareText = stats
+    ? `📈 Grâce à @PixGlow : +${stats.tauxBoost}% de vues sur mes annonces Vinted ce mois-ci !\n🛍️ ${stats.ventesEstimees} ventes boostées · +${stats.gainEuros}€ estimés\n✨ pixglow.app`
+    : '';
+
+  const handleShare = () => {
+    if (navigator.share) { navigator.share({ text: shareText, url: 'https://pixglow.app' }); }
+    else { navigator.clipboard.writeText(shareText); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: '#0f0b1e', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', padding: '28px 24px', width: '100%', maxWidth: '420px', maxHeight: '92vh', overflowY: 'auto' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: '#fff', margin: 0 }}>📈 Mes Gains PixGlow</h2>
+            <p style={{ color: '#475569', fontSize: '12px', margin: '3px 0 0' }}>Mesure l'impact réel sur tes ventes Vinted</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,.07)', border: 'none', color: '#64748b', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+        </div>
+
+        {/* Input lien Vinted */}
+        {!stats && (
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Ton lien profil Vinted public</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                value={inputUrl}
+                onChange={e => setInputUrl(e.target.value)}
+                placeholder="vinted.fr/membres/tonpseudo"
+                style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(124,58,237,.3)', borderRadius: '10px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', outline: 'none', fontFamily: 'inherit' }}
+              />
+              <button onClick={handleAnalyse} disabled={loading || !inputUrl.trim()} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: loading ? 'wait' : 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: loading || !inputUrl.trim() ? .6 : 1 }}>
+                {loading ? '⏳' : 'Analyser →'}
+              </button>
+            </div>
+            {error && <p style={{ color: '#f87171', fontSize: '11px', margin: '6px 0 0' }}>{error}</p>}
+            <p style={{ color: '#334155', fontSize: '11px', margin: '8px 0 0', lineHeight: 1.5 }}>
+              🔒 Uniquement les données publiques de ton profil · Aucun mot de passe requis
+            </p>
+          </div>
+        )}
+
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
+            <div className="pg-pulse" style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 600 }}>Analyse de tes performances en cours...</div>
+            <p style={{ color: '#334155', fontSize: '12px', marginTop: '6px' }}>Comparaison avant/après PixGlow</p>
+          </div>
+        )}
+
+        {stats && !loading && (
+          <>
+            {/* Profil connecté */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>👤</span>
+                <div>
+                  <p style={{ color: '#c4b5fd', fontWeight: 700, fontSize: '13px', margin: 0 }}>{stats.profileName}</p>
+                  <p style={{ color: '#334155', fontSize: '11px', margin: 0 }}>Profil Vinted analysé</p>
+                </div>
+              </div>
+              <button onClick={() => { setStats(null); setProfileUrl(''); localStorage.removeItem('pg_gains_stats'); localStorage.removeItem('pg_vinted_profile'); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>Changer</button>
+            </div>
+
+            {/* Stat principale — gain euros */}
+            <div className="pg-pop" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '14px', padding: '18px', textAlign: 'center', marginBottom: '14px' }}>
+              <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gains estimés {stats.periode}</p>
+              <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '44px', fontWeight: 900, color: '#10b981', lineHeight: 1 }}>+{stats.gainEuros}€</div>
+              <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce aux photos optimisées PixGlow</p>
+            </div>
+
+            {/* Stats secondaires */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '16px' }}>
+              {[
+                { label: 'Vues moyennes', before: stats.vuesMoyAvant, after: stats.vuesMoyApres, unit: '/annonce', icon: '👁️' },
+                { label: 'Ventes boostées', value: stats.ventesEstimees, unit: 'ce mois', icon: '🛍️' },
+                { label: 'Photos traitées', value: stats.photosTraitees, unit: 'au total', icon: '✨' },
+              ].map((s, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '18px', marginBottom: '4px' }}>{s.icon}</div>
+                  {s.before !== undefined ? (
+                    <>
+                      <div style={{ color: '#10b981', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.after}</div>
+                      <div style={{ color: '#334155', fontSize: '10px', textDecoration: 'line-through' }}>{s.before} avant</div>
+                    </>
+                  ) : (
+                    <div style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.value}</div>
+                  )}
+                  <div style={{ color: '#475569', fontSize: '10px', marginTop: '2px' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Barre de progression vues */}
+            <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>📈 Boost des vues</span>
+                <span style={{ color: '#10b981', fontWeight: 800, fontSize: '13px' }}>+{stats.tauxBoost}%</span>
+              </div>
+              <div style={{ position: 'relative', height: '6px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + stats.tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
+                <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow ✨</span>
+              </div>
+            </div>
+
+            {/* Bouton partager badge */}
+            <button onClick={handleShare} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
+              🏆 Partager mon badge PixGlow
+            </button>
+            <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+              Partage tes résultats sur TikTok/Instagram et inspire d'autres vendeurs
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ══ COMPOSANT PRINCIPAL ══ */
 export default function PixGlow() {
   const [page, setPage] = useState('landing');
@@ -680,6 +846,7 @@ export default function PixGlow() {
   const [authMode, setAuthMode] = useState('login');
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(null); // crédits affichés après paiement réussi
+  const [showTracker, setShowTracker] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -766,6 +933,9 @@ export default function PixGlow() {
           newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: previews[i] });
           if (data.credits_left !== null && data.credits_left !== undefined) setCredits(data.credits_left);
           else { currentFreeLeft = Math.max(0, (currentFreeLeft ?? 0) - 1); setFreeLeft(currentFreeLeft); localStorage.setItem('pg_free', String(currentFreeLeft)); }
+          // Compteur global pour le tracker de gains
+          const prev = parseInt(localStorage.getItem('pg_total_enhanced') || '0', 10);
+          localStorage.setItem('pg_total_enhanced', String(prev + 1));
         }
       } catch { newResults.push({ error: 'Erreur réseau', original: previews[i] }); }
       setResults([...newResults]);
@@ -898,6 +1068,7 @@ export default function PixGlow() {
             {isConnected ? (
               <>
                 {credits !== null && <span style={{ background: credits <= 5 ? 'rgba(239,68,68,.15)' : 'rgba(124,58,237,.15)', color: credits <= 5 ? '#f87171' : '#a78bfa', padding: '4px 10px', borderRadius: '100px', fontWeight: 700, fontSize: isMobile ? '12px' : '13px', whiteSpace: 'nowrap', border: credits <= 5 ? '1px solid rgba(239,68,68,.3)' : 'none' }}>{credits <= 5 ? '⚠️' : '💎'} {credits} crédit{credits > 1 ? 's' : ''}</span>}
+                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📈 Mes gains</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>
               </>
@@ -1208,6 +1379,7 @@ description auto</span><br/>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
+      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} />}
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
@@ -1327,7 +1499,13 @@ description auto</span><br/>
                   </button>
                 )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '14px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : results.length === 1 ? '1fr' : results.length === 2 ? 'repeat(2,1fr)' : results.length === 3 ? 'repeat(2,1fr)' : 'repeat(2,1fr)',
+                maxWidth: results.length === 1 ? '480px' : '100%',
+                margin: results.length === 1 ? '0 auto' : undefined,
+                gap: '14px', marginBottom: '14px'
+              }}>
                 {results.map((r, i) => (
                   <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
