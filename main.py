@@ -655,16 +655,23 @@ async def get_trending(
         if cached and not body.force_refresh and now < cached["expires_at"]:
             return cached["data"]
 
-    # Générer via Groq — connaissance mode France 2024-2025
-    prompt = f"""Tu es expert tendances mode Vinted France.
+    # Générer via Groq — tendances Vinted/TikTok/Instagram cette semaine
+    prompt = f"""Tu es expert tendances Vinted/Instagram/TikTok France.
 Semaine du {_date.today().strftime('%d/%m/%Y')}.
-Catégorie : {body.category}
+Catégorie précise : {body.category}
 
-Liste les 6 mots-clés qui explosent EN CE MOMENT sur Vinted/Depop France pour "{body.category}".
-Mix : esthétiques viraux (TikTok/Pinterest), coupes tendance, matières, couleurs saison.
+Retourne UNIQUEMENT 6 mots-clés/expressions courtes qui explosent VRAIMENT cette semaine dans cette catégorie précise sur Vinted/Instagram/TikTok.
 
-Réponds UNIQUEMENT avec ce JSON (sans markdown) :
-{{"trends":[{{"mot":"exemple","boost":"+420%","raison":"Viral TikTok cette semaine","score_avant":80,"score_apres":93}},{{"mot":"exemple2","boost":"+180%","raison":"Tendance saison","score_avant":80,"score_apres":89}},...6 items total],"categorie_detectee":"{body.category}","maj":"{_date.today().isoformat()}"}}"""
+Règles STRICTES :
+- Doivent être 100% compatibles avec la catégorie "{body.category}" (pas de "chapeau paille" pour une montre, pas de "semelle épaisse" pour une veste, etc.)
+- Priorise les mots qui boostent les annonces similaires actuellement visibles
+- Expressions courtes (1-3 mots max), concrètes, cherchées par des acheteurs réels
+- Exemples pour "montres homme" : "bracelet cuir", "acier inoxydable bleu", "mini boîtier", "cadran coloré"
+- Exemples pour "chaussures" : "semelle plateforme", "bout carré", "mule velours", "dad shoe"
+- Exemples pour "vestes" : "oversize crop", "denim vintage", "capuche zippée", "col montant"
+
+Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
+{{"trends":[{{"word":"bracelet cuir","impact":"+280%","raison":"retour cuir chaud printemps","score_plus":"+8"}},{{"word":"exemple2","impact":"+180%","raison":"viral TikTok cette semaine","score_plus":"+6"}},...6 items total],"category_used":"{body.category}"}}"""
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -684,10 +691,24 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) :
             text = _re.sub(r"```json|```", "", text).strip()
             parsed = json.loads(text)
 
+            # Normalise trends — supporte l'ancien format (mot/boost) et le nouveau (word/impact)
+            raw_trends = parsed.get("trends", [])[:6]
+            normalized = []
+            for t in raw_trends:
+                word = t.get("word") or t.get("mot", "tendance")
+                normalized.append({
+                    "mot":       word,   # rétrocompat frontend
+                    "word":      word,   # nouveau format
+                    "boost":     t.get("impact") or t.get("boost", "+100%"),
+                    "impact":    t.get("impact") or t.get("boost", "+100%"),
+                    "raison":    t.get("raison", ""),
+                    "score_plus": t.get("score_plus", ""),
+                })
+
             result = {
-                "trends": parsed.get("trends", [])[:6],
-                "categorie": parsed.get("categorie_detectee", body.category),
-                "maj": parsed.get("maj", str(_date.today())),
+                "trends": normalized,
+                "categorie": parsed.get("category_used") or parsed.get("categorie_detectee", body.category),
+                "maj": str(_date.today()),
                 "cache_key": cache_key
             }
 
