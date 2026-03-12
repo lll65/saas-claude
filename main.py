@@ -548,8 +548,10 @@ async def generate_description(
         image_b64 = base64.b64encode(f.read()).decode("utf-8")
     image_data_url = f"data:image/png;base64,{image_b64}"
 
-    prompt = """Tu es expert vente Vinted France. Analyse ce vêtement et génère UNIQUEMENT ce JSON (sans markdown) :
-{"titre":"titre accrocheur max 60 caractères","description":"2-3 phrases avec emojis, ton naturel et vendeur","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":85,"categorie":"vetement|chaussures|accessoires|sacs|bijoux"}"""
+    prompt = """Tu es expert vente Vinted France. Analyse CE vêtement/article précis sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
+{"titre":"titre accrocheur max 60 caractères basé sur ce que tu vois","description":"2-3 phrases avec emojis, ton naturel et vendeur, décris précisément l'article visible","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison"}
+
+IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité visible de l'article (état, marque, style, tendance actuelle). Ne mets JAMAIS 85 par défaut. Un article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95."""
 
     # Vision models to try in order (fallback if first is unavailable)
     VISION_MODELS = [
@@ -630,6 +632,8 @@ def _week_key(category: str) -> str:
 
 class TrendRequest(BaseModel):
     category: str = "mode"   # catégorie détectée par l'IA dans le titre/desc
+    titre: str = ""           # titre généré — pour contextualiser les tendances
+    description: str = ""    # description générée — pour cohérence
     force_refresh: bool = False
 
 @app.post("/trending")
@@ -656,19 +660,23 @@ async def get_trending(
             return cached["data"]
 
     # Générer via Groq — tendances Vinted/TikTok/Instagram cette semaine
+    article_context = ""
+    if body.titre:
+        article_context = f"\nArticle analysé : \"{body.titre}\""
+    if body.description:
+        article_context += f"\nDescription : \"{body.description[:120]}\""
+
     prompt = f"""Tu es expert tendances Vinted/Instagram/TikTok France.
 Semaine du {_date.today().strftime('%d/%m/%Y')}.
-Catégorie précise : {body.category}
+Catégorie précise : {body.category}{article_context}
 
-Retourne UNIQUEMENT 6 mots-clés/expressions courtes qui explosent VRAIMENT cette semaine dans cette catégorie précise sur Vinted/Instagram/TikTok.
+Retourne UNIQUEMENT 6 mots-clés/expressions courtes qui explosent VRAIMENT cette semaine ET qui sont 100% cohérents avec CET article précis.
 
 Règles STRICTES :
-- Doivent être 100% compatibles avec la catégorie "{body.category}" (pas de "chapeau paille" pour une montre, pas de "semelle épaisse" pour une veste, etc.)
-- Priorise les mots qui boostent les annonces similaires actuellement visibles
-- Expressions courtes (1-3 mots max), concrètes, cherchées par des acheteurs réels
-- Exemples pour "montres homme" : "bracelet cuir", "acier inoxydable bleu", "mini boîtier", "cadran coloré"
-- Exemples pour "chaussures" : "semelle plateforme", "bout carré", "mule velours", "dad shoe"
-- Exemples pour "vestes" : "oversize crop", "denim vintage", "capuche zippée", "col montant"
+- Compatibles avec la catégorie ET avec l'article décrit ci-dessus (si c'est une montre, propose "bracelet cuir", "cadran coloré", etc. — JAMAIS de mots pour d'autres catégories)
+- Expressions courtes (1-3 mots max), concrètes, cherchées par des acheteurs réels cette semaine
+- Mélange : matières tendance, styles viraux TikTok, caractéristiques physiques recherchées, termes d'esthétique actuels
+- Si l'article a des caractéristiques visibles (couleur, matière, marque), intègre-les dans les suggestions
 
 Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
 {{"trends":[{{"word":"bracelet cuir","impact":"+280%","raison":"retour cuir chaud printemps","score_plus":"+8"}},{{"word":"exemple2","impact":"+180%","raison":"viral TikTok cette semaine","score_plus":"+6"}},...6 items total],"category_used":"{body.category}"}}"""
