@@ -214,7 +214,11 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
     try {
       const res = await fetch(`${API_URL}/trending`, {
         method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ category: result.categorie || 'vetement' })
+        body: JSON.stringify({
+          category: result.categorie || 'vetement',
+          titre: result.titre || '',
+          description: result.description || '',
+        })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
@@ -332,45 +336,45 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               </div>
 
               {/* ── TITRE ── */}
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Titre (Vinted)</p>
                   <MiniCopyBtn text={result.titre} field="titre" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 12px' }}>
-                  <p style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 600, margin: 0 }}>{result.titre}</p>
+                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '8px 12px' }}>
+                  <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, margin: 0 }}>{result.titre}</p>
                 </div>
               </div>
 
               {/* ── DESCRIPTION ── */}
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Description</p>
                   <MiniCopyBtn text={result.description} field="desc" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 12px' }}>
-                  <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: 1.6, margin: 0 }}>{result.description}</p>
+                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '8px 12px', maxHeight: '72px', overflowY: 'auto' }}>
+                  <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>{result.description}</p>
                 </div>
               </div>
 
               {/* ── HASHTAGS ── */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags</p>
                   <MiniCopyBtn text={result.hashtags} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                   {result.hashtags.split(' ').filter(Boolean).map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '12px', padding: '3px 10px', borderRadius: '100px', fontWeight: 500 }}>{tag}</span>
+                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '11px', padding: '2px 9px', borderRadius: '100px', fontWeight: 500 }}>{tag}</span>
                   ))}
                 </div>
               </div>
 
               {/* ══ BOOST TENDANCE ══ */}
-              <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '14px', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '16px' }}>🔥</span>
+                    <span style={{ fontSize: '15px' }}>🔥</span>
                     <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Boost Tendance</p>
                     <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>CETTE SEMAINE</span>
                   </div>
@@ -383,6 +387,12 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     <span style={{ color: '#334155', fontSize: '11px' }}>Maj. {trends.maj}</span>
                   )}
                 </div>
+                {/* Mini phrase explicative */}
+                {!trends && !trendLoading && (
+                  <p style={{ color: '#475569', fontSize: '11px', margin: '0 0 8px', lineHeight: 1.4 }}>
+                    Détecte les mots viraux de la semaine pour <strong style={{ color: '#94a3b8' }}>{result.categorie || 'cet article'}</strong> et les intègre dans ta description pour apparaître en tête des recherches Vinted.
+                  </p>
+                )}
 
                 {trendLoading && (
                   <div style={{ textAlign: 'center', padding: '12px 0' }}>
