@@ -1263,7 +1263,6 @@ export default function PixGlow() {
           ))}
         </div>
         <p style={{ color: '#1e293b', fontSize: '10px', textAlign: 'center', margin: '8px 0 0' }}>*Estimation basée sur les retours de nos utilisateurs</p>
-        </div>
       </section>
 
       {/* FEATURES */}
