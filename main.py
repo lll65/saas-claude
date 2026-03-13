@@ -71,7 +71,7 @@ def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
 # ─────────────────────────────────────────────
 #  APP + CORS
 # ─────────────────────────────────────────────
-app = FastAPI(title="PixGlow API", version="2.4")
+app = FastAPI(title="PixGlow API", version="2.5")
 
 ALLOWED_ORIGINS = [
     "https://pixglow.app",
@@ -125,7 +125,7 @@ def get_db():
 
 @app.on_event("startup")
 async def startup_event():
-    print(f"[STARTUP] PixGlow v2.4 — DB: {'OK' if DATABASE_URL else 'MANQUANTE'}")
+    print(f"[STARTUP] PixGlow v2.5 — DB: {'OK' if DATABASE_URL else 'MANQUANTE'}")
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS users (
@@ -136,6 +136,11 @@ async def startup_event():
         cur.execute("""CREATE TABLE IF NOT EXISTS ip_usage (
             ip TEXT PRIMARY KEY, count INTEGER DEFAULT 0, first_used TIMESTAMP DEFAULT NOW()
         )""")
+        # Track total photos processed for real stats
+        cur.execute("""CREATE TABLE IF NOT EXISTS stats (
+            key TEXT PRIMARY KEY, value INTEGER DEFAULT 0
+        )""")
+        cur.execute("""INSERT INTO stats (key, value) VALUES ('total_photos', 0) ON CONFLICT (key) DO NOTHING""")
         # Add first_used column if it doesn't exist yet (migration for existing deployments)
         cur.execute("""
             ALTER TABLE ip_usage ADD COLUMN IF NOT EXISTS first_used TIMESTAMP DEFAULT NOW()
@@ -227,11 +232,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return None
 
 def get_real_ip(request: Request) -> str:
-    """
-    Extracts the real client IP from proxy headers.
-    Priority: CF-Connecting-IP (Cloudflare) > X-Forwarded-For (leftmost public IP) > X-Real-IP > direct host.
-    Filters out private/internal IPs from proxy chains.
-    """
     PRIVATE_PREFIXES = ("100.64.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
                         "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
                         "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
@@ -240,24 +240,20 @@ def get_real_ip(request: Request) -> str:
     def is_public(ip: str) -> bool:
         return ip and not any(ip.startswith(p) for p in PRIVATE_PREFIXES)
 
-    # Cloudflare — most reliable when behind CF
     cf_ip = request.headers.get("CF-Connecting-IP", "").strip()
     if is_public(cf_ip):
         return cf_ip
 
-    # X-Forwarded-For — take the first public IP (real client is leftmost)
     forwarded = request.headers.get("X-Forwarded-For", "")
     if forwarded:
         for ip in (ip.strip() for ip in forwarded.split(",")):
             if is_public(ip):
                 return ip
 
-    # X-Real-IP fallback
     real_ip = request.headers.get("X-Real-IP", "").strip()
     if is_public(real_ip):
         return real_ip
 
-    # Last resort: direct connection (works in dev / no proxy)
     return request.client.host if request.client else "unknown"
 
 def get_ip_count(ip: str) -> int:
@@ -269,14 +265,8 @@ def get_ip_count(ip: str) -> int:
     except: return 0
 
 def increment_ip(ip: str):
-    """
-    Atomically increments the usage counter for an IP using a single SQL statement.
-    Returns (allowed: bool, new_count: int).
-    Uses INSERT ... ON CONFLICT to avoid race conditions.
-    """
     conn = get_db(); cur = conn.cursor()
     try:
-        # Atomic upsert: only increment if count is strictly below the limit
         cur.execute("""
             INSERT INTO ip_usage (ip, count) VALUES (%s, 1)
             ON CONFLICT (ip) DO UPDATE
@@ -287,10 +277,8 @@ def increment_ip(ip: str):
         row = cur.fetchone()
         conn.commit()
         if row:
-            # Row was updated/inserted → request is allowed
             return True, row["count"]
         else:
-            # WHERE clause blocked the update → limit already reached
             cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
             current = cur.fetchone()
             return False, current["count"] if current else FREE_IMAGES_PER_IP
@@ -300,6 +288,13 @@ def increment_ip(ip: str):
     finally:
         cur.close(); conn.close()
 
+def _increment_total_photos(conn, cur):
+    """Increment global photo counter for real stats."""
+    try:
+        cur.execute("UPDATE stats SET value = value + 1 WHERE key = 'total_photos'")
+    except:
+        pass  # Non-critical, don't break the enhance flow
+
 class DescriptionRequest(BaseModel):
     image_url: str = ""
 
@@ -308,7 +303,7 @@ class DescriptionRequest(BaseModel):
 # ─────────────────────────────────────────────
 @app.get("/")
 def root():
-    return {"status": "ok", "version": "2.4", "db": bool(DATABASE_URL)}
+    return {"status": "ok", "version": "2.5", "db": bool(DATABASE_URL)}
 
 @app.get("/health")
 def health():
@@ -319,6 +314,33 @@ def health():
         return {"status": "ok", "db": "connected", "users": n}
     except Exception as e:
         return JSONResponse({"status": "error", "db": str(e)}, status_code=503)
+
+# ─────────────────────────────────────────────
+#  REAL PUBLIC STATS — used by frontend landing page
+#  Returns ACTUAL numbers from the database
+# ─────────────────────────────────────────────
+@app.get("/public-stats")
+async def public_stats():
+    """
+    Returns real, verified stats for the landing page.
+    No fake numbers — only what's actually in the DB.
+    """
+    try:
+        conn = get_db(); cur = conn.cursor()
+        # Real user count
+        cur.execute("SELECT COUNT(*) as n FROM users")
+        user_count = cur.fetchone()["n"]
+        # Real total photos processed
+        cur.execute("SELECT value FROM stats WHERE key = 'total_photos'")
+        row = cur.fetchone()
+        total_photos = row["value"] if row else 0
+        cur.close(); conn.close()
+        return {
+            "users": user_count,
+            "photos_processed": total_photos,
+        }
+    except Exception as e:
+        return {"users": 0, "photos_processed": 0}
 
 @app.get("/free-remaining")
 async def free_remaining(request: Request):
@@ -433,10 +455,15 @@ async def enhance_photo(
         filename = f"{uuid.uuid4()}.png"
         bg.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
 
+        # Increment real stats counter
+        _increment_total_photos(conn, cur)
+
         credits_left = None
         if current_user:
             cur.execute("UPDATE users SET credits = credits - 1 WHERE email = %s RETURNING credits", (current_user,))
             credits_left = cur.fetchone()["credits"]
+            conn.commit()
+        else:
             conn.commit()
         cur.close(); conn.close()
         return JSONResponse({"status": "success", "filename": filename, "url": f"/image/{filename}", "credits_left": credits_left})
@@ -505,7 +532,6 @@ async def stripe_webhook(request: Request):
         obj      = event["data"]["object"]
         email    = (obj.get("customer_email") or obj.get("metadata", {}).get("email", "")).strip().lower()
         metadata = obj.get("metadata", {})
-        # Read credits from metadata (set at checkout creation), fallback to 100
         try:
             credits_to_add = int(metadata.get("credits", 100))
         except (ValueError, TypeError):
@@ -524,7 +550,7 @@ async def stripe_webhook(request: Request):
 
 
 # ─────────────────────────────────────────────
-#  GÉNÉRATION DESCRIPTION AI — GROCK
+#  GÉNÉRATION DESCRIPTION AI — GROQ
 # ─────────────────────────────────────────────
 @app.post("/generate-description")
 async def generate_description(
@@ -536,12 +562,9 @@ async def generate_description(
     if not GROQ_API_KEY:
         raise HTTPException(503, "GROQ_API_KEY manquante.")
 
-    # Extraire le nom de fichier depuis /image/<filename> ou chemin relatif
     filename = os.path.basename(body.image_url.split("?")[0])
     local_path = os.path.join(UPLOAD_DIR, filename)
 
-    # Lire l'image localement et encoder en base64
-    # Plus fiable que passer une URL externe à Groq (évite les 400/403 réseau)
     if not os.path.exists(local_path):
         raise HTTPException(404, "Image introuvable sur le serveur (expirée ?). Retraitez la photo.")
     with open(local_path, "rb") as f:
@@ -553,7 +576,6 @@ async def generate_description(
 
 IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité visible de l'article (état, marque, style, tendance actuelle). Ne mets JAMAIS 85 par défaut. Un article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95."""
 
-    # Vision models to try in order (fallback if first is unavailable)
     VISION_MODELS = [
         "meta-llama/llama-4-scout-17b-16e-instruct",
         "llama-3.2-11b-vision-preview",
@@ -616,24 +638,22 @@ IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité 
 
 
 # ─────────────────────────────────────────────
-#  TRENDING KEYWORDS (simulé via LLM — mise à jour hebdo)
+#  TRENDING KEYWORDS
 # ─────────────────────────────────────────────
 import hashlib as _hashlib
 from datetime import date as _date
 
-# Cache en mémoire — évite de rappeler Groq pour chaque utilisateur
-# clé = semaine ISO + catégorie, valeur = {trends, expires_at}
 _trends_cache: dict = {}
 _trends_lock = threading.Lock()
 
 def _week_key(category: str) -> str:
-    week = _date.today().isocalendar()  # (year, week, day)
+    week = _date.today().isocalendar()
     return f"{week[0]}-W{week[1]:02d}-{category.lower()[:20]}"
 
 class TrendRequest(BaseModel):
-    category: str = "mode"   # catégorie détectée par l'IA dans le titre/desc
-    titre: str = ""           # titre généré — pour contextualiser les tendances
-    description: str = ""    # description générée — pour cohérence
+    category: str = "mode"
+    titre: str = ""
+    description: str = ""
     force_refresh: bool = False
 
 @app.post("/trending")
@@ -641,10 +661,6 @@ async def get_trending(
     body: TrendRequest,
     current_user: str = Depends(get_current_user)
 ):
-    """
-    Retourne les 6 mots-tendance de la semaine pour une catégorie mode.
-    Cache 7 jours par catégorie — un seul appel Groq par semaine par catégorie.
-    """
     if not current_user:
         raise HTTPException(401, "Connexion requise.")
     if not GROQ_API_KEY:
@@ -653,13 +669,11 @@ async def get_trending(
     cache_key = _week_key(body.category)
     now = time.time()
 
-    # Retourner depuis le cache si valide et pas de force_refresh
     with _trends_lock:
         cached = _trends_cache.get(cache_key)
         if cached and not body.force_refresh and now < cached["expires_at"]:
             return cached["data"]
 
-    # Générer via Groq — tendances Vinted/TikTok/Instagram cette semaine
     article_context = ""
     if body.titre:
         article_context = f"\nArticle analysé : \"{body.titre}\""
@@ -673,7 +687,7 @@ Catégorie précise : {body.category}{article_context}
 Retourne UNIQUEMENT 6 mots-clés/expressions courtes qui explosent VRAIMENT cette semaine ET qui sont 100% cohérents avec CET article précis.
 
 Règles STRICTES :
-- Compatibles avec la catégorie ET avec l'article décrit ci-dessus (si c'est une montre, propose "bracelet cuir", "cadran coloré", etc. — JAMAIS de mots pour d'autres catégories)
+- Compatibles avec la catégorie ET avec l'article décrit ci-dessus
 - Expressions courtes (1-3 mots max), concrètes, cherchées par des acheteurs réels cette semaine
 - Mélange : matières tendance, styles viraux TikTok, caractéristiques physiques recherchées, termes d'esthétique actuels
 - Si l'article a des caractéristiques visibles (couleur, matière, marque), intègre-les dans les suggestions
@@ -699,14 +713,13 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
             text = _re.sub(r"```json|```", "", text).strip()
             parsed = json.loads(text)
 
-            # Normalise trends — supporte l'ancien format (mot/boost) et le nouveau (word/impact)
             raw_trends = parsed.get("trends", [])[:6]
             normalized = []
             for t in raw_trends:
                 word = t.get("word") or t.get("mot", "tendance")
                 normalized.append({
-                    "mot":       word,   # rétrocompat frontend
-                    "word":      word,   # nouveau format
+                    "mot":       word,
+                    "word":      word,
                     "boost":     t.get("impact") or t.get("boost", "+100%"),
                     "impact":    t.get("impact") or t.get("boost", "+100%"),
                     "raison":    t.get("raison", ""),
@@ -720,7 +733,6 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
                 "cache_key": cache_key
             }
 
-            # Mettre en cache 7 jours
             with _trends_lock:
                 _trends_cache[cache_key] = {
                     "data": result,
@@ -738,7 +750,7 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
 
 class BoostRequest(BaseModel):
     image_url: str
-    trend_words: list  # mots-tendance à injecter
+    trend_words: list
     current_score: int = 75
 
 @app.post("/generate-boosted")
@@ -746,7 +758,6 @@ async def generate_boosted(
     body: BoostRequest,
     current_user: str = Depends(get_current_user)
 ):
-    """Régénère titre/desc/hashtags en injectant les mots-tendance."""
     if not current_user:
         raise HTTPException(401, "Connexion requise.")
     if not GROQ_API_KEY:
