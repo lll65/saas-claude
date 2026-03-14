@@ -749,50 +749,19 @@ function LoadingTip() {
   );
 }
 
-/* ══ TRACKER DE GAINS ══ */
-function GainsTracker({ onClose, userEmail }) {
-  const [profileUrl, setProfileUrl] = useState(() => localStorage.getItem('pg_vinted_profile') || '');
-  const [inputUrl, setInputUrl]     = useState(() => localStorage.getItem('pg_vinted_profile') || '');
-  const [stats, setStats]           = useState(() => {
-    try { return JSON.parse(localStorage.getItem('pg_gains_stats') || 'null'); } catch { return null; }
-  });
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState(null);
+/* ══ SIMULATEUR GAINS ══ */
+function GainsTracker({ onClose }) {
+  const [articles, setArticles] = useState(15);
+  const [prixMoyen, setPrixMoyen] = useState(25);
 
-  // Estimations basées sur les moyennes PixGlow
-  const estimateStats = (url) => {
-    const seed = url.length % 7;
-    const photosTraitees = parseInt(localStorage.getItem('pg_total_enhanced') || '0') || (3 + seed);
-    const tauxBoost = 28 + seed * 5;
-    const vuesMoyAvant = 12 + seed * 2;
-    const vuesMoyApres = Math.round(vuesMoyAvant * (1 + tauxBoost / 100));
-    const ventesEstimees = Math.max(1, Math.round(photosTraitees * 0.35));
-    const gainEuros = ventesEstimees * (18 + seed * 4);
-    return {
-      photosTraitees, tauxBoost, vuesMoyAvant, vuesMoyApres,
-      ventesEstimees, gainEuros,
-      periode: 'ce mois-ci',
-      profileName: url.split('/').filter(Boolean).pop() || 'votre profil',
-    };
-  };
+  // Calculs temps réel
+  const tauxBoost = 28;
+  const ventesEstimees = Math.max(1, Math.round(articles * 0.35));
+  const gainEuros = Math.round(ventesEstimees * prixMoyen * 0.28);
+  const vuesMoyAvant = 12;
+  const vuesMoyApres = Math.round(vuesMoyAvant * 1.28);
 
-  const handleAnalyse = () => {
-    const url = inputUrl.trim();
-    if (!url.includes('vinted')) { setError('Colle ton lien profil Vinted public (ex: vinted.fr/membres/tonpseudo)'); return; }
-    setError(null); setLoading(true);
-    setTimeout(() => {
-      const s = estimateStats(url);
-      setStats(s); setProfileUrl(url);
-      localStorage.setItem('pg_vinted_profile', url);
-      localStorage.setItem('pg_gains_stats', JSON.stringify(s));
-      setLoading(false);
-    }, 2200);
-  };
-
-  const shareText = stats
-    ? `Grâce à @PixGlow : +${stats.tauxBoost}% de vues sur mes annonces Vinted ce mois-ci ! ${stats.ventesEstimees} ventes estimées · ~${stats.gainEuros}€ estimés — pixglow.app`
-    : '';
-
+  const shareText = `Avec @PixGlow je pourrais générer ~${gainEuros}€ supplémentaires sur mes ${articles} articles ! +${tauxBoost}% de vues estimées — pixglow.app`;
   const handleShare = () => {
     if (navigator.share) { navigator.share({ text: shareText, url: 'https://pixglow.app' }); }
     else { navigator.clipboard.writeText(shareText); }
@@ -804,120 +773,100 @@ function GainsTracker({ onClose, userEmail }) {
       <div style={{ background: '#0f0b1e', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', padding: '28px 24px', width: '100%', maxWidth: '420px', maxHeight: '92vh', overflowY: 'auto' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
           <div>
-            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: '#fff', margin: 0 }}>Mes Gains PixGlow</h2>
-            <p style={{ color: '#475569', fontSize: '12px', margin: '3px 0 0' }}>Estimation de l'impact sur tes ventes</p>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: '#fff', margin: 0 }}>Simulateur Interactif</h2>
+            <p style={{ color: '#475569', fontSize: '12px', margin: '3px 0 0' }}>Simule tes gains avec PixGlow <span title="Estimations basées sur les moyennes de nos utilisateurs" style={{ cursor: 'help', background: 'rgba(124,58,237,.2)', border: '1px solid rgba(124,58,237,.3)', borderRadius: '50%', width: '14px', height: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 800, color: '#a78bfa', verticalAlign: 'middle', marginLeft: '4px' }}>i</span></p>
           </div>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,.07)', border: 'none', color: '#64748b', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '16px' }}>✕</button>
         </div>
 
-        {/* Input lien Vinted */}
-        {!stats && (
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Ton lien profil Vinted public</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                value={inputUrl}
-                onChange={e => setInputUrl(e.target.value)}
-                placeholder="vinted.fr/membres/tonpseudo"
-                style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(124,58,237,.3)', borderRadius: '10px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', outline: 'none', fontFamily: 'inherit' }}
-              />
-              <button onClick={handleAnalyse} disabled={loading || !inputUrl.trim()} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: loading ? 'wait' : 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: loading || !inputUrl.trim() ? .6 : 1 }}>
-                {loading ? <><div style={{ width: '13px', height: '13px', border: '2px solid rgba(124,58,237,.2)', borderTop: '2px solid #7c3aed', borderRadius: '50%', animation: 'pg-spin .8s linear infinite', display: 'inline-block' }} /> Analyse...</> : 'Analyser →'}
-              </button>
+        {/* Sliders */}
+        <div style={{ marginBottom: '20px', marginTop: '20px' }}>
+          {/* Slider articles */}
+          <div style={{ marginBottom: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+              <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>Combien d'articles as-tu à vendre ?</label>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#a78bfa', lineHeight: 1 }}>{articles}</span>
             </div>
-            {error && <p style={{ color: '#f87171', fontSize: '11px', margin: '6px 0 0' }}>{error}</p>}
-            <p style={{ color: '#334155', fontSize: '11px', margin: '8px 0 0', lineHeight: 1.5 }}>
-              Uniquement les données publiques de ton profil · Aucun mot de passe requis
-            </p>
+            <input type="range" min="1" max="100" value={articles} onChange={e => setArticles(+e.target.value)}
+              style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer', height: '4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ color: '#334155', fontSize: '10px' }}>1</span>
+              <span style={{ color: '#334155', fontSize: '10px' }}>100 articles</span>
+            </div>
           </div>
-        )}
 
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div className="pg-pulse" style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 600 }}>Analyse de tes performances en cours...</div>
-            <p style={{ color: '#334155', fontSize: '12px', marginTop: '6px' }}>Comparaison avant / après PixGlow</p>
+          {/* Slider prix moyen */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+              <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>Prix moyen de tes articles ?</label>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#a78bfa', lineHeight: 1 }}>{prixMoyen}€</span>
+            </div>
+            <input type="range" min="5" max="200" step="5" value={prixMoyen} onChange={e => setPrixMoyen(+e.target.value)}
+              style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer', height: '4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ color: '#334155', fontSize: '10px' }}>5€</span>
+              <span style={{ color: '#334155', fontSize: '10px' }}>200€</span>
+            </div>
           </div>
-        )}
+        </div>
 
-        {stats && !loading && (
-          <>
-            {/* Disclaimer */}
-            <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px' }}>
-              <p style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600, margin: 0 }}>
-                ⚠️ Ces chiffres sont des estimations basées sur les moyennes de nos utilisateurs, pas des données réelles de ton profil Vinted.
-              </p>
-            </div>
-            {/* Profil connecté */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>👤</span>
-                <div>
-                  <p style={{ color: '#c4b5fd', fontWeight: 700, fontSize: '13px', margin: 0 }}>{stats.profileName}</p>
-                  <p style={{ color: '#334155', fontSize: '11px', margin: 0 }}>Estimation PixGlow</p>
-                </div>
-              </div>
-              <button onClick={() => { setStats(null); setProfileUrl(''); localStorage.removeItem('pg_gains_stats'); localStorage.removeItem('pg_vinted_profile'); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>Changer</button>
-            </div>
+        {/* Stat principale — gain euros */}
+        <div className="pg-pop" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '14px', padding: '18px', textAlign: 'center', marginBottom: '14px' }}>
+          <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gains supplémentaires estimés</p>
+          <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '52px', fontWeight: 900, color: '#10b981', lineHeight: 1, transition: 'all .15s ease' }}>~{gainEuros}€</div>
+          <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce aux photos optimisées PixGlow</p>
+        </div>
 
-            {/* Stat principale — gain euros */}
-            <div className="pg-pop" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '14px', padding: '18px', textAlign: 'center', marginBottom: '14px' }}>
-              <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gains estimés {stats.periode}</p>
-              <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '44px', fontWeight: 900, color: '#10b981', lineHeight: 1 }}>~{stats.gainEuros}€</div>
-              <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce aux photos optimisées PixGlow</p>
+        {/* Stats secondaires */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '16px' }}>
+          {[
+            { label: 'Vues / annonce', before: vuesMoyAvant, after: vuesMoyApres,
+              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="8" cy="8" r="2" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
+            { label: 'Ventes estimées', value: ventesEstimees,
+              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h1.5l2 7h7l1.5-4.5H5.5" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="11" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
+            { label: 'Boost des vues', value: `+${tauxBoost}%`,
+              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,12 6,7 9,10 14,4" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+          ].map((s, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{s.svg}</div>
+              {s.before !== undefined ? (
+                <>
+                  <div style={{ color: '#10b981', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.after}</div>
+                  <div style={{ color: '#334155', fontSize: '10px', textDecoration: 'line-through' }}>{s.before} avant</div>
+                </>
+              ) : (
+                <div style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.value}</div>
+              )}
+              <div style={{ color: '#475569', fontSize: '10px', marginTop: '2px' }}>{s.label}</div>
             </div>
+          ))}
+        </div>
 
-            {/* Stats secondaires */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '16px' }}>
-              {[
-                { label: 'Vues estimées', before: stats.vuesMoyAvant, after: stats.vuesMoyApres, unit: '/annonce',
-                  svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="8" cy="8" r="2" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-                { label: 'Ventes estimées', value: stats.ventesEstimees, unit: 'ce mois',
-                  svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h1.5l2 7h7l1.5-4.5H5.5" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="11" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-                { label: 'Photos traitées', value: stats.photosTraitees, unit: 'au total',
-                  svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="8" cy="8" r="2.5" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-              ].map((s, i) => (
-                <div key={i} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{s.svg}</div>
-                  {s.before !== undefined ? (
-                    <>
-                      <div style={{ color: '#10b981', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.after}</div>
-                      <div style={{ color: '#334155', fontSize: '10px', textDecoration: 'line-through' }}>{s.before} avant</div>
-                    </>
-                  ) : (
-                    <div style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.value}</div>
-                  )}
-                  <div style={{ color: '#475569', fontSize: '10px', marginTop: '2px' }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
+        {/* Barre de progression vues */}
+        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>📈 Boost des vues</span>
+            <span style={{ color: '#10b981', fontWeight: 800, fontSize: '13px' }}>+{tauxBoost}%</span>
+          </div>
+          <div style={{ position: 'relative', height: '6px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+            <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
+            <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow</span>
+          </div>
+        </div>
 
-            {/* Barre de progression vues */}
-            <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>📈 Boost des vues</span>
-                <span style={{ color: '#10b981', fontWeight: 800, fontSize: '13px' }}>+{stats.tauxBoost}%</span>
-              </div>
-              <div style={{ position: 'relative', height: '6px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + stats.tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-                <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
-                <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow</span>
-              </div>
-            </div>
-
-            {/* Bouton partager badge */}
-            <button onClick={handleShare} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
-              Partager mes résultats
-            </button>
-            <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-              Partage sur TikTok ou Instagram et inspire d'autres vendeurs
-            </p>
-          </>
-        )}
+        {/* Bouton partager */}
+        <button onClick={handleShare} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
+          Partager ma simulation
+        </button>
+        <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+          Estimations basées sur les moyennes de nos utilisateurs · Résultats variables
+        </p>
       </div>
     </div>
   );
@@ -1636,8 +1585,8 @@ export default function PixGlow() {
           <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '28px', color: T.text, letterSpacing: '-.5px' }}>Ce que disent nos premiers testeurs</h2>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '20px' }}>
             {[
-              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
-              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
+              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', photo: 'https://i.pravatar.cc/80?img=3', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
+              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', photo: 'https://i.pravatar.cc/80?img=12', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
             ].map((t,i) => (
               <div key={i} className="pg-card pg-reveal" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '22px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '14px', right: '18px', fontFamily: 'Georgia,serif', fontSize: '64px', color: t.couleur, opacity: .07, lineHeight: 1, userSelect: 'none', fontWeight: 900 }}>"</div>
@@ -1646,7 +1595,7 @@ export default function PixGlow() {
                 </div>
                 <p style={{ color: T.text, fontSize: '14px', lineHeight: 1.7, fontStyle: 'italic', margin: '0 0 16px', position: 'relative', zIndex: 1 }}>"{t.txt}"</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <AvatarInitials name={t.nom} size={38} style={{ border: `2px solid ${t.couleur}30`, flexShrink: 0 }} />
+                  <img src={t.photo} alt={t.nom} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${t.couleur}50`, flexShrink: 0 }} />
                   <div>
                     <p style={{ color: T.text, fontWeight: 700, fontSize: '13px', margin: '0 0 1px' }}>{t.nom}</p>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0 }}>{t.tag}</p>
