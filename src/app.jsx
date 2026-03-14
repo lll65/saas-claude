@@ -13,18 +13,18 @@ const LS = {
 };
 const LegalLayout = ({ title, onBack, children }) => (
   <div style={LS.page}>
-    <nav style={LS.nav}><span style={LS.logo}>Photlow</span><button onClick={onBack} style={LS.back}>← Retour</button></nav>
+    <nav style={LS.nav}><span style={LS.logo}>PixGlow</span><button onClick={onBack} style={LS.back}>← Retour</button></nav>
     <div style={LS.wrap}><h1 style={LS.h1}>{title}</h1><p style={{ ...LS.p, fontSize: '13px', color: '#334155', marginBottom: '28px' }}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</p>{children}</div>
   </div>
 );
 function MentionsLegales({ onBack }) {
-  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site photlow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de Photlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. Photlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
+  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de PixGlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. PixGlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
 }
 function PolitiqueConfidentialite({ onBack }) {
-  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
+  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
 }
 function CGV({ onBack }) {
-  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>Photlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. Photlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
+  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>PixGlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
 }
 
 const API_URL = "https://web-production-f1129.up.railway.app";
@@ -120,6 +120,17 @@ const GLOBAL_CSS = `
 
   /* ── Selection ── */
   ::selection { background: rgba(124,58,237,.35); color: #fff; }
+
+  @keyframes pg-icon-float { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-3px) scale(1.05);} }
+  @keyframes pg-icon-spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  @keyframes pg-icon-pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.7;transform:scale(.93);} }
+  .pg-icon-float { animation: pg-icon-float 2.4s ease-in-out infinite; }
+  .pg-icon-spin-slow { animation: pg-icon-spin 6s linear infinite; }
+  .pg-icon-pulse { animation: pg-icon-pulse 2s ease-in-out infinite; }
+  .pg-reveal-left { opacity:0; transform:translateX(-24px); transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1); }
+  .pg-reveal-left.visible { opacity:1; transform:translateX(0); }
+  .pg-reveal-right { opacity:0; transform:translateX(24px); transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1); }
+  .pg-reveal-right.visible { opacity:1; transform:translateX(0); }
 `;
 
 function InjectCSS() {
@@ -155,6 +166,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
   const [pos, setPos] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [autoAnimDone, setAutoAnimDone] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -191,6 +203,28 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
       window.removeEventListener('touchend', onMouseUp);
     };
   }, [onMouseMove, onMouseUp, onTouchMove]);
+
+  // Auto-animate on scroll into view
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !autoAnimDone) {
+        let start = null;
+        const from = 72, to = 28, duration = 1600;
+        const step = (ts) => {
+          if (!start) start = ts;
+          const p = Math.min((ts - start) / duration, 1);
+          const ease = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+          setPos(Math.round(from + (to - from) * ease));
+          if (p < 1) requestAnimationFrame(step);
+          else setAutoAnimDone(true);
+        };
+        setTimeout(() => requestAnimationFrame(step), 700);
+        observer.disconnect();
+      }
+    }, { threshold: 0.5 });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [autoAnimDone]);
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none', background: '#f8f8f8' }}>
@@ -889,18 +923,57 @@ function GainsTracker({ onClose, userEmail }) {
   );
 }
 
+/* ══ TYPED TEXT ══ */
+function TypedText({ text, className, style }) {
+  const [displayed, setDisplayed] = useState('');
+  const [started, setStarted] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setStarted(true); observer.disconnect(); }
+    }, { threshold: 0.3 });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!started) return;
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(timer);
+    }, 35);
+    return () => clearInterval(timer);
+  }, [started, text]);
+  return <span ref={ref} className={className} style={style}>{displayed || '\u00a0'}</span>;
+}
+
+/* ══ SCROLL REVEAL ══ */
+function useScrollReveal() {
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    const observe = () => document.querySelectorAll('.pg-reveal').forEach(el => observer.observe(el));
+    observe();
+    const t = setTimeout(observe, 300);
+    return () => { observer.disconnect(); clearTimeout(t); };
+  }, []);
+}
+
 /* ══ FAQ SECTION ══ */
 function FAQSection({ T, isMobile }) {
   const [openFaq, setOpenFaq] = useState(null);
   const faqs = [
-    { q: "C'est vraiment gratuit pour commencer ?", a: "Oui — 5 photos traitées gratuitement, sans inscription et sans carte bancaire. Résultat en quelques secondes, aucune limite de temps." },
-    { q: "Mes photos sont-elles en sécurité ?", a: "Oui. Tes images sont traitées sur nos serveurs sécurisés puis supprimées immédiatement après traitement. Elles ne sont ni stockées, ni utilisées pour entraîner des modèles, ni transmises à des tiers. Nous sommes conformes au RGPD." },
-    { q: "Est-ce que ça marche sur mobile ?", a: "Oui, directement depuis le navigateur de ton iPhone ou Android. Aucune application à installer. Compatible HEIC (iPhone), JPEG, PNG, WEBP. Fonctionne aussi sur tablette et ordinateur." },
-    { q: "La description IA est-elle vraiment adaptée à chaque plateforme ?", a: "Oui — titre accrocheur, description naturelle avec les bons mots-clés, hashtags pertinents. L'IA adapte le ton selon la plateforme choisie : plus décontracté pour Vinted, plus formel pour Amazon. Tu peux relire et ajuster avant de poster." },
-    { q: "Que se passe-t-il quand mes 5 photos gratuites sont utilisées ?", a: "Tu peux créer un compte gratuit pour continuer, ou passer en Pro pour 9€/mois avec 100 photos/mois incluses. Aucun prélèvement automatique sans ton accord explicite." },
-    { q: "La qualité de la suppression est-elle toujours parfaite ?", a: "Notre IA est entraînée sur des millions d'images produit, mais certains cas complexes (vêtements transparents, fourrures, reflets) peuvent parfois nécessiter un ajustement. Dans ce cas, tu peux télécharger l'image et la retravailler dans l'outil de ton choix." },
-    { q: "Comment annuler mon abonnement Pro ?", a: "Depuis ton espace compte → 'Abonnement' → 'Annuler'. Annulation immédiate, tu gardes l'accès Pro jusqu'à la fin de la période payée. Aucune rétention, aucun frais caché. Droit de rétractation de 14 jours conformément au Code de la consommation (art. L221-18)." },
-    { q: "Photlow est-il légal pour une utilisation commerciale ?", a: "Oui. Les photos que tu traites et les annonces générées t'appartiennent. Assure-toi simplement que les photos que tu traites t'appartiennent ou que tu as les droits nécessaires pour les utiliser. Photlow n'est pas affilié à Vinted, Leboncoin, Amazon ou Facebook." },
+    { q: "C'est vraiment gratuit pour commencer ?", a: "Oui — 5 photos traitées gratuitement, sans inscription et sans carte bancaire. Résultat immédiat." },
+    { q: "Mes photos sont-elles en sécurité ?", a: "Tes images sont traitées puis supprimées immédiatement. Elles ne sont ni stockées, ni transmises à des tiers. Conforme RGPD." },
+    { q: "Est-ce que ça marche sur mobile ?", a: "Oui, directement depuis le navigateur. Aucune appli à installer. Compatible HEIC (iPhone), JPEG, PNG, WEBP." },
+    { q: "La description IA est-elle adaptée à Vinted / Leboncoin ?", a: "Oui — titre accrocheur, description naturelle avec les bons mots-clés et hashtags. Tu relis, tu ajustes si besoin, tu postes." },
+    { q: "Comment fonctionnent les crédits ?", a: "Tu achètes un pack une seule fois, les crédits sont valables à vie. Starter : 30 crédits à 7 € · Pro : 100 crédits à 15 € · Elite : 300 crédits à 35 €. Pas d'abonnement, pas de date d'expiration." },
+    { q: "Est-ce que mes photos sont conservées ?", a: "Non. Tes photos sont supprimées automatiquement après traitement. Nous ne les utilisons jamais à d'autres fins." },
+    { q: "La qualité est-elle toujours parfaite ?", a: "Notre IA est entraînée sur des millions d'images produit. Certains cas complexes (transparence, fourrures) peuvent nécessiter un ajustement manuel." },
+    { q: "PixGlow est-il légal en France ?", a: "Oui. Droit de rétractation 14 jours (art. L221-18 Code consommation). PixGlow n'est pas affilié à Vinted, Leboncoin ou Amazon. Conforme RGPD." },
   ];
   return (
     <section style={{ maxWidth: '780px', margin: '0 auto', padding: isMobile ? '40px 16px' : '72px 40px' }}>
@@ -926,14 +999,14 @@ function FAQSection({ T, isMobile }) {
       </div>
       <div style={{ textAlign: 'center', marginTop: '28px' }}>
         <p style={{ color: '#475569', fontSize: '14px', marginBottom: '10px' }}>Une autre question ?</p>
-        <a href="mailto:support@photlow.app" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>support@photlow.app →</a>
+        <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>support@pixglow.app →</a>
       </div>
     </section>
   );
 }
 
 /* ══ COMPOSANT PRINCIPAL ══ */
-export default function Photlow() {
+export default function PixGlow() {
   const [page, setPage] = useState('landing');
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -954,6 +1027,8 @@ export default function Photlow() {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  useScrollReveal();
 
   const getToken = () => localStorage.getItem('pg_token');
   const authHeaders = () => { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; };
@@ -1205,7 +1280,7 @@ export default function Photlow() {
     <nav style={{ padding: isMobile ? '14px 16px' : '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)'}`, background: T.navBg, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setPage('landing')}>
         <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>✨</div>
-        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>Photlow</span>
+        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {showBack ? (
@@ -1259,14 +1334,14 @@ export default function Photlow() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px' }}>✨</div>
-              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>Photlow</span>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
             </div>
             <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, maxWidth: '260px', marginBottom: '16px' }}>
               Outil IA de traitement photo et rédaction d'annonces pour marketplaces. Développé en France 🇫🇷
             </p>
-            <a href="mailto:support@photlow.app" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="3" width="11" height="8" rx="1.5" stroke="#7c3aed" strokeWidth="1.2"/><path d="M1 4l5.5 4L12 4" stroke="#7c3aed" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-              support@photlow.app
+              support@pixglow.app
             </a>
           </div>
           {/* Produit */}
@@ -1299,7 +1374,7 @@ export default function Photlow() {
         </div>
         {/* Bottom bar */}
         <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>© {new Date().getFullYear()} Photlow · Tous droits réservés · Photlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify.</p>
+          <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>© {new Date().getFullYear()} PixGlow · Tous droits réservés · PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify.</p>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="12" height="8" rx="1.5" stroke="#334155" strokeWidth="1.2"/><path d="M5 4V3a2 2 0 0 1 4 0v1" stroke="#334155" strokeWidth="1.2"/><circle cx="7" cy="8" r="1" fill="#334155"/></svg>
             <span style={{ color: '#334155', fontSize: '12px' }}>Paiements sécurisés Stripe</span>
@@ -1332,12 +1407,12 @@ export default function Photlow() {
 
           <h1 className="pg-hero" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '38px' : '72px', fontWeight: 800, lineHeight: 1.02, letterSpacing: isMobile ? '-1px' : '-2px', color: T.text, marginBottom: '22px' }}>
             Transforme tes photos<br/>
-            <span style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a78bfa 40%,#60a5fa 70%,#10b981 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>en annonces qui vendent</span><br/>
+            <TypedText text="en annonces qui vendent" style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a78bfa 40%,#60a5fa 70%,#10b981 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }} /><br/>
             en 8 secondes
           </h1>
 
           <p className="pg-anim-2" style={{ fontSize: isMobile ? '16px' : '19px', color: '#64748b', maxWidth: '600px', margin: '0 auto 16px', lineHeight: 1.7 }}>
-            Photlow supprime le fond, blanchit la photo et rédige ton annonce Vinted, Leboncoin ou Amazon automatiquement. Zéro retouche. Zéro effort.
+            PixGlow supprime le fond, blanchit la photo et rédige ton annonce Vinted, Leboncoin ou Amazon automatiquement. Zéro retouche. Zéro effort.
           </p>
 
           {/* Feature pills */}
@@ -1411,40 +1486,52 @@ export default function Photlow() {
         </div>
       </div>
 
-      {/* HOW IT WORKS — 3 steps */}
-      <section style={{ maxWidth: '900px', margin: '0 auto', padding: isMobile ? '44px 16px 36px' : '72px 40px 56px' }}>
+      {/* HOW IT WORKS + FEATURES — merged */}
+      <section style={{ maxWidth: '1040px', margin: '0 auto', padding: isMobile ? '44px 16px 36px' : '72px 40px 56px' }}>
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Comment ça marche</p>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Prêt en moins de 10 secondes, vraiment.</h2>
-        <p style={{ color: '#475569', textAlign: 'center', marginBottom: '40px', fontSize: '15px' }}>Pas de logiciel à installer. Pas de Photoshop. Juste ta photo et le résultat.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '14px', position: 'relative' }}>
+        <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Prêt en moins de 10 secondes, vraiment.</h2>
+        <p className="pg-reveal" style={{ color: '#475569', textAlign: 'center', marginBottom: '48px', fontSize: '15px' }}>Pas de logiciel. Pas de Photoshop. Ta photo + le résultat.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
           {[
             {
               step: '01', col: '#7c3aed', colLight: 'rgba(124,58,237,.12)',
-              svg: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="15" rx="3" stroke="#a78bfa" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" stroke="#a78bfa" strokeWidth="1.5"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="#a78bfa" strokeWidth="1.5"/></svg>,
+              iconClass: 'pg-icon-float',
+              svg: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="3.5" stroke="#a78bfa" strokeWidth="1.5"/><circle cx="14" cy="15" r="5" stroke="#a78bfa" strokeWidth="1.5"/><path d="M10 6V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#a78bfa" strokeWidth="1.5"/><circle cx="14" cy="15" r="2" fill="rgba(124,58,237,.35)"/></svg>,
               title: 'Dépose ta photo',
-              desc: "N'importe quelle photo fait l'affaire — iPhone, Android, JPEG ou PNG. Glisse-dépose ou clique pour sélectionner."
+              desc: "iPhone, Android, JPG, PNG… peu importe. Glisse-dépose en 2 secondes.",
+              feats: ['JPG · PNG · WEBP · HEIC', 'Jusqu\'à 5 en lot', 'Max 15 Mo/photo'],
             },
             {
               step: '02', col: '#60a5fa', colLight: 'rgba(96,165,250,.12)',
-              svg: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 8H21L16 12.5L18 19L12 15L6 19L8 12.5L3 8H9.5L12 2Z" stroke="#60a5fa" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
+              iconClass: 'pg-icon-pulse',
+              svg: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 2L17 9.5H25L19 14.5L21.5 22.5L14 18L6.5 22.5L9 14.5L3 9.5H11L14 2Z" stroke="#60a5fa" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="14" cy="14" r="3" fill="rgba(96,165,250,.3)" stroke="#60a5fa" strokeWidth="1"/></svg>,
               title: "L'IA traite en quelques secondes",
-              desc: 'Fond supprimé. Fond blanc parfait. Photo optimisée aux normes marketplace. Temps moyen observé en beta : 6-9 secondes.'
+              desc: 'Fond blanc parfait, lumière corrigée, image aux normes marketplace.',
+              feats: ['Suppression fond IA', 'Correction lumière auto', 'Format pro e-commerce'],
             },
             {
               step: '03', col: '#10b981', colLight: 'rgba(16,185,129,.12)',
-              svg: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h12M4 14h8" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/><circle cx="18" cy="16" r="4" stroke="#34d399" strokeWidth="1.5"/><path d="M16.5 16l1 1 2-2" stroke="#34d399" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+              iconClass: 'pg-icon-float',
+              svg: <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="4" width="16" height="20" rx="3" stroke="#34d399" strokeWidth="1.5"/><path d="M7 9h8M7 13h8M7 17h5" stroke="#34d399" strokeWidth="1.4" strokeLinecap="round"/><circle cx="21" cy="19" r="5" fill="rgba(16,185,129,.15)" stroke="#34d399" strokeWidth="1.4"/><path d="M19 19l1.3 1.3 2.7-2.7" stroke="#34d399" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
               title: 'Ton annonce est déjà écrite',
-              desc: "Titre accrocheur, description avec les bons mots-clés, hashtags parfaits — générés pour Vinted, Leboncoin ou Amazon. Tu relis, tu postes."
+              desc: 'Titre, description, hashtags — générés par IA pour Vinted, Leboncoin ou Amazon.',
+              feats: ['Titre accrocheur IA', 'Hashtags optimisés', 'Compatible 6 plateformes'],
             },
           ].map((s, i) => (
-            <div key={i} className="pg-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '20px', padding: '24px', position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: s.colLight, border: `2px solid ${s.col}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.svg}</div>
+            <div key={i} className={`pg-card pg-reveal`} style={{ display: 'flex', flexDirection: 'column', gap: '0', background: T.cardBg, border: `1px solid rgba(${s.col === '#7c3aed' ? '124,58,237' : s.col === '#60a5fa' ? '96,165,250' : '16,185,129'},.18)`, borderRadius: '22px', padding: '28px 22px', position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                <div className={s.iconClass} style={{ width: '52px', height: '52px', borderRadius: '15px', background: s.colLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.svg}</div>
                 <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '13px', color: s.col, letterSpacing: '1px' }}>{s.step}</span>
               </div>
-              <div>
-                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, color: T.text, fontSize: '16px', margin: '0 0 6px' }}>{s.title}</p>
-                <p style={{ color: '#475569', fontSize: '14px', margin: 0, lineHeight: 1.6 }}>{s.desc}</p>
+              <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, color: T.text, fontSize: '17px', margin: '0 0 8px' }}>{s.title}</p>
+              <p style={{ color: '#475569', fontSize: '14px', margin: '0 0 16px', lineHeight: 1.6 }}>{s.desc}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: 'auto', borderTop: `1px solid rgba(${s.col === '#7c3aed' ? '124,58,237' : s.col === '#60a5fa' ? '96,165,250' : '16,185,129'},.1)`, paddingTop: '14px' }}>
+                {s.feats.map((f, fi) => (
+                  <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#475569' }}>
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke={s.col} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    {f}
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -1454,10 +1541,9 @@ export default function Photlow() {
       {/* AVANT/APRÈS SLIDER */}
       <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
         <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
-          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemple réel · avant / après Photlow</p>
-          <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '20px' }}>Glisse le curseur pour voir la transformation</p>
+          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemple réel · avant / après PixGlow</p>
+          <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '20px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
 
-          {/* SLIDER PRINCIPAL */}
           <BeforeAfterSlider
             beforeSrc="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%20viewBox%3D%220%200%20400%20400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23e8e0f0%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2245%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20fill%3D%22%237c3aed%22%3EPhoto%20originale%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2258%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2216%22%20fill%3D%22%239f7aea%22%3EFond%20color%C3%A9%20%2F%20encombr%C3%A9%3C%2Ftext%3E%3C%2Fsvg%3E"
             afterSrc="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%20viewBox%3D%220%200%20400%20400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23ffffff%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2245%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20fill%3D%22%2310b981%22%3EFond%20blanc%20PixGlow%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2258%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2216%22%20fill%3D%22%2334d399%22%3EProfessionnel%20%E2%9C%85%3C%2Ftext%3E%3C%2Fsvg%3E"
@@ -1466,7 +1552,6 @@ export default function Photlow() {
             landscape={true}
           />
 
-          {/* Badges résultat */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px', marginBottom: '20px' }}>
             <span style={{ background: 'rgba(239,68,68,.1)', color: '#ef4444', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>Fond encombré · Lumière inégale</span>
             <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
@@ -1490,239 +1575,186 @@ export default function Photlow() {
         </div>
       </section>
 
-      {/* STATS */}
-      <section style={{ background: 'linear-gradient(90deg,rgba(124,58,237,.06),rgba(16,185,129,.04),rgba(96,165,250,.06))', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)', padding: isMobile ? '20px 16px' : '24px 40px' }}>
-        <div className="pg-stats" style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', textAlign: 'center' }}>
-          {[
-            {v:'+1 200',l:'photos traitées en beta',c:'#7c3aed'},
-            {v:'~7 sec',l:'temps moyen par photo†',c:'#10b981'},
-            {v:'6',l:'plateformes supportées',c:'#60a5fa'},
-            {v:'Annonce',l:'rédigée automatiquement',c:'#f59e0b'}
-          ].map((s,i) => (
-            <div key={i} style={{ padding: '14px 8px' }}>
-              <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '20px' : '28px', fontWeight: 800, color: s.c, marginBottom: '4px' }}>{s.v}</div>
-              <div style={{ fontSize: '12px', color: '#334155', fontWeight: 500 }}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-        <p style={{ color: '#1e293b', fontSize: '10px', textAlign: 'center', margin: '8px 0 0' }}>†Observé sur les premiers utilisateurs beta (nov. 2025 – mars 2026). Résultats variables selon les photos.</p>
-      </section>
-
-      {/* FEATURES */}
-      <section style={{ maxWidth: '1040px', margin: '0 auto', padding: isMobile ? '48px 16px' : '80px 40px' }}>
-        <div className="pg-divider" style={{ marginBottom: '56px', maxWidth: '500px' }} />
-        <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Fonctionnalités</p>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '28px' : '42px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Tout ce qu'il te faut pour vendre plus vite</h2>
-        <p style={{ color: '#475569', textAlign: 'center', marginBottom: '48px', fontSize: '16px' }}>Conçu 100% pour les vendeurs particuliers français</p>
-        <div className="pg-feat-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
-          {[
-            {
-              svg: <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="2" width="22" height="22" rx="6" stroke="rgb(124,58,237)" strokeWidth="1.4"/><circle cx="13" cy="13" r="5" stroke="rgb(124,58,237)" strokeWidth="1.4"/><circle cx="13" cy="13" r="2" fill="rgba(124,58,237,.4)"/></svg>,
-              titre: 'Fond blanc parfait', desc: "Suppression de fond précise en un clic. Ton article ressort comme sur une boutique pro.", col: '124,58,237',
-            },
-            {
-              svg: <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 7h18M4 11h14M4 15h10" stroke="rgb(96,165,250)" strokeWidth="1.5" strokeLinecap="round"/><circle cx="20" cy="19" r="4.5" fill="rgba(96,165,250,.1)" stroke="rgb(96,165,250)" strokeWidth="1.4"/><path d="M18.3 19l1.1 1.1 2.3-2.3" stroke="rgb(96,165,250)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-              titre: 'Annonce rédigée par IA', desc: "Titre accrocheur, description optimisée et hashtags Vinted générés automatiquement.", col: '96,165,250', badge: 'Populaire',
-            },
-            {
-              svg: <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 2L15.5 9H23L17 13.5L19 21L13 17L7 21L9 13.5L3 9H10.5L13 2Z" stroke="rgb(16,185,129)" strokeWidth="1.4" strokeLinejoin="round"/></svg>,
-              titre: "Jusqu'à 5 photos en lot", desc: "Traitement en batch — prépare une annonce complète en moins d'une minute.", col: '16,185,129',
-            },
-            {
-              svg: <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="10" stroke="rgb(251,191,36)" strokeWidth="1.4"/><path d="M9 13l3 3 5-5" stroke="rgb(251,191,36)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-              titre: 'Correction lumière auto', desc: "Exposition, contraste et netteté ajustés pour que chaque photo soit parfaite.", col: '251,191,36',
-            },
-            {
-              svg: <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="3" y="6" width="14" height="17" rx="2.5" stroke="rgb(244,114,182)" strokeWidth="1.4"/><rect x="9" y="3" width="14" height="17" rx="2.5" stroke="rgb(244,114,182)" strokeWidth="1.4" opacity=".5"/><path d="M7 11h6M7 14h4" stroke="rgb(244,114,182)" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-              titre: 'Format pro e-commerce', desc: "Images exportées en haute qualité, fond blanc standard marketplace, prêtes à l'emploi.", col: '244,114,182',
-            },
-            {
-              svg: <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 3v5M3 13h5M20 13h3M13 23v-5" stroke="rgb(52,211,153)" strokeWidth="1.4" strokeLinecap="round"/><circle cx="13" cy="13" r="6" stroke="rgb(52,211,153)" strokeWidth="1.4"/><circle cx="13" cy="13" r="2.5" fill="rgba(52,211,153,.2)"/></svg>,
-              titre: 'iPhone & Android natif', desc: "Prise en charge HEIC (iPhone), pas d'app à télécharger — fonctionne depuis le navigateur.", col: '52,211,153',
-            },
-          ].map((f,i) => (
-            <div key={i} className="pg-card" style={{ background: T.cardBg, border: `1px solid rgba(${f.col},.18)`, borderRadius: '22px', padding: '28px 24px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {f.badge && <div style={{ position: 'absolute', top: '16px', right: '16px', background: `rgba(${f.col},.15)`, color: `rgb(${f.col})`, fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '100px', letterSpacing: '.5px' }}>{f.badge}</div>}
-              <div style={{ width: '54px', height: '54px', background: `rgba(${f.col},.08)`, borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', border: `1px solid rgba(${f.col},.15)` }}>{f.svg}</div>
-              <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '17px', fontWeight: 700, marginBottom: '8px', color: T.text }}>{f.titre}</h3>
-              <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* TÉMOIGNAGES */}
-      <section style={{ background: darkMode ? 'linear-gradient(180deg,transparent,rgba(124,58,237,.04),transparent)' : 'linear-gradient(180deg,transparent,rgba(124,58,237,.02),transparent)', padding: isMobile ? '40px 16px' : '72px 40px' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Avis beta testeurs</p>
-          <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '40px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Ce que disent nos premiers testeurs</h2>
-          <p style={{ color: '#475569', textAlign: 'center', marginBottom: '8px', fontSize: '15px' }}>Photlow est en accès beta. Ces retours viennent de vrais utilisateurs ayant testé l'outil sur leurs propres annonces.</p>
-          <p style={{ color: '#334155', textAlign: 'center', marginBottom: '36px', fontSize: '12px' }}>Résultats observés sur la période beta (nov. 2025 – mars 2026). Variables selon les produits et les plateformes.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px' }}>
-            {[
-              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec Photlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
-              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
-              { nom: 'Karim B.',  tag: 'Revendeur multi-plateformes · Beta testeur · Mars 2026', note: 5, couleur: '#60a5fa', txt: "Je vends sur plusieurs plateformes. Avoir la même photo propre adaptable partout sans tout refaire, c'est un gain de temps réel." },
-              { nom: 'Thomas R.', tag: 'Revendeur mode vintage · Beta testeur · Fév. 2026', note: 5, couleur: '#f59e0b', txt: "J'ai testé d'autres outils mais Photlow est le seul qui génère aussi une annonce rédigée en plus de la photo. Ça change vraiment tout." },
-            ].map((t,i) => (
-              <div key={i} className="pg-card" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '22px', padding: '28px 26px', position: 'relative', overflow: 'hidden' }}>
-                {/* Quote mark */}
-                <div style={{ position: 'absolute', top: '16px', right: '20px', fontFamily: 'Georgia,serif', fontSize: '72px', color: `${t.couleur}`, opacity: .08, lineHeight: 1, userSelect: 'none', fontWeight: 900 }}>"</div>
-                {/* Stars */}
-                <div style={{ display: 'flex', gap: '3px', marginBottom: '16px' }}>
-                  {Array.from({length: t.note}).map((_,j) => (
-                    <svg key={j} width="15" height="15" viewBox="0 0 15 15" fill="#f59e0b"><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>
-                  ))}
-                </div>
-                <p style={{ color: T.text, fontSize: '15px', lineHeight: 1.7, fontStyle: 'italic', margin: '0 0 20px', position: 'relative', zIndex: 1 }}>"{t.txt}"</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <AvatarInitials name={t.nom} size={42} style={{ border: `2px solid ${t.couleur}30`, flexShrink: 0 }} />
-                  <div>
-                    <p style={{ color: T.text, fontWeight: 700, fontSize: '14px', margin: '0 0 2px' }}>{t.nom}</p>
-                    <p style={{ color: '#475569', fontSize: '12px', margin: 0 }}>{t.tag}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Aggregate rating */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '28px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '3px' }}>
-              {[0,1,2,3,4].map(i => <svg key={i} width="18" height="18" viewBox="0 0 15 15" fill="#f59e0b"><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>)}
-            </div>
-            <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: T.text }}>4.9/5</span>
-            <span style={{ color: '#475569', fontSize: '14px' }}>selon les retours de nos premiers beta testeurs</span>
-          </div>
-        </div>
-      </section>
-
       {/* COMPARAISON */}
-      <section style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '40px 16px' : '72px 40px' }}>
-        <div className="pg-divider" style={{ marginBottom: '56px' }} />
+      <section className="pg-reveal" style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 64px' }}>
+        <div className="pg-divider" style={{ marginBottom: '48px' }} />
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Différenciation</p>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Pourquoi Photlow ?</h2>
-        <p style={{ color: '#475569', textAlign: 'center', marginBottom: '10px', fontSize: '15px' }}>Une alternative française, construite pour vendre sur les marketplaces.</p>
-        <p style={{ color: '#334155', textAlign: 'center', marginBottom: '40px', fontSize: '12px' }}>Comparaison basée sur les fonctionnalités publiques des services en mars 2026. Photlow n'est pas affilié à ces services.</p>
+        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '34px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Pourquoi PixGlow ?</h2>
+        <p style={{ color: '#475569', textAlign: 'center', marginBottom: '10px', fontSize: '14px' }}>Photo + Annonce en un seul outil — c'est ça la différence.</p>
+        <p style={{ color: '#334155', textAlign: 'center', marginBottom: '28px', fontSize: '11px' }}>Comparaison basée sur les fonctionnalités publiques en mars 2026. PixGlow n'est pas affilié à ces services.</p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', border: `1px solid ${T.cardBorder}`, borderRadius: '16px', overflow: 'hidden', background: T.cardBg }}>
             <thead>
               <tr style={{ background: darkMode ? 'rgba(124,58,237,.08)' : 'rgba(124,58,237,.05)' }}>
-                <th style={{ padding: '14px 18px', textAlign: 'left', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '13px', color: T.text, borderBottom: `1px solid ${T.cardBorder}` }}>Fonctionnalité</th>
-                {['Photlow','Remove.bg','Photoroom'].map((brand, bi) => (
-                  <th key={bi} style={{ padding: '14px 14px', textAlign: 'center', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '13px', color: bi === 0 ? '#a78bfa' : '#475569', borderBottom: `1px solid ${T.cardBorder}`, background: bi === 0 ? (darkMode ? 'rgba(124,58,237,.1)' : 'rgba(124,58,237,.06)') : 'transparent', minWidth: '100px' }}>{brand}{bi === 0 && <span style={{ display: 'block', fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>🇫🇷 Vous êtes ici</span>}</th>
+                <th style={{ padding: '13px 16px', textAlign: 'left', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '12px', color: T.text, borderBottom: `1px solid ${T.cardBorder}` }}>Fonctionnalité</th>
+                {['PixGlow','Remove.bg','Photoroom'].map((brand, bi) => (
+                  <th key={bi} style={{ padding: '13px 12px', textAlign: 'center', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '12px', color: bi === 0 ? '#a78bfa' : '#475569', borderBottom: `1px solid ${T.cardBorder}`, background: bi === 0 ? (darkMode ? 'rgba(124,58,237,.1)' : 'rgba(124,58,237,.06)') : 'transparent', minWidth: '90px' }}>{brand}{bi === 0 && <span style={{ display: 'block', fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>🇫🇷 ici</span>}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {[
-                ['Suppression de fond IA', '✅', '✅', '✅'],
+                ['Suppression fond IA', '✅', '✅', '✅'],
                 ['Fond blanc marketplace', '✅', '✅ partiel', '✅'],
-                ['Génération annonce texte IA', '✅ natif', '❌', '❌ natif'],
-                ['Interface en français', '✅', '✅', '✅'],
-                ['Gratuit sans carte', '✅ 5 photos', '✅ limité', '✅ limité'],
-                ['Conçu pour marketplaces FR', '✅', '❌', 'Partiel'],
-                ['Prix mensuel Pro', '9 €/mois', '~9 €/mois', '~13 €/mois'],
+                ['Annonce texte IA native', '✅', '❌', '❌'],
+                ['5 photos gratuites sans carte', '✅', '✅ limité', '✅ limité'],
+                ['Conçu marketplaces FR', '✅', '❌', 'Partiel'],
+                ['Packs crédits à vie', '✅', '❌', '❌'],
               ].map((row, ri) => (
-                <tr key={ri} style={{ borderBottom: ri < 6 ? `1px solid ${T.cardBorder}` : 'none' }}>
-                  <td style={{ padding: '13px 18px', fontSize: '13px', color: T.text, fontWeight: 500 }}>{row[0]}</td>
+                <tr key={ri} style={{ borderBottom: ri < 5 ? `1px solid ${T.cardBorder}` : 'none' }}>
+                  <td style={{ padding: '11px 16px', fontSize: '13px', color: T.text, fontWeight: 500 }}>{row[0]}</td>
                   {row.slice(1).map((cell, ci) => (
-                    <td key={ci} style={{ padding: '13px 14px', fontSize: '13px', textAlign: 'center', color: ci === 0 ? '#10b981' : cell === '❌' ? '#ef4444' : '#475569', fontWeight: ci === 0 ? 700 : 500, background: ci === 0 ? (darkMode ? 'rgba(124,58,237,.04)' : 'rgba(124,58,237,.025)') : 'transparent' }}>{cell}</td>
+                    <td key={ci} style={{ padding: '11px 12px', fontSize: '13px', textAlign: 'center', color: ci === 0 ? '#10b981' : cell === '❌' ? '#ef4444' : '#475569', fontWeight: ci === 0 ? 700 : 500, background: ci === 0 ? (darkMode ? 'rgba(124,58,237,.04)' : 'rgba(124,58,237,.025)') : 'transparent' }}>{cell}</td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginTop: '16px', lineHeight: 1.6 }}>
-          Photoroom et Remove.bg sont d'excellents outils de retouche photo. Photlow fait un choix différent : aller jusqu'à l'annonce rédigée. C'est notre différence — pas un argument marketing, une vraie fonctionnalité.
-        </p>
+      </section>
+
+      {/* RÉASSURANCE */}
+      <div style={{ padding: isMobile ? '12px 16px 28px' : '0 40px 48px' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto', background: darkMode ? 'rgba(255,255,255,.02)' : 'rgba(124,58,237,.04)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.06)' : 'rgba(124,58,237,.12)'}`, borderRadius: '16px', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {[
+            { icon: '🔒', txt: 'Photos jamais stockées' },
+            { icon: '🇫🇷', txt: 'Développé en France' },
+            { icon: '⚡', txt: 'Résultat immédiat' },
+            { icon: '🚫', txt: 'Aucun abonnement' },
+          ].map((r, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: 600, padding: '4px 10px' }}>
+              <span>{r.icon}</span>{r.txt}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* TÉMOIGNAGES */}
+      <section style={{ background: darkMode ? 'linear-gradient(180deg,transparent,rgba(124,58,237,.04),transparent)' : 'linear-gradient(180deg,transparent,rgba(124,58,237,.02),transparent)', padding: isMobile ? '32px 16px' : '56px 40px' }}>
+        <div style={{ maxWidth: '780px', margin: '0 auto' }}>
+          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Avis</p>
+          <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '28px', color: T.text, letterSpacing: '-.5px' }}>Ce que disent nos premiers testeurs</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '20px' }}>
+            {[
+              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
+              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
+            ].map((t,i) => (
+              <div key={i} className="pg-card pg-reveal" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '22px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '14px', right: '18px', fontFamily: 'Georgia,serif', fontSize: '64px', color: t.couleur, opacity: .07, lineHeight: 1, userSelect: 'none', fontWeight: 900 }}>"</div>
+                <div style={{ display: 'flex', gap: '3px', marginBottom: '14px' }}>
+                  {Array.from({length: t.note}).map((_,j) => <svg key={j} width="14" height="14" viewBox="0 0 15 15" fill="#f59e0b"><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>)}
+                </div>
+                <p style={{ color: T.text, fontSize: '14px', lineHeight: 1.7, fontStyle: 'italic', margin: '0 0 16px', position: 'relative', zIndex: 1 }}>"{t.txt}"</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <AvatarInitials name={t.nom} size={38} style={{ border: `2px solid ${t.couleur}30`, flexShrink: 0 }} />
+                  <div>
+                    <p style={{ color: T.text, fontWeight: 700, fontSize: '13px', margin: '0 0 1px' }}>{t.nom}</p>
+                    <p style={{ color: '#475569', fontSize: '11px', margin: 0 }}>{t.tag}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center' }}>Retours de beta testeurs (nov. 2025 – mars 2026). Résultats variables selon les produits.</p>
+        </div>
       </section>
 
       {/* FAQ ACCORDION */}
       <FAQSection T={T} isMobile={isMobile} />
 
       {/* PRICING */}
-      <section style={{ maxWidth: '960px', margin: '0 auto', padding: isMobile ? '40px 16px 60px' : '72px 40px 80px' }}>
+      <section style={{ maxWidth: '980px', margin: '0 auto', padding: isMobile ? '40px 16px 60px' : '72px 40px 80px' }}>
         <div className="pg-divider" style={{ marginBottom: '56px' }} />
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Tarifs</p>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '40px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Simple, honnête, sans surprise.</h2>
-        <p style={{ color: '#475569', textAlign: 'center', marginBottom: '44px', fontSize: '15px' }}>Commence gratuitement · Évolue si tu en as besoin · Sans engagement</p>
+        <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '40px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Simples et sans surprise</h2>
+        <p style={{ color: '#475569', textAlign: 'center', marginBottom: '44px', fontSize: '15px' }}>Commence gratuit · Pas d'abonnement · Crédits valables à vie</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '20px', maxWidth: '700px', margin: '0 auto', alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4,1fr)', gap: '14px', alignItems: 'end' }}>
 
           {/* Gratuit */}
-          <div className="pg-card pg-card-green" style={{ background: T.cardBg, border: '1px solid rgba(16,185,129,.2)', borderRadius: '22px', padding: '32px 24px', textAlign: 'center' }}>
+          <div className="pg-card pg-card-green pg-reveal" style={{ background: T.cardBg, border: '1px solid rgba(16,185,129,.2)', borderRadius: '22px', padding: '26px 18px', textAlign: 'center' }}>
             <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px' }}>Gratuit</p>
-            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '56px', fontWeight: 800, color: '#10b981', lineHeight: 1, marginBottom: '4px' }}>0 €</div>
-            <p style={{ color: '#34d399', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>pour toujours</p>
-            <p style={{ color: '#334155', fontSize: '11px', marginBottom: '20px' }}>5 photos offertes · résultat immédiat</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px', textAlign: 'left' }}>
-              {[
-                'Sans inscription requise',
-                'Sans carte bancaire',
-                'Fond blanc automatique',
-                'Génération annonce IA',
-                '5 photos par adresse IP',
-              ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: '#64748b' }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="rgba(16,185,129,.4)"/><path d="M4.5 7l2 2 3.5-3.5" stroke="#10b981" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '48px', fontWeight: 800, color: '#10b981', lineHeight: 1, marginBottom: '4px' }}>5</div>
+            <p style={{ color: '#34d399', fontWeight: 600, marginBottom: '16px', fontSize: '13px' }}>photos offertes</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px', textAlign: 'left' }}>
+              {['Sans inscription', 'Sans carte bancaire', 'Fond blanc inclus', 'Annonce IA incluse'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#64748b' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6" stroke="rgba(16,185,129,.4)"/><path d="M4 6.5l1.8 1.8 3.5-3.5" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {f}
                 </div>
               ))}
             </div>
-            <button onClick={() => setPage('app')} className="pg-btn pg-btn-green" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '14px', padding: '15px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>Essayer maintenant →</button>
-            <p style={{ color: '#334155', fontSize: '11px', marginTop: '10px' }}>Aucune carte requise · Résultat en 10 secondes</p>
+            <button onClick={() => setPage('app')} className="pg-btn pg-btn-green" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Essayer →</button>
+          </div>
+
+          {/* Starter */}
+          <div className="pg-card pg-reveal" style={{ background: T.cardBg, border: '1px solid rgba(245,158,11,.22)', borderRadius: '22px', padding: '26px 18px', textAlign: 'center' }}>
+            <p style={{ color: '#f59e0b', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px' }}>Starter</p>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '48px', fontWeight: 800, color: '#f59e0b', lineHeight: 1, marginBottom: '4px' }}>7€</div>
+            <p style={{ color: '#fbbf24', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>30 crédits</p>
+            <p style={{ color: '#475569', fontSize: '11px', marginBottom: '16px' }}>0,23 € / photo</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px', textAlign: 'left' }}>
+              {['Annonce IA incluse', 'Crédits à vie', 'Paiement unique'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#64748b' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6" stroke="rgba(245,158,11,.4)"/><path d="M4 6.5l1.8 1.8 3.5-3.5" stroke="#f59e0b" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {f}
+                </div>
+              ))}
+            </div>
+            <button onClick={() => isConnected ? handlePayment('starter') : openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir →</button>
           </div>
 
           {/* Pro — highlighted */}
-          <div className="pg-card" style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.14),rgba(79,70,229,.07))', border: '2px solid rgba(124,58,237,.55)', borderRadius: '22px', padding: '36px 24px', textAlign: 'center', position: 'relative', transform: isMobile ? 'none' : 'scale(1.04)', zIndex: 2, boxShadow: '0 0 40px rgba(124,58,237,.15), 0 16px 48px rgba(0,0,0,.3)' }}>
-            <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '100px', padding: '5px 18px', fontSize: '11px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '.5px', boxShadow: '0 4px 14px rgba(124,58,237,.4)' }}>⭐ MEILLEURE OFFRE</div>
+          <div className="pg-card pg-reveal" style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.14),rgba(79,70,229,.07))', border: '2px solid rgba(124,58,237,.55)', borderRadius: '22px', padding: '32px 18px', textAlign: 'center', position: 'relative', transform: isMobile ? 'none' : 'scale(1.03)', zIndex: 2, boxShadow: '0 0 40px rgba(124,58,237,.15), 0 16px 48px rgba(0,0,0,.3)' }}>
+            <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '100px', padding: '5px 16px', fontSize: '10px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '.5px', boxShadow: '0 4px 14px rgba(124,58,237,.4)' }}>⭐ MEILLEURE OFFRE</div>
             <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px' }}>Pro</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '4px', marginBottom: '2px' }}>
-              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '60px', fontWeight: 800, color: '#a78bfa', lineHeight: 1 }}>9 €</span>
-              <span style={{ color: '#7c3aed', fontWeight: 600, fontSize: '14px' }}>/mois</span>
-            </div>
-            <p style={{ color: '#c4b5fd', fontWeight: 600, marginBottom: '2px', fontSize: '13px' }}>ou 79 €/an — économise 2 mois</p>
-            <p style={{ color: '#7c3aed', fontSize: '11px', marginBottom: '20px' }}>100 photos/mois · puis 0,09 €/photo supp.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px', textAlign: 'left' }}>
-              {[
-                'Tout ce qui est dans Gratuit',
-                '100 photos par mois incluses',
-                'Export haute résolution (PNG)',
-                'Traitement par lot (20 photos)',
-                'Annonce avancée par plateforme',
-                'Historique 30 jours',
-                'Support prioritaire email',
-              ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: '#94a3b8' }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="rgba(124,58,237,.5)"/><path d="M4.5 7l2 2 3.5-3.5" stroke="#a78bfa" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '52px', fontWeight: 800, color: '#a78bfa', lineHeight: 1, marginBottom: '4px' }}>15€</div>
+            <p style={{ color: '#c4b5fd', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>100 crédits</p>
+            <p style={{ color: '#7c3aed', fontSize: '11px', marginBottom: '16px' }}>0,15 € / photo</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '22px', textAlign: 'left' }}>
+              {['Annonce IA incluse', 'Crédits à vie', 'Paiement unique', 'Support prioritaire'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#94a3b8' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6" stroke="rgba(124,58,237,.5)"/><path d="M4 6.5l1.8 1.8 3.5-3.5" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {f}
                 </div>
               ))}
             </div>
-            <button onClick={() => isConnected ? handlePayment('pro') : openAuth('register')} className="pg-btn pg-glow" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '14px', padding: '17px', fontWeight: 800, cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>Commencer l'essai Pro →</button>
-            <p style={{ color: '#475569', fontSize: '11px', marginTop: '10px' }}>7 jours gratuits · sans carte pendant l'essai · annule à tout moment</p>
+            <button onClick={() => isConnected ? handlePayment('pro') : openAuth('register')} className="pg-btn pg-glow" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>Choisir Pro →</button>
+          </div>
+
+          {/* Elite */}
+          <div className="pg-card pg-reveal" style={{ background: T.cardBg, border: '1px solid rgba(96,165,250,.2)', borderRadius: '22px', padding: '26px 18px', textAlign: 'center', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#60a5fa,#3b82f6)', borderRadius: '100px', padding: '5px 14px', fontSize: '10px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '.5px' }}>MEILLEUR PRIX</div>
+            <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px' }}>Elite</p>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '48px', fontWeight: 800, color: '#60a5fa', lineHeight: 1, marginBottom: '4px' }}>35€</div>
+            <p style={{ color: '#93c5fd', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>300 crédits</p>
+            <p style={{ color: '#475569', fontSize: '11px', marginBottom: '16px' }}>0,12 € / photo</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px', textAlign: 'left' }}>
+              {['Annonce IA incluse', 'Crédits à vie', 'Paiement unique', 'Usage intensif'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#64748b' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6" stroke="rgba(96,165,250,.4)"/><path d="M4 6.5l1.8 1.8 3.5-3.5" stroke="#60a5fa" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {f}
+                </div>
+              ))}
+            </div>
+            <button onClick={() => isConnected ? handlePayment('elite') : openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'rgba(96,165,250,.12)', border: '1px solid rgba(96,165,250,.3)', color: '#60a5fa', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir Elite →</button>
           </div>
 
         </div>
 
         {/* Garanties */}
-        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '32px' }}>
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '28px' }}>
           {[
             { icon: '🔒', label: 'Paiement sécurisé Stripe' },
+            { icon: '✓', label: 'Crédits valables à vie' },
             { icon: '↩', label: 'Remboursement 14 jours' },
-            { icon: '🚫', label: 'Sans engagement' },
-            { icon: '✅', label: 'Annule quand tu veux' },
+            { icon: '🚫', label: 'Aucun abonnement' },
           ].map((g, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
               <span>{g.icon}</span>{g.label}
             </div>
           ))}
         </div>
-        <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', marginTop: '14px', lineHeight: 1.6 }}>
-          Prix TTC. L'essai Pro de 7 jours est accessible sans renseignement de moyen de paiement. Aucun prélèvement sans accord explicite. Conformément à la directive Omnibus, les prix affichés sont les prix réels sans réduction fictive.
-        </p>
       </section>
 
       {/* CTA FINAL */}
@@ -1751,7 +1783,7 @@ export default function Photlow() {
                 Essayer gratuitement — sans carte
               </button>
               {!isMobile && <button onClick={() => openAuth('register')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)', color: '#94a3b8', borderRadius: '16px', padding: '18px 32px', fontWeight: 700, cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>
-                Créer un compte Pro →
+                Créer un compte gratuit →
               </button>}
             </div>
           </div>
@@ -1769,7 +1801,7 @@ export default function Photlow() {
       <Nav />
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '32px 16px' : '60px 40px' }}>
         <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '28px' : '40px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Centre d'aide</h1>
-        <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur Photlow</p>
+        <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur PixGlow</p>
         {[
           { q: 'Comment fonctionnent les 5 photos gratuites ?', r: "Chaque adresse IP bénéficie de 5 traitements gratuits, sans inscription ni carte bancaire. Ils sont comptés sur nos serveurs et ne se réinitialisent jamais." },
           { q: 'Comment fonctionne la description automatique ?', r: "Après traitement de ta photo, un bouton \"Prêt pour Vinted ?\" apparaît. En 1 clic, un texte optimisé est généré : titre, description avec emojis et hashtags pour Vinted et Leboncoin. Fonctionnalité réservée aux comptes créés." },
@@ -1786,7 +1818,7 @@ export default function Photlow() {
         ))}
         <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '14px', padding: '20px', marginTop: '18px', textAlign: 'center' }}>
           <p style={{ color: '#a78bfa', fontWeight: 700, marginBottom: '6px' }}>Une autre question ?</p>
-          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a></p>
+          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p>
         </div>
       </div>
     </div>
@@ -1851,9 +1883,9 @@ export default function Photlow() {
           {!hasResults ? (
             <>
               <div onClick={() => handleSelectClick(false)}
-                onDragOver={e => { e.preventDefault(); e.currentTarget.style.background = 'rgba(124,58,237,.08)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,.6)'; e.currentTarget.style.transform = 'scale(1.01)'; }}
-                onDragLeave={e => { e.currentTarget.style.background = limitReached ? 'rgba(239,68,68,.02)' : 'rgba(124,58,237,.02)'; e.currentTarget.style.borderColor = limitReached ? 'rgba(239,68,68,.25)' : 'rgba(124,58,237,.28)'; e.currentTarget.style.transform = ''; }}
-                onDrop={e => { e.preventDefault(); e.currentTarget.style.background = limitReached ? 'rgba(239,68,68,.02)' : 'rgba(124,58,237,.02)'; e.currentTarget.style.borderColor = limitReached ? 'rgba(239,68,68,.25)' : 'rgba(124,58,237,.28)'; e.currentTarget.style.transform = ''; if (!limitReached) { const evt = { target: { files: e.dataTransfer.files } }; handleFilesChange(evt); } }}
+                onDragOver={e => { e.preventDefault(); e.currentTarget.style.background = 'rgba(124,58,237,.12)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,.85)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(124,58,237,.18), 0 0 32px rgba(124,58,237,.22)'; e.currentTarget.style.transform = 'scale(1.015)'; }}
+                onDragLeave={e => { e.currentTarget.style.background = limitReached ? 'rgba(239,68,68,.02)' : 'rgba(124,58,237,.02)'; e.currentTarget.style.borderColor = limitReached ? 'rgba(239,68,68,.25)' : 'rgba(124,58,237,.28)'; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }}
+                onDrop={e => { e.preventDefault(); e.currentTarget.style.background = limitReached ? 'rgba(239,68,68,.02)' : 'rgba(124,58,237,.02)'; e.currentTarget.style.borderColor = limitReached ? 'rgba(239,68,68,.25)' : 'rgba(124,58,237,.28)'; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; if (!limitReached) { const evt = { target: { files: e.dataTransfer.files } }; handleFilesChange(evt); } }}
                 className={!limitReached && !files.length ? 'pg-drop-zone' : ''}
                 style={{ border: `2px dashed ${limitReached ? 'rgba(239,68,68,.3)' : 'rgba(124,58,237,.32)'}`, borderRadius: '18px', padding: isMobile ? '36px 16px' : '52px 24px', textAlign: 'center', cursor: limitReached ? 'not-allowed' : 'pointer', marginBottom: '16px', background: limitReached ? 'rgba(239,68,68,.02)' : 'rgba(124,58,237,.02)', transition: 'all .25s cubic-bezier(.22,1,.36,1)' }}>
                 <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
