@@ -78,11 +78,17 @@ ALLOWED_ORIGINS = [
     "https://www.pixglow.app",
     "http://localhost:3000",
     "http://localhost:5173",
+    # Vercel preview deployments — ajoutez votre URL de preview exacte ici si besoin
+    "https://saas-claude-ln8peo744-lohangottardi-5625s-projects.vercel.app",
 ]
+
+# Regex pour accepter toutes les previews Vercel du projet saas-claude
+ALLOW_ORIGIN_REGEX = r"https://saas-claude[a-zA-Z0-9\-]*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
