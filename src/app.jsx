@@ -875,7 +875,61 @@ function GainsTracker({ onClose }) {
   );
 }
 
-/* ══ TYPED TEXT ══ */
+/* ══ DEMO SLIDER (landing) ══ */
+const DEMO_PAIRS = [
+  {
+    beforeSrc: '/demo/veste-avant.png', afterSrc: '/demo/veste-apres.png',
+    beforeLabel: 'Fond encombré', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Veste bomber noire — Taille M',
+    desc: 'Veste bomber noire oversize, taille M. Fermeture éclair dorée. Portée 2 fois, comme neuve. Idéale mi-saison.',
+    tags: ['#vestebomber','#vintedfrançais','#modeoccasion','#overwear','#jacketstyle'],
+    badgeBefore: 'Photo sur lit · Lumière inégale', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
+  },
+  {
+    beforeSrc: '/demo/beanie-avant.png', afterSrc: '/demo/beanie-apres.png',
+    beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Bonnet Patagonia — Unisexe',
+    desc: 'Bonnet Patagonia authentique, unisexe, taille unique. Très chaud, parfait état. Patch logo brodé.',
+    tags: ['#patagonia','#bonnet','#outdoorstyle','#vintedmode','#modeoccasion'],
+    badgeBefore: 'Photo brute · Fond texturé', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+  },
+];
+function DemoSlider({ darkMode, T, isMobile }) {
+  const [demoIdx, setDemoIdx] = useState(0);
+  const pair = DEMO_PAIRS[demoIdx];
+  return (
+    <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
+      <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
+        <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemples réels · avant / après PixGlow</p>
+        <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+          {DEMO_PAIRS.map((p, i) => (
+            <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
+              {i === 0 ? 'Bomber noire' : 'Patagonia'}
+            </button>
+          ))}
+        </div>
+        <BeforeAfterSlider key={demoIdx} beforeSrc={pair.beforeSrc} afterSrc={pair.afterSrc} beforeLabel={pair.beforeLabel} afterLabel={pair.afterLabel} landscape={true} />
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px', marginBottom: '20px' }}>
+          <span style={{ background: 'rgba(239,68,68,.1)', color: '#ef4444', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeBefore}</span>
+          <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
+          <span style={{ background: 'rgba(16,185,129,.1)', color: '#10b981', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeAfter}</span>
+        </div>
+        <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px' }}>
+          <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
+            Texte généré automatiquement
+          </p>
+          <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{pair.titre}</p>
+          <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>{pair.desc}</p>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {pair.tags.map((t,i) => <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>)}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 function TypedText({ text, className, style }) {
   const [displayed, setDisplayed] = useState('');
   const [started, setStarted] = useState(false);
@@ -1491,82 +1545,7 @@ export default function PixGlow() {
       </section>
 
       {/* AVANT/APRÈS SLIDER */}
-      {(() => {
-        const DEMO_PAIRS = [
-          {
-            beforeSrc: '/demo/veste-avant.png',
-            afterSrc:  '/demo/veste-apres.png',
-            beforeLabel: 'Fond encombré',
-            afterLabel:  'Fond blanc PixGlow',
-            beforeStyle: { transform: 'rotate(-90deg) scale(0.75)', transformOrigin: 'center' },
-            titre: 'Veste bomber noire — Taille M',
-            desc: 'Veste bomber noire oversize, taille M. Fermeture éclair dorée. Portée 2 fois, comme neuve. Idéale mi-saison.',
-            tags: ['#vestebomber','#vintedfrançais','#modeoccasion','#overwear','#jacketstyle'],
-            badgeBefore: 'Photo sur lit · Lumière inégale',
-            badgeAfter:  'Fond blanc · Annonce rédigée ✅',
-          },
-          {
-            beforeSrc: '/demo/beanie-avant.png',
-            afterSrc:  '/demo/beanie-apres.png',
-            beforeLabel: 'Photo brute',
-            afterLabel:  'Fond blanc PixGlow',
-            titre: 'Bonnet Patagonia — Unisexe',
-            desc: 'Bonnet Patagonia authentique, unisexe, taille unique. Très chaud, parfait état. Patch logo brodé.',
-            tags: ['#patagonia','#bonnet','#outdoorstyle','#vintedmode','#modeoccasion'],
-            badgeBefore: 'Photo brute · Fond texturé',
-            badgeAfter:  'Fond blanc · Prêt à publier ✅',
-          },
-        ];
-        const [demoIdx, setDemoIdx] = React.useState(0);
-        const pair = DEMO_PAIRS[demoIdx];
-        return (
-          <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
-            <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
-              <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemples réels · avant / après PixGlow</p>
-              <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
-
-              {/* Sélecteur de paire */}
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
-                {DEMO_PAIRS.map((p, i) => (
-                  <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
-                    {i === 0 ? 'Bomber noire' : 'Patagonia'}
-                  </button>
-                ))}
-              </div>
-
-              <BeforeAfterSlider
-                key={demoIdx}
-                beforeSrc={pair.beforeSrc}
-                afterSrc={pair.afterSrc}
-                beforeLabel={pair.beforeLabel}
-                afterLabel={pair.afterLabel}
-                landscape={true}
-              />
-
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px', marginBottom: '20px' }}>
-                <span style={{ background: 'rgba(239,68,68,.1)', color: '#ef4444', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeBefore}</span>
-                <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
-                <span style={{ background: 'rgba(16,185,129,.1)', color: '#10b981', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeAfter}</span>
-              </div>
-
-              {/* AI description preview */}
-              <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px', transition: 'all .3s ease' }}>
-                <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                  Texte généré automatiquement
-                </p>
-                <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{pair.titre}</p>
-                <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>{pair.desc}</p>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                  {pair.tags.map((t,i) => (
-                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-        );
-      })()}
+      <DemoSlider darkMode={darkMode} T={T} isMobile={isMobile} />
 
       {/* COMPARAISON */}
       <section className="pg-reveal" style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 64px' }}>

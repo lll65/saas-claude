@@ -102,7 +102,7 @@ elif _env_extra:
 
 # Accepte toutes les URLs preview Vercel (pattern *lohangottardi*.vercel.app)
 # et toutes les URLs saas-claude*.vercel.app
-ALLOW_ORIGIN_REGEX = r"https://[a-zA-Z0-9\-]+-lohangottardi[a-zA-Z0-9\-]*\.vercel\.app"
+ALLOW_ORIGIN_REGEX = r"https://[a-zA-Z0-9][a-zA-Z0-9\-]*\.vercel\.app"
 
 def _origin_allowed(origin: str) -> bool:
     """Vérifie si une origine est autorisée (liste OU regex OU wildcard)."""
