@@ -377,9 +377,9 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a78bfa', fontWeight: 700, fontSize: '14px' }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3h10M2 6h8M2 9h5" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round"/></svg>
           Générer titre + description Vinted
-          {!isConnected && <span style={{ background: 'rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>PRO</span>}
           {boosted && <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>Boosté</span>}
           {result && !boosted && <span style={{ background: 'rgba(16,185,129,.15)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>Prêt</span>}
+          {!result && <span style={{ background: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>Gratuit</span>}
         </span>
         <span style={{ color: '#475569', fontSize: '18px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span>
       </button>
@@ -490,7 +490,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   </div>
                   {!trends && !trendLoading && (
                     <button onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      {isConnected ? 'Analyser →' : '🔒 Pro →'}
+                      {isConnected ? 'Analyser →' : '🔒 Acheter →'}
                     </button>
                   )}
                   {trends && (
@@ -684,16 +684,18 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
   const [mode, setMode] = useState(initialMode || 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
 
-  useEffect(() => { if (show) { setMode(initialMode || 'login'); setErrMsg(''); } }, [show, initialMode]);
+  useEffect(() => { if (show) { setMode(initialMode || 'login'); setErrMsg(''); setConfirmPassword(''); } }, [show, initialMode]);
   if (!show) return null;
 
   const handleSubmit = async () => {
     setErrMsg('');
     if (!email.includes('@')) { setErrMsg('Entrez un email valide'); return; }
     if (password.length < 6) { setErrMsg('Mot de passe : minimum 6 caractères'); return; }
+    if (mode === 'register' && password !== confirmPassword) { setErrMsg('Les mots de passe ne correspondent pas'); return; }
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
@@ -714,13 +716,16 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
         <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '22px' }}>{mode === 'login' ? 'Accédez à vos crédits et vos photos' : 'Gratuit · Crédits sauvegardés à vie · Titre+Description auto'}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,.4)', borderRadius: '12px', padding: '4px', marginBottom: '22px' }}>
           {['login','register'].map(m => (
-            <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
+            <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
               {m === 'login' ? 'Se connecter' : "S'inscrire"}
             </button>
           ))}
         </div>
         <input className="pg-input" type="email" placeholder="Votre adresse email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoFocus autoComplete="email" style={{ marginBottom: '12px', borderColor: errMsg ? 'rgba(239,68,68,.5)' : undefined }} />
-        <input className="pg-input" type="password" placeholder="Mot de passe (min. 6 caractères)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} style={{ marginBottom: '16px', borderColor: errMsg ? 'rgba(239,68,68,.5)' : undefined }} />
+        <input className="pg-input" type="password" placeholder="Mot de passe (min. 6 caractères)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} style={{ marginBottom: mode === 'register' ? '12px' : '16px', borderColor: errMsg ? 'rgba(239,68,68,.5)' : undefined }} />
+        {mode === 'register' && (
+          <input className="pg-input" type="password" placeholder="Confirmer votre mot de passe" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete="new-password" style={{ marginBottom: '16px', borderColor: errMsg && password !== confirmPassword ? 'rgba(239,68,68,.5)' : undefined }} />
+        )}
         {errMsg && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', color: '#f87171', fontSize: '13px' }}>{errMsg}</div>}
         <button className="pg-btn pg-glow" disabled={loading} onClick={handleSubmit} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? .7 : 1 }}>
           {loading ? 'Connexion...' : mode === 'login' ? 'Me connecter' : 'Créer mon compte'}
@@ -753,7 +758,7 @@ function LoadingTip() {
 }
 
 /* ══ SIMULATEUR GAINS ══ */
-function GainsTracker({ onClose }) {
+function GainsTracker({ onClose, onOptimize }) {
   const [articles, setArticles] = useState(15);
   const [prixMoyen, setPrixMoyen] = useState(25);
 
@@ -761,14 +766,6 @@ function GainsTracker({ onClose }) {
   const tauxBoost = Math.min(42, 18 + Math.round(articles / 3.5));
   const ventesEstimees = Math.max(1, Math.round(articles * 0.35));
   const gainEuros = Math.round(ventesEstimees * prixMoyen * (tauxBoost / 100));
-  const vuesMoyAvant = Math.max(8, 14 - Math.round(prixMoyen / 40));
-  const vuesMoyApres = Math.round(vuesMoyAvant * (1 + tauxBoost / 100));
-
-  const shareText = `Avec @PixGlow je pourrais générer ~${gainEuros}€ supplémentaires sur mes ${articles} articles ! +${tauxBoost}% de vues estimées — pixglow.app`;
-  const handleShare = () => {
-    if (navigator.share) { navigator.share({ text: shareText, url: 'https://pixglow.app' }); }
-    else { navigator.clipboard.writeText(shareText); }
-  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
@@ -817,55 +814,30 @@ function GainsTracker({ onClose }) {
 
         {/* Stat principale — gain euros */}
         <div className="pg-pop" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '14px', padding: '18px', textAlign: 'center', marginBottom: '14px' }}>
-          <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gains supplémentaires estimés</p>
+          <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gain supplémentaire estimé</p>
           <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '52px', fontWeight: 900, color: '#10b981', lineHeight: 1, transition: 'all .15s ease' }}>~{gainEuros}€</div>
-          <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce aux photos optimisées PixGlow</p>
-        </div>
+          <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce à une vente plus rapide ou un prix mieux maintenu</p>
 
-        {/* Stats secondaires */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '16px' }}>
-          {[
-            { label: 'Vues / annonce', before: vuesMoyAvant, after: vuesMoyApres,
-              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="8" cy="8" r="2" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-            { label: 'Ventes estimées', value: ventesEstimees,
-              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h1.5l2 7h7l1.5-4.5H5.5" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="11" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-            { label: 'Boost des vues', value: `+${tauxBoost}%`,
-              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,12 6,7 9,10 14,4" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-          ].map((s, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{s.svg}</div>
-              {s.before !== undefined ? (
-                <>
-                  <div style={{ color: '#10b981', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.after}</div>
-                  <div style={{ color: '#334155', fontSize: '10px', textDecoration: 'line-through' }}>{s.before} avant</div>
-                </>
-              ) : (
-                <div style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.value}</div>
-              )}
-              <div style={{ color: '#475569', fontSize: '10px', marginTop: '2px' }}>{s.label}</div>
+          {/* Barre de progression vues — juste sous le chiffre */}
+          <div style={{ marginTop: '16px', background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>📈 Boost des vues</span>
+              <span style={{ color: '#10b981', fontWeight: 800, fontSize: '12px' }}>+{tauxBoost}%</span>
             </div>
-          ))}
-        </div>
-
-        {/* Barre de progression vues */}
-        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>📈 Boost des vues</span>
-            <span style={{ color: '#10b981', fontWeight: 800, fontSize: '13px' }}>+{tauxBoost}%</span>
-          </div>
-          <div style={{ position: 'relative', height: '6px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
-            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-            <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
-            <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow</span>
+            <div style={{ position: 'relative', height: '5px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+              <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
+              <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow</span>
+            </div>
           </div>
         </div>
 
-        {/* Bouton partager */}
-        <button onClick={handleShare} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
-          Partager ma simulation
+        {/* Bouton CTA */}
+        <button onClick={onOptimize} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
+          ✨ Optimiser mes photos
         </button>
         <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
           Estimations basées sur les moyennes de nos utilisateurs · Résultats variables
@@ -1300,14 +1272,15 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                <button onClick={() => isConnected ? setShowTracker(true) : setShowPlanModal(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
+                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>
               </>
             ) : (
               <>
-                <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Connexion</button>
-                <button onClick={() => setPage('landing')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)', color: '#64748b', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>← Accueil</button>
+                <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
+                <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '14px', fontFamily: 'inherit' }}>Connexion</button>
+                {!isMobile && <button onClick={() => setPage('landing')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)', color: '#64748b', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>← Accueil</button>}
               </>
             )}
           </>
@@ -1323,6 +1296,7 @@ export default function PixGlow() {
             {isConnected
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
+                  {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '10px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                   <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
                   <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
                 </>}
@@ -1395,6 +1369,7 @@ export default function PixGlow() {
     <div style={{ background: darkMode ? '#0a0a0f' : '#f8f9fc', minHeight: '100vh', color: darkMode ? '#e2e8f0' : '#111118', overflowX: 'hidden' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
+      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} onOptimize={() => { setShowTracker(false); setPage('app'); }} />}
       <Nav />
 
       {/* HERO */}
@@ -1802,7 +1777,7 @@ export default function PixGlow() {
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
-      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} />}
+      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} onOptimize={() => { setShowTracker(false); isConnected ? null : setShowPlanModal(true); }} />}
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
@@ -1973,7 +1948,7 @@ export default function PixGlow() {
                         {!isMobile && (
                           <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '8px' }}>📥 Télécharger</button>
                         )}
-                        <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => openAuth('register')} />
+                        <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
                       </>
                     )}
                     {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
