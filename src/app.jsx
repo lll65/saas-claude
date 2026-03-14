@@ -296,7 +296,6 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
   // Génération description standard
   const generateBoost = async () => {
-    if (!isConnected) { onUpgrade(); return; }
     setLoading(true); setError(null);
     try {
       const res = await fetch(`${API_URL}/generate-description`, {
@@ -337,7 +336,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
   // Appliquer le boost tendance
   const applyTrendBoost = async () => {
-    if (!result || !selectedTrends.length) return;
+    if (!result || !selectedTrends.length || boosted) return;
     setBoostLoading(true);
     try {
       const res = await fetch(`${API_URL}/generate-boosted`, {
@@ -388,14 +387,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       {open && (
         <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.75)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
 
-          {/* ── NON CONNECTÉ ── */}
-          {!isConnected ? (
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>Fonctionnalité réservée aux comptes — inscription gratuite</p>
-              <button onClick={onUpgrade} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Créer un compte gratuit</button>
-            </div>
-
-          ) : !result && !loading && !error ? (
+          {/* ── ÉTAT INITIAL ── */}
+          {!result && !loading && !error ? (
             /* ── ÉTAT INITIAL ── */
             <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
@@ -404,7 +397,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               <button onClick={generateBoost} className="pg-btn pg-glow" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '11px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>
                 Générer la description
               </button>
-              <p style={{ color: '#334155', fontSize: '11px', marginTop: '10px' }}>~15 secondes · Inclus avec ton compte</p>
+              <p style={{ color: '#334155', fontSize: '11px', marginTop: '10px' }}>~15 secondes · Inclus dans les 5 photos gratuites</p>
             </div>
 
           ) : loading || boostLoading ? (
@@ -480,6 +473,15 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
               {/* ══ BOOST TENDANCE ══ */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '12px', marginBottom: '12px' }}>
+                {boosted ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '10px', padding: '10px 14px' }}>
+                    <span style={{ fontSize: '16px' }}>🔥</span>
+                    <div>
+                      <p style={{ color: '#fbbf24', fontWeight: 700, fontSize: '13px', margin: 0 }}>Boost tendance appliqué</p>
+                      <p style={{ color: '#475569', fontSize: '11px', margin: '2px 0 0' }}>Régénère la description pour relancer le boost sur une nouvelle image</p>
+                    </div>
+                  </div>
+                ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
@@ -487,8 +489,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>CETTE SEMAINE</span>
                   </div>
                   {!trends && !trendLoading && (
-                    <button onClick={loadTrends} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      Analyser →
+                    <button onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      {isConnected ? 'Analyser →' : '🔒 Pro →'}
                     </button>
                   )}
                   {trends && (
@@ -561,6 +563,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                       }
                     </button>
                   </>
+                )}
                 )}
               </div>
 
@@ -754,12 +757,12 @@ function GainsTracker({ onClose }) {
   const [articles, setArticles] = useState(15);
   const [prixMoyen, setPrixMoyen] = useState(25);
 
-  // Calculs temps réel
-  const tauxBoost = 28;
+  // Calculs temps réel — tauxBoost varie selon le volume d'articles
+  const tauxBoost = Math.min(42, 18 + Math.round(articles / 3.5));
   const ventesEstimees = Math.max(1, Math.round(articles * 0.35));
-  const gainEuros = Math.round(ventesEstimees * prixMoyen * 0.28);
-  const vuesMoyAvant = 12;
-  const vuesMoyApres = Math.round(vuesMoyAvant * 1.28);
+  const gainEuros = Math.round(ventesEstimees * prixMoyen * (tauxBoost / 100));
+  const vuesMoyAvant = Math.max(8, 14 - Math.round(prixMoyen / 40));
+  const vuesMoyApres = Math.round(vuesMoyAvant * (1 + tauxBoost / 100));
 
   const shareText = `Avec @PixGlow je pourrais générer ~${gainEuros}€ supplémentaires sur mes ${articles} articles ! +${tauxBoost}% de vues estimées — pixglow.app`;
   const handleShare = () => {
@@ -892,7 +895,7 @@ function TypedText({ text, className, style }) {
       i++;
       setDisplayed(text.slice(0, i));
       if (i >= text.length) clearInterval(timer);
-    }, 35);
+    }, 80);
     return () => clearInterval(timer);
   }, [started, text]);
   return <span ref={ref} className={className} style={style}>{displayed || '\u00a0'}</span>;
@@ -903,7 +906,7 @@ function useScrollReveal() {
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
-    }, { threshold: 0.12 });
+    }, { threshold: 0.25 });
     const observe = () => document.querySelectorAll('.pg-reveal').forEach(el => observer.observe(el));
     observe();
     const t = setTimeout(observe, 300);
@@ -1243,7 +1246,7 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
+                <button onClick={() => isConnected ? setShowTracker(true) : setShowPlanModal(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>
               </>
@@ -1488,41 +1491,82 @@ export default function PixGlow() {
       </section>
 
       {/* AVANT/APRÈS SLIDER */}
-      <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
-        <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
-          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemple réel · avant / après PixGlow</p>
-          <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '20px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
+      {(() => {
+        const DEMO_PAIRS = [
+          {
+            beforeSrc: '/demo/veste-avant.png',
+            afterSrc:  '/demo/veste-apres.png',
+            beforeLabel: 'Fond encombré',
+            afterLabel:  'Fond blanc PixGlow',
+            beforeStyle: { transform: 'rotate(-90deg) scale(0.75)', transformOrigin: 'center' },
+            titre: 'Veste bomber noire — Taille M',
+            desc: 'Veste bomber noire oversize, taille M. Fermeture éclair dorée. Portée 2 fois, comme neuve. Idéale mi-saison.',
+            tags: ['#vestebomber','#vintedfrançais','#modeoccasion','#overwear','#jacketstyle'],
+            badgeBefore: 'Photo sur lit · Lumière inégale',
+            badgeAfter:  'Fond blanc · Annonce rédigée ✅',
+          },
+          {
+            beforeSrc: '/demo/beanie-avant.png',
+            afterSrc:  '/demo/beanie-apres.png',
+            beforeLabel: 'Photo brute',
+            afterLabel:  'Fond blanc PixGlow',
+            titre: 'Bonnet Patagonia — Unisexe',
+            desc: 'Bonnet Patagonia authentique, unisexe, taille unique. Très chaud, parfait état. Patch logo brodé.',
+            tags: ['#patagonia','#bonnet','#outdoorstyle','#vintedmode','#modeoccasion'],
+            badgeBefore: 'Photo brute · Fond texturé',
+            badgeAfter:  'Fond blanc · Prêt à publier ✅',
+          },
+        ];
+        const [demoIdx, setDemoIdx] = React.useState(0);
+        const pair = DEMO_PAIRS[demoIdx];
+        return (
+          <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
+            <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
+              <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemples réels · avant / après PixGlow</p>
+              <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
 
-          <BeforeAfterSlider
-            beforeSrc="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%20viewBox%3D%220%200%20400%20400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23e8e0f0%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2245%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20fill%3D%22%237c3aed%22%3EPhoto%20originale%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2258%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2216%22%20fill%3D%22%239f7aea%22%3EFond%20color%C3%A9%20%2F%20encombr%C3%A9%3C%2Ftext%3E%3C%2Fsvg%3E"
-            afterSrc="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%20viewBox%3D%220%200%20400%20400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23ffffff%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2245%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2222%22%20fill%3D%22%2310b981%22%3EFond%20blanc%20PixGlow%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2258%25%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2216%22%20fill%3D%22%2334d399%22%3EProfessionnel%20%E2%9C%85%3C%2Ftext%3E%3C%2Fsvg%3E"
-            beforeLabel="Fond encombré"
-            afterLabel="Fond blanc PixGlow"
-            landscape={true}
-          />
+              {/* Sélecteur de paire */}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+                {DEMO_PAIRS.map((p, i) => (
+                  <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
+                    {i === 0 ? 'Bomber noire' : 'Patagonia'}
+                  </button>
+                ))}
+              </div>
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px', marginBottom: '20px' }}>
-            <span style={{ background: 'rgba(239,68,68,.1)', color: '#ef4444', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>Fond encombré · Lumière inégale</span>
-            <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
-            <span style={{ background: 'rgba(16,185,129,.1)', color: '#10b981', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>Fond blanc · Photo pro · Annonce rédigée</span>
-          </div>
+              <BeforeAfterSlider
+                key={demoIdx}
+                beforeSrc={pair.beforeSrc}
+                afterSrc={pair.afterSrc}
+                beforeLabel={pair.beforeLabel}
+                afterLabel={pair.afterLabel}
+                landscape={true}
+              />
 
-          {/* AI Boost preview */}
-          <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px' }}>
-            <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
-              Texte généré automatiquement
-            </p>
-            <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Veste zippée vintage — comme neuve</p>
-            <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>Veste zippée taille M en parfait état. Coupe moderne, portée 3 fois. Idéale hiver ou mi-saison. Expédition rapide.</p>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {['#veste','#vintedfrançais','#modeoccasion','#jacketvintage','#modeautomne'].map((t,i) => (
-                <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>
-              ))}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px', marginBottom: '20px' }}>
+                <span style={{ background: 'rgba(239,68,68,.1)', color: '#ef4444', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeBefore}</span>
+                <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
+                <span style={{ background: 'rgba(16,185,129,.1)', color: '#10b981', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeAfter}</span>
+              </div>
+
+              {/* AI description preview */}
+              <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px', transition: 'all .3s ease' }}>
+                <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  Texte généré automatiquement
+                </p>
+                <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{pair.titre}</p>
+                <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>{pair.desc}</p>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  {pair.tags.map((t,i) => (
+                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        );
+      })()}
 
       {/* COMPARAISON */}
       <section className="pg-reveal" style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 64px' }}>
@@ -1544,11 +1588,11 @@ export default function PixGlow() {
             <tbody>
               {[
                 ['Suppression fond IA', '✅', '✅', '✅'],
-                ['Fond blanc marketplace', '✅', '✅ partiel', '✅'],
-                ['Annonce texte IA native', '✅', '❌', '❌'],
-                ['5 photos gratuites sans carte', '✅', '✅ limité', '✅ limité'],
-                ['Conçu marketplaces FR', '✅', '❌', 'Partiel'],
-                ['Packs crédits à vie', '✅', '❌', '❌'],
+                ['Fond blanc marketplace', '✅', 'PNG transparent', '✅'],
+                ['Annonce texte IA native', '✅', '❌', 'Partiel'],
+                ['Sans inscription ni carte', '✅', '❌', '❌'],
+                ['Conçu marketplaces FR', '✅', '❌', '❌'],
+                ['Crédits à vie (pas d\'abo)', '✅', '❌', '❌'],
               ].map((row, ri) => (
                 <tr key={ri} style={{ borderBottom: ri < 5 ? `1px solid ${T.cardBorder}` : 'none' }}>
                   <td style={{ padding: '11px 16px', fontSize: '13px', color: T.text, fontWeight: 500 }}>{row[0]}</td>
