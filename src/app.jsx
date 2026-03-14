@@ -29,6 +29,7 @@ function CGV({ onBack }) {
 
 const API_URL = "https://web-production-f1129.up.railway.app";
 const MAX_SIMULTANEOUS = 5;
+const FREE_FREE_IMAGES = 5; // Nombre de photos gratuites — doit correspondre à FREE_IMAGES_PER_IP côté serveur
 
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
@@ -963,12 +964,16 @@ export default function PixGlow() {
       setUserEmail(savedEmail); setIsConnected(true);
       fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); }).catch(() => {});
     }
-    fetch(`${API_URL}/free-remaining`).then(r => r.json()).then(d => { if (d.remaining !== undefined) { setFreeLeft(d.remaining); localStorage.setItem('pg_free', String(d.remaining)); } }).catch(() => {
-      const stored = localStorage.getItem('pg_free');
-      if (stored !== null) {
-        setFreeLeft(parseInt(stored, 10));
+    fetch(`${API_URL}/free-remaining`).then(r => r.json()).then(d => {
+      if (d.remaining !== undefined) {
+        setFreeLeft(d.remaining);
+        localStorage.setItem('pg_free', String(d.remaining));
       }
-      // Si stored est null, freeLeft reste null → UI ne montre pas le compteur
+    }).catch(() => {
+      // CORS ou réseau : on laisse freeLeft à null plutôt que d'afficher
+      // une valeur localStorage potentiellement périmée.
+      // L'UI masque le compteur quand freeLeft === null (comportement voulu).
+      setFreeLeft(null);
     });
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
@@ -992,7 +997,10 @@ export default function PixGlow() {
   const handleFilesChange = (e) => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
-    const available = isConnected ? (credits ?? 999) : (freeLeft ?? 0);
+    // freeLeft === null signifie que le serveur n'a pas répondu (CORS, réseau)
+    // → on suppose 5 crédits dispo pour ne pas bloquer l'utilisateur inutilement.
+    // Le serveur refusera de toute façon si la limite est atteinte.
+    const available = isConnected ? (credits ?? 999) : (freeLeft ?? FREE_FREE_IMAGES);
     const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
     const chosen = selected.slice(0, maxAllowed);
     if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
@@ -1018,28 +1026,56 @@ export default function PixGlow() {
     });
   };
 
+  // Resynchronise freeLeft depuis le serveur (utilisé après erreurs pour éviter les valeurs périmées)
+  const syncFreeLeft = () => {
+    fetch(`${API_URL}/free-remaining`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.remaining !== undefined) {
+          setFreeLeft(d.remaining);
+          localStorage.setItem('pg_free', String(d.remaining));
+        }
+      })
+      .catch(() => {}); // silencieux — le compteur restera dans l'état actuel
+  };
+
   const handleUpload = async () => {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
-    if (!isConnected && freeLeft !== null && freeLeft <= 0) { setError('Vos 5 photos gratuites ont été utilisées.'); return; }
+    if (!isConnected && freeLeft !== null && freeLeft <= 0) { setError('Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.'); return; }
     if (isConnected && credits !== null && credits < files.length) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
     setLoading(true); setError(null); setResults([]); setProgress(0);
-    let currentFreeLeft = freeLeft; const newResults = [];
+    const newResults = [];
     for (let i = 0; i < files.length; i++) {
       setProgress(i + 1);
       try {
         const form = new FormData(); form.append('file', files[i]);
         const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: authHeaders(), body: form });
         const data = await res.json();
-        if (!res.ok) { newResults.push({ error: data.detail || 'Erreur', original: previews[i] }); }
-        else {
+        if (!res.ok) {
+          newResults.push({ error: data.detail || 'Erreur serveur', original: previews[i] });
+          // Erreur 429 = limite atteinte → on resynchronise le compteur côté serveur
+          if (res.status === 429) {
+            syncFreeLeft();
+          }
+        } else {
           newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: previews[i] });
-          if (data.credits_left !== null && data.credits_left !== undefined) setCredits(data.credits_left);
-          else { currentFreeLeft = Math.max(0, (currentFreeLeft ?? 0) - 1); setFreeLeft(currentFreeLeft); localStorage.setItem('pg_free', String(currentFreeLeft)); }
+          // Priorité : valeur retournée par le serveur (source de vérité)
+          if (data.credits_left !== null && data.credits_left !== undefined) {
+            setCredits(data.credits_left);
+          } else if (data.free_remaining !== null && data.free_remaining !== undefined) {
+            // Le serveur retourne le nombre exact restant après débit → on l'utilise directement
+            setFreeLeft(data.free_remaining);
+            localStorage.setItem('pg_free', String(data.free_remaining));
+          }
           // Compteur global pour le tracker de gains
           const prev = parseInt(localStorage.getItem('pg_total_enhanced') || '0', 10);
           localStorage.setItem('pg_total_enhanced', String(prev + 1));
         }
-      } catch { newResults.push({ error: 'Erreur réseau — vérifiez votre connexion et réessayez.', original: previews[i] }); }
+      } catch {
+        newResults.push({ error: 'Erreur réseau — vérifiez votre connexion et réessayez.', original: previews[i] });
+        // Réseau coupé ou CORS → on resync pour éviter un compteur périmé
+        if (!isConnected) syncFreeLeft();
+      }
       setResults([...newResults]);
     }
     setLoading(false);
