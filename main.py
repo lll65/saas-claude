@@ -73,37 +73,70 @@ def rate_limit(ip: str, max_calls: int = 10, window_sec: int = 60):
 # ─────────────────────────────────────────────
 app = FastAPI(title="PixGlow API", version="2.5")
 
+# ── Origines autorisées ───────────────────────────────────────────────────────
+# En production : CORS_ALLOWED_ORIGINS=https://www.pixglow.app,https://pixglow.app
+# Pour Vercel previews : CORS_ALLOWED_ORIGINS=* (ou laisser vide → regex Vercel)
+# ─────────────────────────────────────────────────────────────────────────────
+_env_extra = os.getenv("CORS_ALLOWED_ORIGINS", "")
+
 ALLOWED_ORIGINS = [
     "https://pixglow.app",
     "https://www.pixglow.app",
     "http://localhost:3000",
     "http://localhost:5173",
-    # Vercel preview deployments — ajoutez votre URL de preview exacte ici si besoin
-    "https://saas-claude-ln8peo744-lohangottardi-5625s-projects.vercel.app",
 ]
+ALLOW_ALL_ORIGINS = False
 
-# Regex pour accepter toutes les previews Vercel du projet saas-claude
-ALLOW_ORIGIN_REGEX = r"https://saas-claude[a-zA-Z0-9\-]*\.vercel\.app"
+if _env_extra == "*":
+    ALLOW_ALL_ORIGINS = True
+elif _env_extra:
+    for _o in _env_extra.split(","):
+        _o = _o.strip()
+        if _o and _o not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(_o)
+
+# Accepte toutes les URLs preview Vercel (pattern *lohangottardi*.vercel.app)
+# et toutes les URLs saas-claude*.vercel.app
+import re as _re
+ALLOW_ORIGIN_REGEX = r"https://[a-zA-Z0-9\-]+-lohangottardi[a-zA-Z0-9\-]*\.vercel\.app"
+
+def _origin_allowed(origin: str) -> bool:
+    """Vérifie si une origine est autorisée (liste OU regex OU wildcard)."""
+    if not origin:
+        return False
+    if ALLOW_ALL_ORIGINS:
+        return True
+    if origin in ALLOWED_ORIGINS:
+        return True
+    if _re.match(ALLOW_ORIGIN_REGEX, origin):
+        return True
+    return False
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=ALLOW_ORIGIN_REGEX,
-    allow_credentials=True,
+    allow_origins=["*"] if ALLOW_ALL_ORIGINS else ALLOWED_ORIGINS,
+    allow_origin_regex=None if ALLOW_ALL_ORIGINS else ALLOW_ORIGIN_REGEX,
+    allow_credentials=not ALLOW_ALL_ORIGINS,   # credentials incompatible avec wildcard *
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Used in exception handlers — must match Allow-Origin for the actual request origin
 def _cors_headers(request: Request) -> dict:
+    """Headers CORS corrects pour les exception handlers (middleware ne les gère pas)."""
     origin = request.headers.get("origin", "")
-    allowed = origin if origin in ALLOWED_ORIGINS else "https://www.pixglow.app"
+    if ALLOW_ALL_ORIGINS:
+        return {"Access-Control-Allow-Origin": "*"}
+    if _origin_allowed(origin):
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    # Repli sur le domaine principal — le navigateur bloquera de toute façon
     return {
-        "Access-Control-Allow-Origin": allowed,
+        "Access-Control-Allow-Origin": "https://www.pixglow.app",
         "Access-Control-Allow-Credentials": "true",
     }
 
-# Kept for backwards compatibility where Request is unavailable
 CORS_HEADERS = {"Access-Control-Allow-Origin": "https://www.pixglow.app", "Access-Control-Allow-Credentials": "true"}
 
 # ─────────────────────────────────────────────
