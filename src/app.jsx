@@ -1408,8 +1408,6 @@ export default function PixGlow() {
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Comment ça marche</p>
         <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '40px', color: T.text, letterSpacing: '-.5px' }}>3 étapes, résultat pro</h2>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '14px', position: 'relative' }}>
-          {/* Connector line — desktop only */}
-          {!isMobile && <div style={{ position: 'absolute', top: '36px', left: 'calc(16.6% + 18px)', right: 'calc(16.6% + 18px)', height: '2px', background: 'linear-gradient(90deg,#7c3aed,#60a5fa,#10b981)', borderRadius: '2px', zIndex: 0, opacity: .35 }} />}
           {[
             {
               step: '01', col: '#7c3aed', colLight: 'rgba(124,58,237,.12)',
