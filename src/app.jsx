@@ -878,7 +878,7 @@ function GainsTracker({ onClose }) {
 /* ══ DEMO SLIDER (landing) ══ */
 const DEMO_PAIRS = [
   {
-    beforeSrc: '/demo/veste-avant.png', afterSrc: '/demo/veste-apres.png',
+    beforeSrc: '/demo/bomber-avant.jpg', afterSrc: '/demo/bomber-apres.jpg',
     beforeLabel: 'Fond encombré', afterLabel: 'Fond blanc PixGlow',
     titre: 'Veste bomber noire — Taille M',
     desc: 'Veste bomber noire oversize, taille M. Fermeture éclair dorée. Portée 2 fois, comme neuve. Idéale mi-saison.',
@@ -886,12 +886,12 @@ const DEMO_PAIRS = [
     badgeBefore: 'Photo sur lit · Lumière inégale', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
   },
   {
-    beforeSrc: '/demo/beanie-avant.png', afterSrc: '/demo/beanie-apres.png',
+    beforeSrc: '/demo/carhartt-avant.jpg', afterSrc: '/demo/carhartt-apres.png',
     beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Bonnet Patagonia — Unisexe',
-    desc: 'Bonnet Patagonia authentique, unisexe, taille unique. Très chaud, parfait état. Patch logo brodé.',
-    tags: ['#patagonia','#bonnet','#outdoorstyle','#vintedmode','#modeoccasion'],
-    badgeBefore: 'Photo brute · Fond texturé', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Fleece Carhartt — Taille L',
+    desc: "Fleece Carhartt Heritage Relaxed Fit, taille L. Coloris naturel/olive. Étiquette présente, porté 5 fois. Très chaud.",
+    tags: ['#carhartt','#fleece','#vintedmode','#streetwear','#modeoccasion'],
+    badgeBefore: 'Photo sol · Fond encombré', badgeAfter: 'Fond blanc · Prêt à publier ✅',
   },
 ];
 function DemoSlider({ darkMode, T, isMobile }) {
@@ -905,7 +905,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
             <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
-              {i === 0 ? 'Bomber noire' : 'Patagonia'}
+              {i === 0 ? 'Bomber noire' : 'Carhartt fleece'}
             </button>
           ))}
         </div>
@@ -1457,9 +1457,9 @@ export default function PixGlow() {
           {/* Social proof */}
           <div className="pg-anim-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex' }}>
-              {['Lucas M.', 'Amélie T.', 'Karim B.', 'Thomas R.', 'Yasmine A.', 'Maxime D.'].map((name, i) => (
-                <AvatarInitials key={i} name={name} size={32}
-                  style={{ marginLeft: i ? '-10px' : '0', border: '2px solid #0a0a0f', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }} />
+              {[33, 44, 57, 15, 51, 27].map((imgId, i) => (
+                <img key={i} src={`https://i.pravatar.cc/64?img=${imgId}`} alt=""
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', marginLeft: i ? '-10px' : '0', border: '2px solid #0a0a0f', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }} />
               ))}
             </div>
             <div>
@@ -1608,8 +1608,8 @@ export default function PixGlow() {
           <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '28px', color: T.text, letterSpacing: '-.5px' }}>Ce que disent nos premiers testeurs</h2>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '20px' }}>
             {[
-              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', photo: 'https://i.pravatar.cc/80?img=3', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
-              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', photo: 'https://i.pravatar.cc/80?img=12', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
+              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', photo: 'https://i.pravatar.cc/80?img=33', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
+              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', photo: 'https://i.pravatar.cc/80?img=44', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
             ].map((t,i) => (
               <div key={i} className="pg-card pg-reveal" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '22px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '14px', right: '18px', fontFamily: 'Georgia,serif', fontSize: '64px', color: t.couleur, opacity: .07, lineHeight: 1, userSelect: 'none', fontWeight: 900 }}>"</div>
