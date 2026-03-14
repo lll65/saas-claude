@@ -13,18 +13,18 @@ const LS = {
 };
 const LegalLayout = ({ title, onBack, children }) => (
   <div style={LS.page}>
-    <nav style={LS.nav}><span style={LS.logo}>Photlow</span><button onClick={onBack} style={LS.back}>← Retour</button></nav>
+    <nav style={LS.nav}><span style={LS.logo}>PixGlow</span><button onClick={onBack} style={LS.back}>← Retour</button></nav>
     <div style={LS.wrap}><h1 style={LS.h1}>{title}</h1><p style={{ ...LS.p, fontSize: '13px', color: '#334155', marginBottom: '28px' }}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</p>{children}</div>
   </div>
 );
 function MentionsLegales({ onBack }) {
-  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site photlow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de Photlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. Photlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
+  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de PixGlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. PixGlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
 }
 function PolitiqueConfidentialite({ onBack }) {
-  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
+  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
 }
 function CGV({ onBack }) {
-  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>Photlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. Photlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
+  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>PixGlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
 }
 
 const API_URL = "https://web-production-f1129.up.railway.app";
@@ -120,6 +120,17 @@ const GLOBAL_CSS = `
 
   /* ── Selection ── */
   ::selection { background: rgba(124,58,237,.35); color: #fff; }
+
+  @keyframes pg-icon-float { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-3px) scale(1.05);} }
+  @keyframes pg-icon-spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  @keyframes pg-icon-pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.7;transform:scale(.93);} }
+  .pg-icon-float { animation: pg-icon-float 2.4s ease-in-out infinite; }
+  .pg-icon-spin-slow { animation: pg-icon-spin 6s linear infinite; }
+  .pg-icon-pulse { animation: pg-icon-pulse 2s ease-in-out infinite; }
+  .pg-reveal-left { opacity:0; transform:translateX(-24px); transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1); }
+  .pg-reveal-left.visible { opacity:1; transform:translateX(0); }
+  .pg-reveal-right { opacity:0; transform:translateX(24px); transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1); }
+  .pg-reveal-right.visible { opacity:1; transform:translateX(0); }
 `;
 
 function InjectCSS() {
@@ -155,6 +166,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
   const [pos, setPos] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [autoAnimDone, setAutoAnimDone] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -191,6 +203,28 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
       window.removeEventListener('touchend', onMouseUp);
     };
   }, [onMouseMove, onMouseUp, onTouchMove]);
+
+  // Auto-animate on scroll into view
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !autoAnimDone) {
+        let start = null;
+        const from = 72, to = 28, duration = 1600;
+        const step = (ts) => {
+          if (!start) start = ts;
+          const p = Math.min((ts - start) / duration, 1);
+          const ease = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+          setPos(Math.round(from + (to - from) * ease));
+          if (p < 1) requestAnimationFrame(step);
+          else setAutoAnimDone(true);
+        };
+        setTimeout(() => requestAnimationFrame(step), 700);
+        observer.disconnect();
+      }
+    }, { threshold: 0.5 });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [autoAnimDone]);
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none', background: '#f8f8f8' }}>
@@ -889,6 +923,45 @@ function GainsTracker({ onClose, userEmail }) {
   );
 }
 
+/* ══ TYPED TEXT ══ */
+function TypedText({ text, className, style }) {
+  const [displayed, setDisplayed] = useState('');
+  const [started, setStarted] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setStarted(true); observer.disconnect(); }
+    }, { threshold: 0.3 });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!started) return;
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(timer);
+    }, 35);
+    return () => clearInterval(timer);
+  }, [started, text]);
+  return <span ref={ref} className={className} style={style}>{displayed || '\u00a0'}</span>;
+}
+
+/* ══ SCROLL REVEAL ══ */
+function useScrollReveal() {
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    const observe = () => document.querySelectorAll('.pg-reveal').forEach(el => observer.observe(el));
+    observe();
+    const t = setTimeout(observe, 300);
+    return () => { observer.disconnect(); clearTimeout(t); };
+  }, []);
+}
+
 /* ══ FAQ SECTION ══ */
 function FAQSection({ T, isMobile }) {
   const [openFaq, setOpenFaq] = useState(null);
@@ -900,7 +973,7 @@ function FAQSection({ T, isMobile }) {
     { q: "Que se passe-t-il quand mes 5 photos gratuites sont utilisées ?", a: "Tu peux créer un compte gratuit pour continuer, ou passer en Pro pour 9€/mois avec 100 photos/mois incluses. Aucun prélèvement automatique sans ton accord explicite." },
     { q: "La qualité de la suppression est-elle toujours parfaite ?", a: "Notre IA est entraînée sur des millions d'images produit, mais certains cas complexes (vêtements transparents, fourrures, reflets) peuvent parfois nécessiter un ajustement. Dans ce cas, tu peux télécharger l'image et la retravailler dans l'outil de ton choix." },
     { q: "Comment annuler mon abonnement Pro ?", a: "Depuis ton espace compte → 'Abonnement' → 'Annuler'. Annulation immédiate, tu gardes l'accès Pro jusqu'à la fin de la période payée. Aucune rétention, aucun frais caché. Droit de rétractation de 14 jours conformément au Code de la consommation (art. L221-18)." },
-    { q: "Photlow est-il légal pour une utilisation commerciale ?", a: "Oui. Les photos que tu traites et les annonces générées t'appartiennent. Assure-toi simplement que les photos que tu traites t'appartiennent ou que tu as les droits nécessaires pour les utiliser. Photlow n'est pas affilié à Vinted, Leboncoin, Amazon ou Facebook." },
+    { q: "PixGlow est-il légal pour une utilisation commerciale ?", a: "Oui. Les photos que tu traites et les annonces générées t'appartiennent. Assure-toi simplement que les photos que tu traites t'appartiennent ou que tu as les droits nécessaires pour les utiliser. PixGlow n'est pas affilié à Vinted, Leboncoin, Amazon ou Facebook." },
   ];
   return (
     <section style={{ maxWidth: '780px', margin: '0 auto', padding: isMobile ? '40px 16px' : '72px 40px' }}>
@@ -926,14 +999,14 @@ function FAQSection({ T, isMobile }) {
       </div>
       <div style={{ textAlign: 'center', marginTop: '28px' }}>
         <p style={{ color: '#475569', fontSize: '14px', marginBottom: '10px' }}>Une autre question ?</p>
-        <a href="mailto:support@photlow.app" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>support@photlow.app →</a>
+        <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>support@pixglow.app →</a>
       </div>
     </section>
   );
 }
 
 /* ══ COMPOSANT PRINCIPAL ══ */
-export default function Photlow() {
+export default function PixGlow() {
   const [page, setPage] = useState('landing');
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -954,6 +1027,8 @@ export default function Photlow() {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  useScrollReveal();
 
   const getToken = () => localStorage.getItem('pg_token');
   const authHeaders = () => { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; };
@@ -1205,7 +1280,7 @@ export default function Photlow() {
     <nav style={{ padding: isMobile ? '14px 16px' : '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)'}`, background: T.navBg, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setPage('landing')}>
         <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>✨</div>
-        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>Photlow</span>
+        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {showBack ? (
@@ -1259,14 +1334,14 @@ export default function Photlow() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px' }}>✨</div>
-              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>Photlow</span>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
             </div>
             <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, maxWidth: '260px', marginBottom: '16px' }}>
               Outil IA de traitement photo et rédaction d'annonces pour marketplaces. Développé en France 🇫🇷
             </p>
-            <a href="mailto:support@photlow.app" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="3" width="11" height="8" rx="1.5" stroke="#7c3aed" strokeWidth="1.2"/><path d="M1 4l5.5 4L12 4" stroke="#7c3aed" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-              support@photlow.app
+              support@pixglow.app
             </a>
           </div>
           {/* Produit */}
@@ -1299,7 +1374,7 @@ export default function Photlow() {
         </div>
         {/* Bottom bar */}
         <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>© {new Date().getFullYear()} Photlow · Tous droits réservés · Photlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify.</p>
+          <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>© {new Date().getFullYear()} PixGlow · Tous droits réservés · PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify.</p>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="12" height="8" rx="1.5" stroke="#334155" strokeWidth="1.2"/><path d="M5 4V3a2 2 0 0 1 4 0v1" stroke="#334155" strokeWidth="1.2"/><circle cx="7" cy="8" r="1" fill="#334155"/></svg>
             <span style={{ color: '#334155', fontSize: '12px' }}>Paiements sécurisés Stripe</span>
@@ -1332,12 +1407,12 @@ export default function Photlow() {
 
           <h1 className="pg-hero" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '38px' : '72px', fontWeight: 800, lineHeight: 1.02, letterSpacing: isMobile ? '-1px' : '-2px', color: T.text, marginBottom: '22px' }}>
             Transforme tes photos<br/>
-            <span style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a78bfa 40%,#60a5fa 70%,#10b981 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>en annonces qui vendent</span><br/>
+            <TypedText text="en annonces qui vendent" style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a78bfa 40%,#60a5fa 70%,#10b981 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }} /><br/>
             en 8 secondes
           </h1>
 
           <p className="pg-anim-2" style={{ fontSize: isMobile ? '16px' : '19px', color: '#64748b', maxWidth: '600px', margin: '0 auto 16px', lineHeight: 1.7 }}>
-            Photlow supprime le fond, blanchit la photo et rédige ton annonce Vinted, Leboncoin ou Amazon automatiquement. Zéro retouche. Zéro effort.
+            PixGlow supprime le fond, blanchit la photo et rédige ton annonce Vinted, Leboncoin ou Amazon automatiquement. Zéro retouche. Zéro effort.
           </p>
 
           {/* Feature pills */}
@@ -1454,7 +1529,7 @@ export default function Photlow() {
       {/* AVANT/APRÈS SLIDER */}
       <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
         <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
-          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemple réel · avant / après Photlow</p>
+          <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemple réel · avant / après PixGlow</p>
           <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '20px' }}>Glisse le curseur pour voir la transformation</p>
 
           {/* SLIDER PRINCIPAL */}
@@ -1556,14 +1631,14 @@ export default function Photlow() {
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Avis beta testeurs</p>
           <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '40px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Ce que disent nos premiers testeurs</h2>
-          <p style={{ color: '#475569', textAlign: 'center', marginBottom: '8px', fontSize: '15px' }}>Photlow est en accès beta. Ces retours viennent de vrais utilisateurs ayant testé l'outil sur leurs propres annonces.</p>
+          <p style={{ color: '#475569', textAlign: 'center', marginBottom: '8px', fontSize: '15px' }}>PixGlow est en accès beta. Ces retours viennent de vrais utilisateurs ayant testé l'outil sur leurs propres annonces.</p>
           <p style={{ color: '#334155', textAlign: 'center', marginBottom: '36px', fontSize: '12px' }}>Résultats observés sur la période beta (nov. 2025 – mars 2026). Variables selon les produits et les plateformes.</p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px' }}>
             {[
-              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec Photlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
+              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
               { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
               { nom: 'Karim B.',  tag: 'Revendeur multi-plateformes · Beta testeur · Mars 2026', note: 5, couleur: '#60a5fa', txt: "Je vends sur plusieurs plateformes. Avoir la même photo propre adaptable partout sans tout refaire, c'est un gain de temps réel." },
-              { nom: 'Thomas R.', tag: 'Revendeur mode vintage · Beta testeur · Fév. 2026', note: 5, couleur: '#f59e0b', txt: "J'ai testé d'autres outils mais Photlow est le seul qui génère aussi une annonce rédigée en plus de la photo. Ça change vraiment tout." },
+              { nom: 'Thomas R.', tag: 'Revendeur mode vintage · Beta testeur · Fév. 2026', note: 5, couleur: '#f59e0b', txt: "J'ai testé d'autres outils mais PixGlow est le seul qui génère aussi une annonce rédigée en plus de la photo. Ça change vraiment tout." },
             ].map((t,i) => (
               <div key={i} className="pg-card" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '22px', padding: '28px 26px', position: 'relative', overflow: 'hidden' }}>
                 {/* Quote mark */}
@@ -1601,15 +1676,15 @@ export default function Photlow() {
       <section style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '40px 16px' : '72px 40px' }}>
         <div className="pg-divider" style={{ marginBottom: '56px' }} />
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Différenciation</p>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Pourquoi Photlow ?</h2>
+        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Pourquoi PixGlow ?</h2>
         <p style={{ color: '#475569', textAlign: 'center', marginBottom: '10px', fontSize: '15px' }}>Une alternative française, construite pour vendre sur les marketplaces.</p>
-        <p style={{ color: '#334155', textAlign: 'center', marginBottom: '40px', fontSize: '12px' }}>Comparaison basée sur les fonctionnalités publiques des services en mars 2026. Photlow n'est pas affilié à ces services.</p>
+        <p style={{ color: '#334155', textAlign: 'center', marginBottom: '40px', fontSize: '12px' }}>Comparaison basée sur les fonctionnalités publiques des services en mars 2026. PixGlow n'est pas affilié à ces services.</p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', border: `1px solid ${T.cardBorder}`, borderRadius: '16px', overflow: 'hidden', background: T.cardBg }}>
             <thead>
               <tr style={{ background: darkMode ? 'rgba(124,58,237,.08)' : 'rgba(124,58,237,.05)' }}>
                 <th style={{ padding: '14px 18px', textAlign: 'left', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '13px', color: T.text, borderBottom: `1px solid ${T.cardBorder}` }}>Fonctionnalité</th>
-                {['Photlow','Remove.bg','Photoroom'].map((brand, bi) => (
+                {['PixGlow','Remove.bg','Photoroom'].map((brand, bi) => (
                   <th key={bi} style={{ padding: '14px 14px', textAlign: 'center', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '13px', color: bi === 0 ? '#a78bfa' : '#475569', borderBottom: `1px solid ${T.cardBorder}`, background: bi === 0 ? (darkMode ? 'rgba(124,58,237,.1)' : 'rgba(124,58,237,.06)') : 'transparent', minWidth: '100px' }}>{brand}{bi === 0 && <span style={{ display: 'block', fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>🇫🇷 Vous êtes ici</span>}</th>
                 ))}
               </tr>
@@ -1635,7 +1710,7 @@ export default function Photlow() {
           </table>
         </div>
         <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginTop: '16px', lineHeight: 1.6 }}>
-          Photoroom et Remove.bg sont d'excellents outils de retouche photo. Photlow fait un choix différent : aller jusqu'à l'annonce rédigée. C'est notre différence — pas un argument marketing, une vraie fonctionnalité.
+          Photoroom et Remove.bg sont d'excellents outils de retouche photo. PixGlow fait un choix différent : aller jusqu'à l'annonce rédigée. C'est notre différence — pas un argument marketing, une vraie fonctionnalité.
         </p>
       </section>
 
@@ -1769,7 +1844,7 @@ export default function Photlow() {
       <Nav />
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '32px 16px' : '60px 40px' }}>
         <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '28px' : '40px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Centre d'aide</h1>
-        <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur Photlow</p>
+        <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur PixGlow</p>
         {[
           { q: 'Comment fonctionnent les 5 photos gratuites ?', r: "Chaque adresse IP bénéficie de 5 traitements gratuits, sans inscription ni carte bancaire. Ils sont comptés sur nos serveurs et ne se réinitialisent jamais." },
           { q: 'Comment fonctionne la description automatique ?', r: "Après traitement de ta photo, un bouton \"Prêt pour Vinted ?\" apparaît. En 1 clic, un texte optimisé est généré : titre, description avec emojis et hashtags pour Vinted et Leboncoin. Fonctionnalité réservée aux comptes créés." },
@@ -1786,7 +1861,7 @@ export default function Photlow() {
         ))}
         <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '14px', padding: '20px', marginTop: '18px', textAlign: 'center' }}>
           <p style={{ color: '#a78bfa', fontWeight: 700, marginBottom: '6px' }}>Une autre question ?</p>
-          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:support@photlow.app" style={{ color: '#7c3aed' }}>support@photlow.app</a></p>
+          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p>
         </div>
       </div>
     </div>
