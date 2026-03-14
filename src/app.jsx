@@ -481,7 +481,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                       <p style={{ color: '#475569', fontSize: '11px', margin: '2px 0 0' }}>Régénère la description pour relancer le boost sur une nouvelle image</p>
                     </div>
                   </div>
-                ) : (
+                ) : (<>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
@@ -564,7 +564,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </button>
                   </>
                 )}
-                )}
+                </>)}
               </div>
 
               {/* ── BOUTONS FINAUX ── */}
