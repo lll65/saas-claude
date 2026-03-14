@@ -28,6 +28,10 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import threading
 
+import re as _re
+import hashlib as _hashlib
+from datetime import date as _date
+
 load_dotenv()
 
 # ─────────────────────────────────────────────
@@ -42,7 +46,8 @@ TOKEN_EXPIRE_DAYS     = 30
 FREE_IMAGES_PER_IP    = 5
 UPLOAD_DIR            = "output"
 MAX_FILE_SIZE_MB      = 15
-ALLOWED_TYPES         = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
+# image/jpg est un alias non-officiel de image/jpeg, envoyé par certains Android/Samsung
+ALLOWED_TYPES         = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/heif"}
 IMAGE_TTL_HOURS       = 24
 GROQ_API_KEY          = os.getenv("GROQ_API_KEY", "")
 
@@ -97,7 +102,6 @@ elif _env_extra:
 
 # Accepte toutes les URLs preview Vercel (pattern *lohangottardi*.vercel.app)
 # et toutes les URLs saas-claude*.vercel.app
-import re as _re
 ALLOW_ORIGIN_REGEX = r"https://[a-zA-Z0-9\-]+-lohangottardi[a-zA-Z0-9\-]*\.vercel\.app"
 
 def _origin_allowed(origin: str) -> bool:
@@ -137,7 +141,7 @@ def _cors_headers(request: Request) -> dict:
         "Access-Control-Allow-Credentials": "true",
     }
 
-CORS_HEADERS = {"Access-Control-Allow-Origin": "https://www.pixglow.app", "Access-Control-Allow-Credentials": "true"}
+# (CORS_HEADERS supprimé — utiliser _cors_headers(request) à la place)
 
 # ─────────────────────────────────────────────
 #  HANDLERS D'ERREUR
@@ -296,18 +300,27 @@ def get_real_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 def get_ip_count(ip: str) -> int:
+    """Lecture seule du compteur IP. Ne jamais utiliser pour autoriser/bloquer."""
+    conn = get_db(); cur = conn.cursor()
     try:
-        conn = get_db(); cur = conn.cursor()
         cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
-        row = cur.fetchone(); cur.close(); conn.close()
+        row = cur.fetchone()
         return row["count"] if row else 0
-    except: return 0
+    except:
+        return 0
+    finally:
+        cur.close(); conn.close()
 
 def increment_ip(ip: str):
+    """
+    Incrémente le compteur IP de façon atomique.
+    Retourne (allowed: bool, new_count: int).
+    À appeler APRÈS un traitement réussi pour ne pas brûler de crédit sur une erreur.
+    """
     conn = get_db(); cur = conn.cursor()
     try:
         cur.execute("""
-            INSERT INTO ip_usage (ip, count) VALUES (%s, 1)
+            INSERT INTO ip_usage (ip, count, first_used) VALUES (%s, 1, NOW())
             ON CONFLICT (ip) DO UPDATE
                 SET count = ip_usage.count + 1
             WHERE ip_usage.count < %s
@@ -317,10 +330,10 @@ def increment_ip(ip: str):
         conn.commit()
         if row:
             return True, row["count"]
-        else:
-            cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
-            current = cur.fetchone()
-            return False, current["count"] if current else FREE_IMAGES_PER_IP
+        # La condition WHERE a échoué → déjà au maximum
+        cur.execute("SELECT count FROM ip_usage WHERE ip = %s", (ip,))
+        current = cur.fetchone()
+        return False, current["count"] if current else FREE_IMAGES_PER_IP
     except Exception as e:
         conn.rollback()
         raise e
@@ -389,7 +402,7 @@ async def free_remaining(request: Request):
 
 @app.post("/register")
 async def register(body: AuthBody, request: Request):
-    rate_limit(request.client.host, max_calls=5, window_sec=3600)
+    rate_limit(get_real_ip(request), max_calls=5, window_sec=3600)
     email = body.email.strip().lower()
     if "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(400, "Email invalide")
@@ -407,7 +420,7 @@ async def register(body: AuthBody, request: Request):
 
 @app.post("/login")
 async def login(body: AuthBody, request: Request):
-    rate_limit(request.client.host, max_calls=10, window_sec=600)
+    rate_limit(get_real_ip(request), max_calls=10, window_sec=600)
     email = body.email.strip().lower()
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE email = %s", (email,))
@@ -431,34 +444,40 @@ async def enhance_photo(
     request: Request = None,
     current_user: str = Depends(get_current_user)
 ):
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(400, f"Format non supporté ({file.content_type}). Utilisez JPG, PNG, WEBP ou HEIC.")
+    # ── 1. Validation fichier (aucune DB, aucun quota consommé) ──────────────
+    content_type = (file.content_type or "").lower()
+    if content_type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"Format non supporté ({content_type}). Utilisez JPG, PNG, WEBP ou HEIC.")
 
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"Fichier trop lourd (max {MAX_FILE_SIZE_MB} Mo).")
 
-    conn = get_db(); cur = conn.cursor()
+    # ── 2. Vérification quota — lecture seule, RIEN n'est consommé ici ───────
+    ip = None
     if current_user:
-        cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
-        user = cur.fetchone()
-        if not user or user["credits"] <= 0:
+        conn = get_db(); cur = conn.cursor()
+        try:
+            cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
+            user = cur.fetchone()
+            if not user or user["credits"] <= 0:
+                raise HTTPException(402, "Crédits insuffisants. Rechargez votre compte.")
+        finally:
             cur.close(); conn.close()
-            raise HTTPException(402, "Crédits insuffisants. Rechargez votre compte.")
     else:
         ip = get_real_ip(request)
-        allowed, used = increment_ip(ip)
-        if not allowed:
-            cur.close(); conn.close()
+        used = get_ip_count(ip)          # lecture seule — ne consomme RIEN
+        if used >= FREE_IMAGES_PER_IP:
             raise HTTPException(429, f"Limite gratuite atteinte ({used}/{FREE_IMAGES_PER_IP}). Créez un compte pour continuer.")
 
+    # ── 3. Traitement image — le quota n'est débité QU'APRÈS le succès ───────
+    filename = None
     try:
         orig = Image.open(BytesIO(contents))
         if orig.mode not in ("RGB", "RGBA"):
             orig = orig.convert("RGBA" if "transparency" in orig.info else "RGB")
 
         w, h = orig.size
-
         PROCESS_MAX = 1500
         if w > PROCESS_MAX or h > PROCESS_MAX:
             scale = PROCESS_MAX / max(w, h)
@@ -483,36 +502,61 @@ async def enhance_photo(
         pad = max(40, int(min(w, h) * 0.05))
         canvas = Image.new("RGBA", (w + pad*2, h + pad*2), (255, 255, 255, 255))
         canvas.paste(no_bg, (pad, pad), no_bg if no_bg.mode == "RGBA" else None)
-        bg = Image.new("RGB", canvas.size, (255, 255, 255))
-        bg.paste(canvas, (0, 0), canvas)
+        bg_img = Image.new("RGB", canvas.size, (255, 255, 255))
+        bg_img.paste(canvas, (0, 0), canvas)
 
-        bg = ImageEnhance.Brightness(bg).enhance(1.04)
-        bg = ImageEnhance.Contrast(bg).enhance(1.04)
-        bg = ImageEnhance.Color(bg).enhance(1.06)
-        bg = ImageEnhance.Sharpness(bg).enhance(1.08)
+        bg_img = ImageEnhance.Brightness(bg_img).enhance(1.04)
+        bg_img = ImageEnhance.Contrast(bg_img).enhance(1.04)
+        bg_img = ImageEnhance.Color(bg_img).enhance(1.06)
+        bg_img = ImageEnhance.Sharpness(bg_img).enhance(1.08)
 
         filename = f"{uuid.uuid4()}.png"
-        bg.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
-
-        # Increment real stats counter
-        _increment_total_photos(conn, cur)
-
-        credits_left = None
-        if current_user:
-            cur.execute("UPDATE users SET credits = credits - 1 WHERE email = %s RETURNING credits", (current_user,))
-            credits_left = cur.fetchone()["credits"]
-            conn.commit()
-        else:
-            conn.commit()
-        cur.close(); conn.close()
-        return JSONResponse({"status": "success", "filename": filename, "url": f"/image/{filename}", "credits_left": credits_left})
+        bg_img.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
 
     except HTTPException:
         raise
     except Exception as e:
-        cur.close(); conn.close()
-        print(f"[ERREUR enhance] {e}")
+        print(f"[ERREUR enhance processing] {type(e).__name__}: {e}")
+        # Image processing échoue → AUCUN crédit consommé (quota pas encore débité)
         raise HTTPException(500, f"Erreur traitement image: {str(e)}")
+
+    # ── 4. Débit quota UNIQUEMENT après traitement réussi ────────────────────
+    credits_left = None
+    free_remaining = None
+    conn = get_db(); cur = conn.cursor()
+    try:
+        _increment_total_photos(conn, cur)
+        if current_user:
+            cur.execute(
+                "UPDATE users SET credits = credits - 1 WHERE email = %s RETURNING credits",
+                (current_user,)
+            )
+            row = cur.fetchone()
+            credits_left = row["credits"] if row else None
+        else:
+            # Incrémente IP seulement maintenant (traitement a réussi)
+            allowed, new_count = increment_ip(ip)
+            if not allowed:
+                # Race condition rare : une autre requête concurrente a consommé le dernier crédit.
+                # L'image a quand même été traitée → on la retourne mais on signale 0 restants.
+                free_remaining = 0
+            else:
+                free_remaining = max(0, FREE_IMAGES_PER_IP - new_count)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERREUR enhance commit] {type(e).__name__}: {e}")
+        # Le traitement a réussi, on retourne quand même l'image même si le DB commit a raté
+    finally:
+        cur.close(); conn.close()
+
+    return JSONResponse({
+        "status": "success",
+        "filename": filename,
+        "url": f"/image/{filename}",
+        "credits_left": credits_left,
+        "free_remaining": free_remaining,   # retourné pour les utilisateurs anonymes
+    })
 
 @app.get("/image/{filename}")
 async def get_image(filename: str):
@@ -657,7 +701,6 @@ IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité 
             resp.raise_for_status()
             data = resp.json()
             text = data["choices"][0]["message"]["content"]
-            import re as _re
             text = _re.sub(r'```json|```', '', text).strip()
             parsed = json.loads(text)
             return {
@@ -679,9 +722,6 @@ IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité 
 # ─────────────────────────────────────────────
 #  TRENDING KEYWORDS
 # ─────────────────────────────────────────────
-import hashlib as _hashlib
-from datetime import date as _date
-
 _trends_cache: dict = {}
 _trends_lock = threading.Lock()
 
@@ -748,7 +788,6 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
             )
             resp.raise_for_status()
             text = resp.json()["choices"][0]["message"]["content"]
-            import re as _re
             text = _re.sub(r"```json|```", "", text).strip()
             parsed = json.loads(text)
 
@@ -851,7 +890,6 @@ Génère UNIQUEMENT ce JSON (sans markdown) :
                 raise HTTPException(503, f"Modèles vision indisponibles: {last_error}")
             resp.raise_for_status()
             text = resp.json()["choices"][0]["message"]["content"]
-            import re as _re
             text = _re.sub(r"```json|```", "", text).strip()
             parsed = json.loads(text)
             return {
