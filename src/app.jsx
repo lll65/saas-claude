@@ -866,6 +866,45 @@ const DEMO_PAIRS = [
     badgeBefore: 'Photo sol · Fond encombré', badgeAfter: 'Fond blanc · Prêt à publier ✅',
   },
 ];
+/* ══ TRUST BAR ANIMATED ══ */
+const PLATFORMS = [
+  { name: 'Vinted',      color: '#09B1BA' },
+  { name: 'Leboncoin',   color: '#f56b2a' },
+  { name: 'Amazon',      color: '#FF9900' },
+  { name: 'Shopify',     color: '#96bf48' },
+  { name: 'Facebook',    color: '#1877f2' },
+  { name: 'BackMarket',  color: '#3d9970' },
+];
+function TrustBar({ darkMode, isMobile }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setActiveIdx(i => (i + 1) % PLATFORMS.length), 1300);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, padding: isMobile ? '16px 16px' : '18px 40px', background: darkMode ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.02)' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '20px' : '48px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap' }}>Compatible avec</span>
+        {PLATFORMS.map((p, i) => (
+          <span key={i} style={{
+            fontFamily: "'Bricolage Grotesque',sans-serif",
+            fontWeight: 800,
+            fontSize: isMobile ? '13px' : '15px',
+            letterSpacing: '-.3px',
+            whiteSpace: 'nowrap',
+            transition: 'color .4s ease, text-shadow .4s ease',
+            color: i === activeIdx ? p.color : (darkMode ? 'rgba(255,255,255,.28)' : 'rgba(0,0,0,.28)'),
+            textShadow: i === activeIdx ? `0 0 18px ${p.color}70` : 'none',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = p.color; e.currentTarget.style.textShadow = `0 0 18px ${p.color}70`; }}
+            onMouseLeave={e => { e.currentTarget.style.color = i === activeIdx ? p.color : (darkMode ? 'rgba(255,255,255,.28)' : 'rgba(0,0,0,.28)'); e.currentTarget.style.textShadow = i === activeIdx ? `0 0 18px ${p.color}70` : 'none'; }}
+          >{p.name}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DemoSlider({ darkMode, T, isMobile }) {
   const [demoIdx, setDemoIdx] = useState(0);
   const pair = DEMO_PAIRS[demoIdx];
@@ -1040,8 +1079,8 @@ export default function PixGlow() {
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   const handleLogout = () => { ['pg_token','pg_email','pg_free'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setFreeLeft(null); setPage('landing'); };
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
-  const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
-  const canSelect = () => isConnected || freeLeft === null || freeLeft > 0;
+  const limitReached = freeLeft !== null && freeLeft <= 0 && (credits === null || credits <= 0);
+  const canSelect = () => (credits !== null && credits > 0) || freeLeft === null || freeLeft > 0;
 
   const handleSelectClick = (useCamera = false) => {
     if (!canSelect()) { setError(!isConnected ? 'Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.' : 'Crédits épuisés.'); return; }
@@ -1100,12 +1139,16 @@ export default function PixGlow() {
     if (freeLeft !== null && freeLeft <= 0 && (!isConnected || (credits !== null && credits <= 0))) { setError(!isConnected ? 'Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.' : 'Crédits épuisés — rechargez pour continuer.'); return; }
     if (isConnected && credits !== null && credits < files.length && (freeLeft === null || freeLeft <= 0)) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
     setLoading(true); setError(null); setResults([]); setProgress(0);
+    // If connected but 0 credits and still have free IP slots → send without auth
+    // so the server uses the IP-based free quota (permanent per IP)
+    const useIpFree = isConnected && (credits ?? 0) === 0 && (freeLeft ?? 0) > 0;
+    const uploadHeaders = useIpFree ? {} : authHeaders();
     const newResults = [];
     for (let i = 0; i < files.length; i++) {
       setProgress(i + 1);
       try {
         const form = new FormData(); form.append('file', files[i]);
-        const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: authHeaders(), body: form });
+        const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: uploadHeaders, body: form });
         const data = await res.json();
         if (!res.ok) {
           newResults.push({ error: data.detail || 'Erreur serveur', original: previews[i] });
@@ -1297,7 +1340,7 @@ export default function PixGlow() {
             {isConnected
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
-                  {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '10px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
+                  <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '10px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
                   <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
                   <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
                 </>}
@@ -1449,24 +1492,7 @@ export default function PixGlow() {
       </section>
 
       {/* TRUST BAR — Plateformes */}
-      <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, padding: isMobile ? '16px 16px' : '18px 40px', background: darkMode ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.02)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '20px' : '48px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap' }}>Compatible avec</span>
-          {[
-            { name: 'Vinted', color: '#09B1BA' },
-            { name: 'Leboncoin', color: '#f56b2a' },
-            { name: 'Amazon', color: '#FF9900' },
-            { name: 'Shopify', color: '#96bf48' },
-            { name: 'Facebook', color: '#1877f2' },
-            { name: 'BackMarket', color: '#3d9970' },
-          ].map((p, i) => (
-            <span key={i} style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: isMobile ? '13px' : '15px', color: darkMode ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)', letterSpacing: '-.3px', whiteSpace: 'nowrap', transition: 'color .2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = p.color}
-              onMouseLeave={e => e.currentTarget.style.color = darkMode ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)'}
-            >{p.name}</span>
-          ))}
-        </div>
-      </div>
+      <TrustBar darkMode={darkMode} isMobile={isMobile} />
 
       {/* HOW IT WORKS + FEATURES — merged */}
       <section style={{ maxWidth: '1040px', margin: '0 auto', padding: isMobile ? '44px 16px 36px' : '72px 40px 56px' }}>
