@@ -583,25 +583,25 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 }
 
 /* ══ UPSELL BANNER ══ */
-function UpsellBanner({ freeLeft, onRegister, onLogin }) {
+function UpsellBanner({ freeLeft, onRegister, onLogin, darkMode }) {
   const [dismissed, setDismissed] = useState(false);
   const dismiss = () => { setDismissed(true); };
   if (dismissed || freeLeft === null || freeLeft > 2) return null;
   return (
-    <div className="pg-slide-up" style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.12),rgba(16,185,129,.06))', border: '1px solid rgba(124,58,237,.3)', borderRadius: '16px', padding: '18px 20px', marginBottom: '14px', position: 'relative' }}>
-      <button onClick={dismiss} style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
+    <div className="pg-slide-up" style={{ background: darkMode ? 'linear-gradient(135deg,rgba(124,58,237,.14),rgba(16,185,129,.07))' : 'linear-gradient(135deg,rgba(124,58,237,.1),rgba(16,185,129,.06))', border: '1px solid rgba(124,58,237,.3)', borderRadius: '16px', padding: '18px 20px', marginBottom: '14px', position: 'relative' }}>
+      <button onClick={dismiss} style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '15px', color: '#fff', marginBottom: '4px' }}>
+          <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '15px', color: darkMode ? '#e2e8f0' : '#3730a3', marginBottom: '4px' }}>
             {freeLeft === 0 ? 'Limite atteinte' : 'Dernière photo gratuite'}
           </p>
-          <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '8px', lineHeight: 1.5 }}>
+          <p style={{ color: darkMode ? '#64748b' : '#4b5563', fontSize: '13px', marginBottom: '8px', lineHeight: 1.5 }}>
             Passez à Pro pour continuer — dès 7€ pour 30 crédits à vie
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
           <button onClick={onRegister} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>🚀 Créer un compte</button>
-          <button onClick={onLogin} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '11px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Connexion</button>
+          <button onClick={onLogin} className="pg-ghost" style={{ background: darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)', border: darkMode ? '1px solid rgba(255,255,255,.08)' : '1px solid rgba(0,0,0,.1)', color: '#64748b', borderRadius: '10px', padding: '11px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Connexion</button>
         </div>
       </div>
     </div>
@@ -1037,7 +1037,7 @@ export default function PixGlow() {
   }, []);
 
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
-  const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setFreeLeft(null); setShowAuth(false); setPage('app'); };
+  const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   const handleLogout = () => { ['pg_token','pg_email','pg_free'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setFreeLeft(null); setPage('landing'); };
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
   const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
@@ -1055,7 +1055,8 @@ export default function PixGlow() {
     // freeLeft === null signifie que le serveur n'a pas répondu (CORS, réseau)
     // → on suppose 5 crédits dispo pour ne pas bloquer l'utilisateur inutilement.
     // Le serveur refusera de toute façon si la limite est atteinte.
-    const available = isConnected ? (credits ?? 999) : (freeLeft ?? FREE_FREE_IMAGES);
+    // Connected users use credits; if 0 credits, fall back to remaining free IP quota
+    const available = isConnected && (credits ?? 0) > 0 ? credits : (freeLeft ?? (isConnected ? 0 : FREE_FREE_IMAGES));
     const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
     const chosen = selected.slice(0, maxAllowed);
     if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
@@ -1096,8 +1097,8 @@ export default function PixGlow() {
 
   const handleUpload = async () => {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
-    if (!isConnected && freeLeft !== null && freeLeft <= 0) { setError('Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.'); return; }
-    if (isConnected && credits !== null && credits < files.length) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
+    if (freeLeft !== null && freeLeft <= 0 && (!isConnected || (credits !== null && credits <= 0))) { setError(!isConnected ? 'Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.' : 'Crédits épuisés — rechargez pour continuer.'); return; }
+    if (isConnected && credits !== null && credits < files.length && (freeLeft === null || freeLeft <= 0)) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
     setLoading(true); setError(null); setResults([]); setProgress(0);
     const newResults = [];
     for (let i = 0; i < files.length; i++) {
@@ -1278,7 +1279,7 @@ export default function PixGlow() {
               </>
             ) : (
               <>
-                <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
+                {(freeLeft !== null && freeLeft < 5) || hasResults ? <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button> : null}
                 <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '14px', fontFamily: 'inherit' }}>Connexion</button>
                 {!isMobile && <button onClick={() => setPage('landing')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)', color: '#64748b', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>← Accueil</button>}
               </>
@@ -1773,7 +1774,7 @@ export default function PixGlow() {
 
 /* ══ APP ══ */
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
+    <div style={{ background: T.pageBg, minHeight: '100vh', color: T.text, paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
@@ -1791,12 +1792,12 @@ export default function PixGlow() {
 
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
 
-        {!isConnected && <UpsellBanner freeLeft={freeLeft} onRegister={() => openAuth('register')} onLogin={() => openAuth('login')} />}
+        {!isConnected && <UpsellBanner freeLeft={freeLeft} onRegister={() => openAuth('register')} onLogin={() => openAuth('login')} darkMode={darkMode} />}
 
         {!isConnected && freeLeft !== null && (
-          <div className="pg-anim" style={{ background: limitReached ? 'rgba(239,68,68,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${limitReached ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.05)'}`, borderRadius: '16px', padding: '18px 22px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div className="pg-anim" style={{ background: limitReached ? 'rgba(239,68,68,.06)' : T.cardBg, border: `1px solid ${limitReached ? 'rgba(239,68,68,.2)' : T.cardBorder}`, borderRadius: '16px', padding: '18px 22px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <p style={{ color: '#334155', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '4px' }}>Photos gratuites restantes</p>
+              <p style={{ color: T.textSub, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '4px' }}>Photos gratuites restantes</p>
               <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '38px', fontWeight: 800, color: limitReached ? '#ef4444' : '#10b981', lineHeight: 1 }}>{freeLeft}/5</div>
               {limitReached && <p style={{ color: '#f87171', fontSize: '12px', fontWeight: 600, marginTop: '4px' }}>🔴 Vos 5 photos gratuites ont été utilisées</p>}
             </div>
@@ -1813,10 +1814,10 @@ export default function PixGlow() {
         {isConnected && credits !== null && !hasResults && (
           <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
-              <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '15px', margin: '0 0 2px' }}>
+              <p style={{ color: T.text, fontWeight: 700, fontSize: '15px', margin: '0 0 2px' }}>
                 {credits === 0 ? 'Plus de crédits — rechargez pour continuer' : `${credits} crédit${credits > 1 ? 's' : ''} disponible${credits > 1 ? 's' : ''}`}
               </p>
-              <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>
+              <p style={{ color: T.textSub, fontSize: '12px', margin: 0 }}>
                 {credits > 0 ? 'Déposez vos photos ci-dessous pour les améliorer instantanément' : 'Achetez des crédits pour continuer à traiter vos photos'}
               </p>
             </div>
@@ -1843,7 +1844,7 @@ export default function PixGlow() {
                       </div>
                   }
                 </div>
-                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : '#e2e8f0', letterSpacing: '-.3px' }}>{limitReached ? 'Limite atteinte' : "Dépose jusqu'à 5 photos ici"}</p>
+                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : T.text, letterSpacing: '-.3px' }}>{limitReached ? 'Limite atteinte' : "Dépose jusqu'à 5 photos ici"}</p>
                 <p style={{ color: '#475569', fontSize: '13px', marginBottom: limitReached ? 0 : '16px' }}>{limitReached ? 'Créez un compte pour continuer' : 'JPG · PNG · WEBP · HEIC (iPhone) · ou clique pour sélectionner'}</p>
                 {!limitReached && isMobile && (
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
@@ -1910,7 +1911,7 @@ export default function PixGlow() {
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="#10b981" strokeWidth="1.5"/><path d="M5.5 9l2.5 2.5L12.5 6" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {doneCount}/{results.length} photo{doneCount > 1 ? 's' : ''} traitée{doneCount > 1 ? 's' : ''}
                   </h3>
-                  <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>Prêtes à publier sur Vinted & Leboncoin</p>
+                  <p style={{ color: T.textSub, fontSize: '12px', margin: 0 }}>Prêtes à publier sur Vinted & Leboncoin</p>
                 </div>
                 {doneCount > 1 && !isMobile && (
                   <button onClick={handleDownloadAll} disabled={zipping} className="pg-btn" style={{ background: zipping ? 'rgba(16,185,129,.4)' : 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: zipping ? 'wait' : 'pointer', fontSize: '14px', fontFamily: 'inherit', opacity: zipping ? .8 : 1, display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -1932,7 +1933,7 @@ export default function PixGlow() {
                   <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                       <div>
-                        <p style={{ color: '#334155', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
+                        <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
                         <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
                       </div>
                       <div>
@@ -1957,7 +1958,7 @@ export default function PixGlow() {
               </div>
               {/* Bouton reset — desktop uniquement, sticky bar gère le mobile */}
               {!isMobile && (
-                <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', color: '#475569', borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
+                <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.textMuted, borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
               )}
             </>
           )}
@@ -1966,23 +1967,23 @@ export default function PixGlow() {
         {/* CTA bas */}
         {!isConnected ? (
           <div style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.07),rgba(79,70,229,.04))', border: '1px solid rgba(124,58,237,.18)', borderRadius: '20px', padding: isMobile ? '22px 18px' : '30px 36px', textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '22px', fontWeight: 800, marginBottom: '8px', color: '#fff' }}>Envie de plus de photos et descriptions optimisées ?</h3>
-            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '20px', lineHeight: 1.65 }}>Créez un compte gratuit et achetez des crédits.<br/><strong style={{ color: '#e2e8f0' }}>3 offres dès 7€ · 30, 100 ou 300 crédits · Valables à vie · Paiement sécurisé</strong></p>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '22px', fontWeight: 800, marginBottom: '8px', color: T.text }}>Envie de plus de photos et descriptions optimisées ?</h3>
+            <p style={{ color: T.textMuted, fontSize: '14px', marginBottom: '20px', lineHeight: 1.65 }}>Créez un compte gratuit et achetez des crédits.<br/><strong style={{ color: T.text }}>3 offres dès 7€ · 30, 100 ou 300 crédits · Valables à vie · Paiement sécurisé</strong></p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => openAuth('register')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>Créer mon compte →</button>
-              <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '12px', padding: '14px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>J'ai déjà un compte</button>
+              <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.textMuted, borderRadius: '12px', padding: '14px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>J'ai déjà un compte</button>
             </div>
           </div>
         ) : (
           <div style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.07),rgba(79,70,229,.04))', border: '1px solid rgba(124,58,237,.18)', borderRadius: '20px', padding: isMobile ? '22px 18px' : '28px 36px', textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '17px' : '20px', fontWeight: 800, marginBottom: '6px', color: '#fff' }}>Besoin de plus de crédits ?</h3>
-            <p style={{ color: '#475569', fontSize: '13px', marginBottom: '16px' }}>Valables à vie · Sans abonnement · Description IA incluse à chaque crédit</p>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '17px' : '20px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Besoin de plus de crédits ?</h3>
+            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '16px' }}>Valables à vie · Sans abonnement · Description IA incluse à chaque crédit</p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
               {[{plan:'starter',label:'30 crédits — 7€',col:'#f59e0b'},{plan:'pro',label:'100 crédits — 15€',col:'#a78bfa'},{plan:'elite',label:'300 crédits — 35€',col:'#60a5fa'}].map(p => (
-                <button key={p.plan} onClick={() => handlePayment(p.plan)} className="pg-btn" style={{ background: p.plan==='pro' ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.05)', border: p.plan==='pro' ? 'none' : '1px solid rgba(255,255,255,.1)', color: p.col, borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{p.label}{p.plan==='pro' ? ' — Populaire' : ''}</button>
+                <button key={p.plan} onClick={() => handlePayment(p.plan)} className="pg-btn" style={{ background: p.plan==='pro' ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : T.cardBg, border: p.plan==='pro' ? 'none' : `1px solid ${T.cardBorder}`, color: p.col, borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{p.label}{p.plan==='pro' ? ' — Populaire' : ''}</button>
               ))}
             </div>
-            <p style={{ color: '#334155', fontSize: '11px' }}>Paiement sécurisé Stripe · Crédits valables à vie</p>
+            <p style={{ color: T.textSub, fontSize: '11px' }}>Paiement sécurisé Stripe · Crédits valables à vie</p>
           </div>
         )}
       </div>
