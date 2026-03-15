@@ -58,7 +58,8 @@ SMTP_PORT             = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER             = os.getenv("SMTP_USER", "")
 SMTP_PASS             = os.getenv("SMTP_PASS", "")
 SMTP_FROM             = os.getenv("SMTP_FROM", SMTP_USER)
-EMAIL_ENABLED         = bool(SMTP_USER and SMTP_PASS)
+RESEND_API_KEY        = os.getenv("RESEND_API_KEY", "")      # Alternative à SMTP (resend.com)
+EMAIL_ENABLED         = bool(SMTP_USER and SMTP_PASS) or bool(RESEND_API_KEY)
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -223,8 +224,30 @@ def _extract_email_addr(addr: str) -> str:
     m = _email_re.search(r'<([^>]+)>', addr)
     return m.group(1).strip() if m else addr.strip()
 
+def _send_via_resend(to: str, subject: str, html: str) -> bool:
+    """Envoi via API Resend (resend.com) — plus fiable que SMTP."""
+    try:
+        import httpx as _httpx
+        from_addr = SMTP_FROM if SMTP_FROM else "PixGlow <onboarding@resend.dev>"
+        r = _httpx.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": from_addr, "to": [to], "subject": subject, "html": html},
+            timeout=15
+        )
+        if r.status_code in (200, 201):
+            print(f"[EMAIL/Resend] ✅ Envoyé à {to}")
+            return True
+        print(f"[EMAIL/Resend] ❌ {r.status_code} : {r.text}")
+        return False
+    except Exception as e:
+        print(f"[EMAIL/Resend] ❌ Exception : {e}")
+        return False
+
 def _send_email_sync(to: str, subject: str, html: str):
     """Envoi SMTP synchrone — appelé dans un thread pour ne pas bloquer."""
+    if RESEND_API_KEY:
+        return _send_via_resend(to, subject, html)
     from_addr = SMTP_FROM if SMTP_FROM else SMTP_USER
     from_display = f"PixGlow <{_extract_email_addr(from_addr)}>" if '<' not in from_addr else from_addr
     from_raw = _extract_email_addr(from_display)
@@ -247,10 +270,10 @@ def _send_email_sync(to: str, subject: str, html: str):
                 server.ehlo()
                 server.login(SMTP_USER, SMTP_PASS)
                 server.sendmail(from_raw, to, msg.as_string())
-        print(f"[EMAIL] ✅ Envoyé à {to} : {subject}")
+        print(f"[EMAIL/SMTP] ✅ Envoyé à {to} : {subject}")
         return True
     except Exception as e:
-        print(f"[EMAIL] ❌ Erreur envoi à {to} : {e}")
+        print(f"[EMAIL/SMTP] ❌ Erreur envoi à {to} : {e}")
         return False
 
 def send_email(to: str, subject: str, html: str) -> bool:

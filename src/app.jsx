@@ -1249,7 +1249,17 @@ function TrustBar({ darkMode, isMobile }) {
 
 function DemoSlider({ darkMode, T, isMobile }) {
   const [demoIdx, setDemoIdx] = useState(0);
+  const [userPicked, setUserPicked] = useState(false);
   const pair = DEMO_PAIRS[demoIdx];
+
+  // Auto-rotate every 5s unless user manually picked
+  useEffect(() => {
+    if (userPicked) return;
+    const t = setInterval(() => setDemoIdx(i => (i + 1) % DEMO_PAIRS.length), 5000);
+    return () => clearInterval(t);
+  }, [userPicked]);
+
+  const pickIdx = (i) => { setDemoIdx(i); setUserPicked(true); };
   return (
     <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
       <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
@@ -1257,7 +1267,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
         <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
-            <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '6px 12px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '11px' : '12px', fontFamily: 'inherit', transition: 'all .2s', whiteSpace: 'nowrap' }}>
+            <button key={i} onClick={() => pickIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '6px 12px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '11px' : '12px', fontFamily: 'inherit', transition: 'all .2s', whiteSpace: 'nowrap' }}>
               {['Bomber noir', 'Carhartt fleece', 'Doudoune', 'Imperméable', 'Montre'][i]}
             </button>
           ))}
@@ -1699,11 +1709,9 @@ export default function PixGlow() {
                 : <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
               }
             </button>
+            <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : '💰 Mes gains'}</button>
             {isConnected
-              ? <>
-                  <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 11px' : '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : '💰 Mes gains'}</button>
-                  <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
-                </>
+              ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
                   <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
                   <button onClick={() => openAuth('register')} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
