@@ -1424,6 +1424,160 @@ function FAQSection({ T, isMobile }) {
   );
 }
 
+/* ══ CHANGELOG / NOUVEAUTÉS ══ */
+const CHANGELOG = [
+  {
+    date: '15 mars 2026',
+    version: 'v2.4',
+    items: [
+      { type: 'new', label: 'Page Nouveautés', desc: 'Retrouvez toutes les mises à jour et nouvelles fonctionnalités directement dans l\'app.' },
+      { type: 'improve', label: 'Mode sombre amélioré', desc: 'Meilleurs contrastes et transitions plus fluides entre les thèmes.' },
+    ],
+  },
+  {
+    date: 'Février 2026',
+    version: 'v2.3',
+    items: [
+      { type: 'new', label: 'Tracker de gains', desc: 'Estimez vos revenus potentiels selon vos articles mis en ligne. Accessible depuis la barre de navigation.' },
+      { type: 'improve', label: 'Téléchargement ZIP', desc: 'Toutes vos photos traitées en un seul clic, compressées dans un fichier ZIP prêt à l\'emploi.' },
+    ],
+  },
+  {
+    date: 'Janvier 2026',
+    version: 'v2.2',
+    items: [
+      { type: 'new', label: 'Pack Elite 300 crédits', desc: 'Nouveau pack à 29€ — le meilleur prix par crédit (0,10€/photo). Idéal pour les vendeurs réguliers.' },
+      { type: 'improve', label: 'Traitement jusqu\'à 10 photos', desc: 'Envoyez jusqu\'à 10 photos en une seule fois, toutes traitées simultanément.' },
+      { type: 'fix', label: 'Affichage HEIC iPhone', desc: 'Correction d\'un bug d\'affichage sur certains modèles d\'iPhone avec les photos au format HEIC.' },
+    ],
+  },
+  {
+    date: 'Décembre 2025',
+    version: 'v2.1',
+    items: [
+      { type: 'new', label: 'Génération IA multi-plateforme', desc: 'Textes optimisés pour Vinted, Leboncoin, Amazon, Shopify et Facebook Marketplace — en 1 clic.' },
+      { type: 'improve', label: 'Qualité fond blanc', desc: 'Nouveau modèle IA avec meilleure précision sur les contours fins (cheveux, textiles, bijoux).' },
+    ],
+  },
+  {
+    date: 'Novembre 2025',
+    version: 'v2.0',
+    items: [
+      { type: 'new', label: 'Comptes utilisateurs', desc: 'Créez un compte, vérifiez votre email et recevez 5 crédits offerts. Vos crédits sont conservés à vie.' },
+      { type: 'new', label: 'Système de crédits', desc: '3 packs disponibles sans abonnement. Chaque crédit = 1 photo traitée + description IA incluse.' },
+      { type: 'new', label: 'Mode clair / sombre', desc: 'Basculez entre les thèmes depuis la barre de navigation. Votre préférence est mémorisée.' },
+    ],
+  },
+  {
+    date: 'Septembre 2025',
+    version: 'v1.0',
+    items: [
+      { type: 'new', label: 'Lancement de PixGlow', desc: 'Traitement automatique de photos avec fond blanc IA. 5 photos gratuites sans inscription.' },
+      { type: 'new', label: 'Compatible mobile', desc: 'Prenez vos photos directement depuis l\'appareil photo de votre téléphone.' },
+    ],
+  },
+];
+
+const BADGE = {
+  new:     { label: '✨ Nouveau',      bg: 'rgba(124,58,237,.15)', color: '#a78bfa', border: 'rgba(124,58,237,.3)' },
+  improve: { label: '🔧 Amélioration', bg: 'rgba(59,130,246,.12)', color: '#60a5fa', border: 'rgba(59,130,246,.25)' },
+  fix:     { label: '🐛 Correctif',    bg: 'rgba(16,185,129,.1)',  color: '#34d399', border: 'rgba(16,185,129,.25)' },
+};
+
+function Changelog({ onBack, darkMode }) {
+  const [filter, setFilter] = React.useState('all');
+  const T2 = {
+    bg:      darkMode ? '#0a0a0f' : '#f8f9fc',
+    card:    darkMode ? 'rgba(255,255,255,.03)' : '#fff',
+    border:  darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.07)',
+    text:    darkMode ? '#e2e8f0' : '#111118',
+    muted:   darkMode ? '#475569' : '#64748b',
+    lineBg:  darkMode ? 'rgba(124,58,237,.35)' : 'rgba(124,58,237,.25)',
+  };
+  const filters = [
+    { key: 'all',     label: 'Tout' },
+    { key: 'new',     label: '✨ Nouveautés' },
+    { key: 'improve', label: '🔧 Améliorations' },
+    { key: 'fix',     label: '🐛 Correctifs' },
+  ];
+  const filtered = CHANGELOG.map(entry => ({
+    ...entry,
+    items: filter === 'all' ? entry.items : entry.items.filter(i => i.type === filter),
+  })).filter(entry => entry.items.length > 0);
+
+  return (
+    <div style={{ background: T2.bg, minHeight: '100vh', color: T2.text, fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+      {/* Nav */}
+      <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T2.border}`, background: darkMode ? 'rgba(10,10,15,.95)' : 'rgba(255,255,255,.97)', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(12px)' }}>
+        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T2.text }}>PixGlow</span>
+        <button onClick={onBack} style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)', border: `1px solid ${T2.border}`, color: T2.muted, borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: '14px', fontFamily: 'inherit' }}>← Retour</button>
+      </nav>
+
+      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '48px 20px 80px' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.2)', borderRadius: '20px', padding: '5px 14px', fontSize: '12px', fontWeight: 700, color: '#a78bfa', marginBottom: '16px', letterSpacing: '.5px', textTransform: 'uppercase' }}>
+            📋 Changelog
+          </div>
+          <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '36px', fontWeight: 800, color: T2.text, marginBottom: '10px', lineHeight: 1.15 }}>Nouveautés PixGlow</h1>
+          <p style={{ color: T2.muted, fontSize: '16px', lineHeight: 1.6, maxWidth: '480px' }}>Toutes les mises à jour, nouvelles fonctionnalités et améliorations de la plateforme.</p>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '40px' }}>
+          {filters.map(f => (
+            <button key={f.key} onClick={() => setFilter(f.key)} style={{ padding: '7px 16px', borderRadius: '20px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all .2s', border: filter === f.key ? '1px solid rgba(124,58,237,.5)' : `1px solid ${T2.border}`, background: filter === f.key ? 'rgba(124,58,237,.15)' : (darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)'), color: filter === f.key ? '#a78bfa' : T2.muted }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Timeline */}
+        <div style={{ position: 'relative' }}>
+          {/* Ligne verticale */}
+          <div style={{ position: 'absolute', left: '11px', top: '8px', bottom: '8px', width: '2px', background: `linear-gradient(to bottom, ${T2.lineBg}, transparent)`, borderRadius: '2px' }} />
+
+          {filtered.map((entry, ei) => (
+            <div key={ei} style={{ marginBottom: '44px', paddingLeft: '36px', position: 'relative' }}>
+              {/* Dot */}
+              <div style={{ position: 'absolute', left: '4px', top: '6px', width: '16px', height: '16px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 0 0 3px ' + (darkMode ? 'rgba(124,58,237,.2)' : 'rgba(124,58,237,.15)') }} />
+
+              {/* Date + version */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '17px', color: T2.text }}>{entry.date}</span>
+                <span style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)', color: T2.muted, borderRadius: '6px', padding: '2px 8px', fontSize: '12px', fontWeight: 700, fontFamily: 'monospace' }}>{entry.version}</span>
+              </div>
+
+              {/* Items */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {entry.items.map((item, ii) => {
+                  const b = BADGE[item.type];
+                  return (
+                    <div key={ii} style={{ background: T2.card, border: `1px solid ${T2.border}`, borderRadius: '14px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ background: b.bg, color: b.color, border: `1px solid ${b.border}`, borderRadius: '6px', padding: '2px 10px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>{b.label}</span>
+                        <span style={{ fontWeight: 700, fontSize: '14px', color: T2.text }}>{item.label}</span>
+                      </div>
+                      <p style={{ color: T2.muted, fontSize: '13px', lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA bas de page */}
+        <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '16px', padding: '24px', textAlign: 'center', marginTop: '20px' }}>
+          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '15px', marginBottom: '6px' }}>Une idée de fonctionnalité ?</p>
+          <p style={{ color: T2.muted, fontSize: '13px', margin: '0 0 14px' }}>Vos suggestions sont les bienvenues pour améliorer PixGlow.</p>
+          <a href="mailto:pixglow.support@proton.me" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>Envoyer une suggestion →</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══ COMPOSANT PRINCIPAL ══ */
 export default function PixGlow() {
   const [page, setPageRaw] = useState('landing');
@@ -1647,6 +1801,7 @@ export default function PixGlow() {
   if (page === 'mentions') return <><InjectCSS /><MentionsLegales onBack={() => setPage('landing')} /></>;
   if (page === 'confidentialite') return <><InjectCSS /><PolitiqueConfidentialite onBack={() => setPage('landing')} /></>;
   if (page === 'cgv') return <><InjectCSS /><CGV onBack={() => setPage('landing')} /></>;
+  if (page === 'nouveautes') return <><InjectCSS /><Changelog onBack={() => setPage('landing')} darkMode={darkMode} /></>;
 
   // Tokens de thème — tous les styles conditionnels passent par T
   const T = darkMode ? {
@@ -1709,6 +1864,7 @@ export default function PixGlow() {
         ) : (
           <>
             {!isMobile && <button onClick={() => setPage('help')} className="pg-navlink" style={{ color: '#64748b', fontSize: '14px', padding: '0 6px' }}>Aide</button>}
+            {!isMobile && <button onClick={() => setPage('nouveautes')} className="pg-navlink" style={{ color: '#64748b', fontSize: '14px', padding: '0 6px', display: 'inline-flex', alignItems: 'center', gap: '5px', position: 'relative' }}>Nouveautés<span style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', fontWeight: 800, letterSpacing: '.3px' }}>NEW</span></button>}
             <button onClick={toggleTheme} title={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'} style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', flexShrink: 0, transition: 'all .2s' }}>
               {darkMode
                 ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.4"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
@@ -1750,7 +1906,7 @@ export default function PixGlow() {
           <div>
             <p style={{ color: T.text, fontWeight: 700, fontSize: '13px', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Produit</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[['app','Traiter mes photos'],['app','Tarifs'],['help','Centre d\'aide']].map(([p, label], i) => (
+              {[['app','Traiter mes photos'],['app','Tarifs'],['nouveautes','Nouveautés'],['help','Centre d\'aide']].map(([p, label], i) => (
                 <button key={i} onClick={() => setPage(p)} className="pg-navlink" style={{ color: '#475569', fontSize: '13px', textAlign: 'left', padding: 0 }}>{label}</button>
               ))}
             </div>
