@@ -4,7 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
-import os, uuid, json, time, base64
+import os, uuid, json, time, base64, secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from io import BytesIO
 from PIL import Image, ImageEnhance, ImageFilter
 import numpy as np
@@ -50,6 +53,12 @@ MAX_FILE_SIZE_MB      = 15
 ALLOWED_TYPES         = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/heif"}
 IMAGE_TTL_HOURS       = 24
 GROQ_API_KEY          = os.getenv("GROQ_API_KEY", "")
+SMTP_HOST             = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT             = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER             = os.getenv("SMTP_USER", "")
+SMTP_PASS             = os.getenv("SMTP_PASS", "")
+SMTP_FROM             = os.getenv("SMTP_FROM", SMTP_USER)
+EMAIL_ENABLED         = bool(SMTP_USER and SMTP_PASS)
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -188,11 +197,43 @@ async def startup_event():
         cur.execute("""
             ALTER TABLE ip_usage ADD COLUMN IF NOT EXISTS first_used TIMESTAMP DEFAULT NOW()
         """)
+        # Email verification & password reset columns / tables
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT")
+        cur.execute("""CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            used BOOLEAN DEFAULT FALSE
+        )""")
         conn.commit(); cur.close(); conn.close()
         print("[STARTUP] ✅ Tables OK")
     except Exception as e:
         print(f"[STARTUP] ⚠️ DB: {e}")
     _schedule_cleanup()
+
+# ─────────────────────────────────────────────
+#  EMAIL
+# ─────────────────────────────────────────────
+def send_email(to: str, subject: str, html: str):
+    if not EMAIL_ENABLED:
+        print(f"[EMAIL] SMTP non configuré — email ignoré pour {to} : {subject}")
+        return
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = f"PixGlow <{SMTP_FROM}>"
+        msg["To"]      = to
+        msg.attach(MIMEText(html, "html"))
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(SMTP_FROM, to, msg.as_string())
+        print(f"[EMAIL] ✅ Envoyé à {to} : {subject}")
+    except Exception as e:
+        print(f"[EMAIL] ❌ Erreur envoi à {to} : {e}")
 
 # ─────────────────────────────────────────────
 #  NETTOYAGE AUTO DES IMAGES (toutes les 6h)
@@ -413,10 +454,30 @@ async def register(body: AuthBody, request: Request):
     if cur.fetchone():
         cur.close(); conn.close()
         raise HTTPException(400, "Cet email est déjà utilisé. Essayez de vous connecter.")
-    cur.execute("INSERT INTO users (email, password_hash, credits) VALUES (%s, %s, 5)",
-                (email, hash_password(body.password)))
+    verification_token = secrets.token_urlsafe(32)
+    cur.execute(
+        "INSERT INTO users (email, password_hash, credits, email_verified, verification_token) VALUES (%s, %s, 0, FALSE, %s)",
+        (email, hash_password(body.password), verification_token)
+    )
     conn.commit(); cur.close(); conn.close()
-    return {"status": "success", "token": create_token(email), "credits": 5}
+    # Send verification email
+    verify_url = f"{FRONTEND_URL}?verify={verification_token}"
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#0d0d1a;color:#e2e8f0;border-radius:16px;">
+      <h1 style="color:#a78bfa;font-size:28px;margin-bottom:8px;">✨ PixGlow</h1>
+      <h2 style="font-size:20px;color:#fff;margin-bottom:16px;">Confirmez votre adresse email</h2>
+      <p style="color:#94a3b8;line-height:1.6;">Vous avez créé un compte PixGlow. Cliquez sur le bouton ci-dessous pour confirmer votre email et recevoir vos <strong style="color:#34d399;">5 crédits offerts</strong>.</p>
+      <a href="{verify_url}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Confirmer mon email →</a>
+      <p style="color:#475569;font-size:12px;">Lien valable 48h. Si vous n'avez pas créé de compte PixGlow, ignorez cet email.</p>
+    </div>"""
+    send_email(email, "Confirmez votre email — PixGlow", html)
+    if not EMAIL_ENABLED:
+        # Dev mode: auto-login without verification
+        conn2 = get_db(); cur2 = conn2.cursor()
+        cur2.execute("UPDATE users SET email_verified=TRUE, credits=5, verification_token=NULL WHERE email=%s", (email,))
+        conn2.commit(); cur2.close(); conn2.close()
+        return {"status": "success", "token": create_token(email), "credits": 5}
+    return {"status": "success", "verification_required": True}
 
 @app.post("/login")
 async def login(body: AuthBody, request: Request):
@@ -437,6 +498,83 @@ async def get_me(current_user: str = Depends(get_current_user)):
     user = cur.fetchone(); cur.close(); conn.close()
     if not user: raise HTTPException(404, "Utilisateur introuvable")
     return {"email": current_user, "credits": user["credits"]}
+
+@app.get("/verify-email/{token}")
+async def verify_email(token: str):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT email, email_verified FROM users WHERE verification_token = %s", (token,))
+    user = cur.fetchone()
+    if not user:
+        cur.close(); conn.close()
+        raise HTTPException(400, "Lien de vérification invalide ou expiré.")
+    if user["email_verified"]:
+        cur.close(); conn.close()
+        return {"status": "already_verified"}
+    cur.execute(
+        "UPDATE users SET email_verified=TRUE, credits=5, verification_token=NULL WHERE verification_token=%s RETURNING email, credits",
+        (token,)
+    )
+    row = cur.fetchone()
+    conn.commit(); cur.close(); conn.close()
+    email = row["email"]
+    return {"status": "verified", "token": create_token(email), "credits": row["credits"], "email": email}
+
+class ForgotPasswordBody(BaseModel):
+    email: str
+
+class ResetPasswordBody(BaseModel):
+    token: str
+    password: str
+
+@app.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordBody, request: Request):
+    rate_limit(get_real_ip(request), max_calls=5, window_sec=3600)
+    email = body.email.strip().lower()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+    user = cur.fetchone()
+    if not user:
+        cur.close(); conn.close()
+        # On ne révèle pas si l'email existe
+        return {"status": "sent"}
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=1)
+    cur.execute(
+        "INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (%s, %s, %s)",
+        (email, token, expires)
+    )
+    conn.commit(); cur.close(); conn.close()
+    reset_url = f"{FRONTEND_URL}?reset={token}"
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#0d0d1a;color:#e2e8f0;border-radius:16px;">
+      <h1 style="color:#a78bfa;font-size:28px;margin-bottom:8px;">✨ PixGlow</h1>
+      <h2 style="font-size:20px;color:#fff;margin-bottom:16px;">Réinitialisation de votre mot de passe</h2>
+      <p style="color:#94a3b8;line-height:1.6;">Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous.</p>
+      <a href="{reset_url}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Réinitialiser mon mot de passe →</a>
+      <p style="color:#475569;font-size:12px;">Lien valable 1h. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+    </div>"""
+    send_email(email, "Réinitialisation de mot de passe — PixGlow", html)
+    return {"status": "sent"}
+
+@app.post("/reset-password")
+async def reset_password(body: ResetPasswordBody, request: Request):
+    rate_limit(get_real_ip(request), max_calls=10, window_sec=3600)
+    if len(body.password) < 6:
+        raise HTTPException(400, "Mot de passe trop court (minimum 6 caractères)")
+    conn = get_db(); cur = conn.cursor()
+    cur.execute(
+        "SELECT email FROM password_reset_tokens WHERE token=%s AND used=FALSE AND expires_at > NOW()",
+        (body.token,)
+    )
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        raise HTTPException(400, "Lien invalide ou expiré. Faites une nouvelle demande.")
+    email = row["email"]
+    cur.execute("UPDATE users SET password_hash=%s WHERE email=%s", (hash_password(body.password), email))
+    cur.execute("UPDATE password_reset_tokens SET used=TRUE WHERE token=%s", (body.token,))
+    conn.commit(); cur.close(); conn.close()
+    return {"status": "success", "token": create_token(email)}
 
 @app.post("/enhance")
 async def enhance_photo(
@@ -571,8 +709,8 @@ class CheckoutBody(BaseModel):
 
 PLANS = {
     "starter": {"credits": 30,  "amount": 700,  "name": "Pack Starter - 30 Credits PixGlow"},
-    "pro":     {"credits": 100, "amount": 1500, "name": "Pack Pro - 100 Credits PixGlow"},
-    "elite":   {"credits": 300, "amount": 3500, "name": "Pack Elite - 300 Credits PixGlow"},
+    "pro":     {"credits": 100, "amount": 1299, "name": "Pack Pro - 100 Credits PixGlow"},
+    "elite":   {"credits": 300, "amount": 2900, "name": "Pack Elite - 300 Credits PixGlow"},
 }
 
 @app.post("/create-checkout-session")
