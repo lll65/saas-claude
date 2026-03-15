@@ -961,6 +961,22 @@ const DEMO_PAIRS = [
     tags: ['#doudoune','#vintedfrançais','#modeoccasion','#winterwear','#modehomme'],
     badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
   },
+  {
+    beforeSrc: '/demo/carhartt-rain-avant.jpeg', afterSrc: '/demo/carhartt-rain-apres.png',
+    beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Carhartt Nimbus — Imperméable',
+    desc: 'Veste imperméable Carhartt Nimbus, coloris natural. Neuve avec étiquettes. Taille L.',
+    tags: ['#carhartt','#imperméable','#vintedmode','#streetwear','#modeoccasion'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+  },
+  {
+    beforeSrc: '/demo/montre-avant.jpeg', afterSrc: '/demo/montre-apres.png',
+    beforeLabel: 'Photo table', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Montre Poedagar Quartz',
+    desc: 'Montre Poedagar Quartz, cadran turquoise, bracelet acier. Très bon état, pile neuve.',
+    tags: ['#montre','#vintedmode','#accessoires','#quartz','#modeoccasion'],
+    badgeBefore: 'Photo table · Fond bois', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+  },
 ];
 /* ══ TRUST BAR ANIMATED ══ */
 const PLATFORMS = [
@@ -1012,7 +1028,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
             <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
-              {['Bomber noir', 'Carhartt fleece', 'Doudoune'][i]}
+              {['Bomber noir', 'Carhartt fleece', 'Doudoune', 'Imperméable', 'Montre'][i]}
             </button>
           ))}
         </div>
