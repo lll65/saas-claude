@@ -613,8 +613,8 @@ function PlanModal({ show, onClose, onSelect, isMobile }) {
   if (!show) return null;
   const plans = [
     { id: 'starter', icon: '⚡', label: 'Starter', credits: 30,  price: '7€',  pricePerPhoto: '0,23€', color: '16,185,129',  highlight: false, badge: null },
-    { id: 'pro',     icon: '💎', label: 'Pro',     credits: 100, price: '15€', pricePerPhoto: '0,15€', color: '124,58,237', highlight: true,  badge: '⭐ MEILLEURE OFFRE' },
-    { id: 'elite',   icon: '🚀', label: 'Elite',   credits: 300, price: '35€', pricePerPhoto: '0,12€', color: '96,165,250',  highlight: false, badge: '💰 MEILLEUR PRIX/PHOTO' },
+    { id: 'pro',     icon: '💎', label: 'Pro',     credits: 100, price: '12,99€', pricePerPhoto: '0,13€', color: '124,58,237', highlight: true,  badge: '⭐ MEILLEURE OFFRE' },
+    { id: 'elite',   icon: '🚀', label: 'Elite',   credits: 300, price: '29€',    pricePerPhoto: '0,10€', color: '96,165,250',  highlight: false, badge: '💰 MEILLEUR PRIX/PHOTO' },
   ];
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? '0' : '16px' }}>
@@ -713,7 +713,16 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
       <div className="pg-anim" style={{ background: 'linear-gradient(160deg,#16102a,#0d0d1a)', border: '1px solid rgba(124,58,237,.35)', borderRadius: '24px', padding: isMobile ? '28px 20px' : '44px', width: '100%', maxWidth: '420px', position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(255,255,255,.08)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', width: '34px', height: '34px', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
         <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>{mode === 'login' ? '👋 Bon retour !' : '🚀 Créer mon compte'}</h2>
-        <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '22px' }}>{mode === 'login' ? 'Accédez à vos crédits et vos photos' : 'Gratuit · Crédits sauvegardés à vie · Titre+Description auto'}</p>
+        <p style={{ color: '#64748b', fontSize: '13px', marginBottom: mode === 'register' ? '12px' : '22px' }}>{mode === 'login' ? 'Accédez à vos crédits et vos photos' : 'Gratuit · Crédits sauvegardés à vie · Titre+Description auto'}</p>
+        {mode === 'register' && (
+          <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.15),rgba(5,150,105,.08))', border: '1px solid rgba(16,185,129,.35)', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '22px' }}>🎁</span>
+            <div>
+              <div style={{ color: '#34d399', fontWeight: 800, fontSize: '14px' }}>+5 crédits offerts à l'inscription</div>
+              <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>Valables à vie · Sans carte bancaire</div>
+            </div>
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,.4)', borderRadius: '12px', padding: '4px', marginBottom: '22px' }}>
           {['login','register'].map(m => (
             <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
@@ -1489,6 +1498,19 @@ export default function PixGlow() {
             </div>
           </div>
         </div>
+
+        {/* Hero video — before/after 30s */}
+        <div className="pg-anim-4" style={{ marginTop: '44px', position: 'relative', zIndex: 1 }}>
+          <div style={{ position: 'relative', borderRadius: isMobile ? '18px' : '24px', overflow: 'hidden', border: '1px solid rgba(124,58,237,.25)', boxShadow: '0 0 60px rgba(124,58,237,.12), 0 24px 64px rgba(0,0,0,.35)', maxWidth: isMobile ? '100%' : '720px', margin: '0 auto' }}>
+            <video autoPlay muted loop playsInline style={{ width: '100%', display: 'block', borderRadius: isMobile ? '18px' : '24px' }}>
+              <source src="/demo/hero-demo.mp4" type="video/mp4" />
+            </video>
+            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', pointerEvents: 'none' }}>
+              <span style={{ background: 'rgba(0,0,0,.72)', backdropFilter: 'blur(6px)', color: '#94a3b8', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '100px', border: '1px solid rgba(255,255,255,.08)' }}>AVANT</span>
+              <span style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.85),rgba(79,70,229,.85))', backdropFilter: 'blur(6px)', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '100px' }}>APRÈS ✨</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* TRUST BAR — Plateformes */}
@@ -1682,9 +1704,9 @@ export default function PixGlow() {
           <div className="pg-card pg-reveal" style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.14),rgba(79,70,229,.07))', border: '2px solid rgba(124,58,237,.55)', borderRadius: '22px', padding: '32px 18px', textAlign: 'center', position: 'relative', transform: isMobile ? 'none' : 'scale(1.03)', zIndex: 2, boxShadow: '0 0 40px rgba(124,58,237,.15), 0 16px 48px rgba(0,0,0,.3)' }}>
             <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '100px', padding: '5px 16px', fontSize: '10px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '.5px', boxShadow: '0 4px 14px rgba(124,58,237,.4)' }}>⭐ MEILLEURE OFFRE</div>
             <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px' }}>Pro</p>
-            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '52px', fontWeight: 800, color: '#a78bfa', lineHeight: 1, marginBottom: '4px' }}>15€</div>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '52px', fontWeight: 800, color: '#a78bfa', lineHeight: 1, marginBottom: '4px' }}>12,99€</div>
             <p style={{ color: '#c4b5fd', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>100 crédits</p>
-            <p style={{ color: '#7c3aed', fontSize: '11px', marginBottom: '16px' }}>0,15 € / photo</p>
+            <p style={{ color: '#7c3aed', fontSize: '11px', marginBottom: '16px' }}>0,13 € / photo</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '22px', textAlign: 'left' }}>
               {['Annonce IA incluse', 'Crédits à vie', 'Paiement unique', 'Support prioritaire'].map((f, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#94a3b8' }}>
@@ -1700,9 +1722,9 @@ export default function PixGlow() {
           <div className="pg-card pg-reveal" style={{ background: T.cardBg, border: '1px solid rgba(96,165,250,.2)', borderRadius: '22px', padding: '26px 18px', textAlign: 'center', position: 'relative' }}>
             <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#60a5fa,#3b82f6)', borderRadius: '100px', padding: '5px 14px', fontSize: '10px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '.5px' }}>MEILLEUR PRIX</div>
             <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px' }}>Elite</p>
-            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '48px', fontWeight: 800, color: '#60a5fa', lineHeight: 1, marginBottom: '4px' }}>35€</div>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '48px', fontWeight: 800, color: '#60a5fa', lineHeight: 1, marginBottom: '4px' }}>29€</div>
             <p style={{ color: '#93c5fd', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>300 crédits</p>
-            <p style={{ color: '#475569', fontSize: '11px', marginBottom: '16px' }}>0,12 € / photo</p>
+            <p style={{ color: '#475569', fontSize: '11px', marginBottom: '16px' }}>0,10 € / photo</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px', textAlign: 'left' }}>
               {['Annonce IA incluse', 'Crédits à vie', 'Paiement unique', 'Usage intensif'].map((f, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#64748b' }}>
@@ -1780,7 +1802,7 @@ export default function PixGlow() {
           { q: 'Comment fonctionnent les 5 photos gratuites ?', r: "Chaque adresse IP bénéficie de 5 traitements gratuits, sans inscription ni carte bancaire. Ils sont comptés sur nos serveurs et ne se réinitialisent jamais." },
           { q: 'Comment fonctionne la description automatique ?', r: "Après traitement de ta photo, un bouton \"Prêt pour Vinted ?\" apparaît. En 1 clic, un texte optimisé est généré : titre, description avec emojis et hashtags pour Vinted et Leboncoin. Fonctionnalité réservée aux comptes créés." },
           { q: 'Quel format de photo acceptez-vous ?', r: "JPG, PNG, WEBP et HEIC (iPhone). Taille max 15 Mo par photo." },
-          { q: "Quel tarif après l'essai gratuit ?", r: "3 offres disponibles : Starter 30 crédits à 7€ (0,23€/photo), Pro 100 crédits à 15€ (0,15€/photo), Elite 300 crédits à 35€ (0,12€/photo). Crédits valables à vie, sans abonnement. Les textes auto sont inclus avec chaque crédit." },
+          { q: "Quel tarif après l'essai gratuit ?", r: "3 offres disponibles : Starter 30 crédits à 7€ (0,23€/photo), Pro 100 crédits à 12,99€ (0,13€/photo), Elite 300 crédits à 29€ (0,10€/photo). Crédits valables à vie, sans abonnement. Les textes auto sont inclus avec chaque crédit." },
           { q: 'Comment fonctionnent les crédits ?', r: "Les crédits sont liés à votre compte email et valables à vie. Ils ne périment jamais." },
           { q: 'Est-ce que mes photos sont conservées ?', r: "Non. Vos photos sont supprimées automatiquement de nos serveurs après 24 heures." },
           { q: 'Les statistiques du tracker de gains sont-elles réelles ?', r: "Le tracker de gains fournit des estimations basées sur les moyennes observées chez nos utilisateurs. Ce ne sont pas des données récupérées depuis votre profil Vinted." },
@@ -2005,7 +2027,7 @@ export default function PixGlow() {
             <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '17px' : '20px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Besoin de plus de crédits ?</h3>
             <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '16px' }}>Valables à vie · Sans abonnement · Description IA incluse à chaque crédit</p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
-              {[{plan:'starter',label:'30 crédits — 7€',col:'#f59e0b'},{plan:'pro',label:'100 crédits — 15€',col:'#a78bfa'},{plan:'elite',label:'300 crédits — 35€',col:'#60a5fa'}].map(p => (
+              {[{plan:'starter',label:'30 crédits — 7€',col:'#f59e0b'},{plan:'pro',label:'100 crédits — 12,99€',col:'#a78bfa'},{plan:'elite',label:'300 crédits — 29€',col:'#60a5fa'}].map(p => (
                 <button key={p.plan} onClick={() => handlePayment(p.plan)} className="pg-btn" style={{ background: p.plan==='pro' ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : T.cardBg, border: p.plan==='pro' ? 'none' : `1px solid ${T.cardBorder}`, color: p.col, borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{p.label}{p.plan==='pro' ? ' — Populaire' : ''}</button>
               ))}
             </div>
