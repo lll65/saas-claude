@@ -377,9 +377,9 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a78bfa', fontWeight: 700, fontSize: '14px' }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3h10M2 6h8M2 9h5" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round"/></svg>
           Générer titre + description Vinted
-          {!isConnected && <span style={{ background: 'rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>PRO</span>}
           {boosted && <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>Boosté</span>}
           {result && !boosted && <span style={{ background: 'rgba(16,185,129,.15)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>Prêt</span>}
+          {!result && <span style={{ background: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: '10px', padding: '2px 8px', borderRadius: '100px', fontWeight: 800 }}>Gratuit</span>}
         </span>
         <span style={{ color: '#475569', fontSize: '18px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span>
       </button>
@@ -490,7 +490,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   </div>
                   {!trends && !trendLoading && (
                     <button onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      {isConnected ? 'Analyser →' : '🔒 Pro →'}
+                      {isConnected ? 'Analyser →' : '🔒 Acheter →'}
                     </button>
                   )}
                   {trends && (
@@ -583,25 +583,25 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 }
 
 /* ══ UPSELL BANNER ══ */
-function UpsellBanner({ freeLeft, onRegister, onLogin }) {
+function UpsellBanner({ freeLeft, onRegister, onLogin, darkMode }) {
   const [dismissed, setDismissed] = useState(false);
   const dismiss = () => { setDismissed(true); };
   if (dismissed || freeLeft === null || freeLeft > 2) return null;
   return (
-    <div className="pg-slide-up" style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.12),rgba(16,185,129,.06))', border: '1px solid rgba(124,58,237,.3)', borderRadius: '16px', padding: '18px 20px', marginBottom: '14px', position: 'relative' }}>
-      <button onClick={dismiss} style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#334155', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
+    <div className="pg-slide-up" style={{ background: darkMode ? 'linear-gradient(135deg,rgba(124,58,237,.14),rgba(16,185,129,.07))' : 'linear-gradient(135deg,rgba(124,58,237,.1),rgba(16,185,129,.06))', border: '1px solid rgba(124,58,237,.3)', borderRadius: '16px', padding: '18px 20px', marginBottom: '14px', position: 'relative' }}>
+      <button onClick={dismiss} style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '15px', color: '#fff', marginBottom: '4px' }}>
+          <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '15px', color: darkMode ? '#e2e8f0' : '#3730a3', marginBottom: '4px' }}>
             {freeLeft === 0 ? 'Limite atteinte' : 'Dernière photo gratuite'}
           </p>
-          <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '8px', lineHeight: 1.5 }}>
+          <p style={{ color: darkMode ? '#64748b' : '#4b5563', fontSize: '13px', marginBottom: '8px', lineHeight: 1.5 }}>
             Passez à Pro pour continuer — dès 7€ pour 30 crédits à vie
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
           <button onClick={onRegister} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>🚀 Créer un compte</button>
-          <button onClick={onLogin} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '11px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Connexion</button>
+          <button onClick={onLogin} className="pg-ghost" style={{ background: darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)', border: darkMode ? '1px solid rgba(255,255,255,.08)' : '1px solid rgba(0,0,0,.1)', color: '#64748b', borderRadius: '10px', padding: '11px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Connexion</button>
         </div>
       </div>
     </div>
@@ -684,16 +684,18 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
   const [mode, setMode] = useState(initialMode || 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
 
-  useEffect(() => { if (show) { setMode(initialMode || 'login'); setErrMsg(''); } }, [show, initialMode]);
+  useEffect(() => { if (show) { setMode(initialMode || 'login'); setErrMsg(''); setConfirmPassword(''); } }, [show, initialMode]);
   if (!show) return null;
 
   const handleSubmit = async () => {
     setErrMsg('');
     if (!email.includes('@')) { setErrMsg('Entrez un email valide'); return; }
     if (password.length < 6) { setErrMsg('Mot de passe : minimum 6 caractères'); return; }
+    if (mode === 'register' && password !== confirmPassword) { setErrMsg('Les mots de passe ne correspondent pas'); return; }
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
@@ -714,13 +716,16 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
         <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '22px' }}>{mode === 'login' ? 'Accédez à vos crédits et vos photos' : 'Gratuit · Crédits sauvegardés à vie · Titre+Description auto'}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,.4)', borderRadius: '12px', padding: '4px', marginBottom: '22px' }}>
           {['login','register'].map(m => (
-            <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
+            <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
               {m === 'login' ? 'Se connecter' : "S'inscrire"}
             </button>
           ))}
         </div>
         <input className="pg-input" type="email" placeholder="Votre adresse email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoFocus autoComplete="email" style={{ marginBottom: '12px', borderColor: errMsg ? 'rgba(239,68,68,.5)' : undefined }} />
-        <input className="pg-input" type="password" placeholder="Mot de passe (min. 6 caractères)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} style={{ marginBottom: '16px', borderColor: errMsg ? 'rgba(239,68,68,.5)' : undefined }} />
+        <input className="pg-input" type="password" placeholder="Mot de passe (min. 6 caractères)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} style={{ marginBottom: mode === 'register' ? '12px' : '16px', borderColor: errMsg ? 'rgba(239,68,68,.5)' : undefined }} />
+        {mode === 'register' && (
+          <input className="pg-input" type="password" placeholder="Confirmer votre mot de passe" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete="new-password" style={{ marginBottom: '16px', borderColor: errMsg && password !== confirmPassword ? 'rgba(239,68,68,.5)' : undefined }} />
+        )}
         {errMsg && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', color: '#f87171', fontSize: '13px' }}>{errMsg}</div>}
         <button className="pg-btn pg-glow" disabled={loading} onClick={handleSubmit} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? .7 : 1 }}>
           {loading ? 'Connexion...' : mode === 'login' ? 'Me connecter' : 'Créer mon compte'}
@@ -753,7 +758,7 @@ function LoadingTip() {
 }
 
 /* ══ SIMULATEUR GAINS ══ */
-function GainsTracker({ onClose }) {
+function GainsTracker({ onClose, onOptimize }) {
   const [articles, setArticles] = useState(15);
   const [prixMoyen, setPrixMoyen] = useState(25);
 
@@ -761,14 +766,6 @@ function GainsTracker({ onClose }) {
   const tauxBoost = Math.min(42, 18 + Math.round(articles / 3.5));
   const ventesEstimees = Math.max(1, Math.round(articles * 0.35));
   const gainEuros = Math.round(ventesEstimees * prixMoyen * (tauxBoost / 100));
-  const vuesMoyAvant = Math.max(8, 14 - Math.round(prixMoyen / 40));
-  const vuesMoyApres = Math.round(vuesMoyAvant * (1 + tauxBoost / 100));
-
-  const shareText = `Avec @PixGlow je pourrais générer ~${gainEuros}€ supplémentaires sur mes ${articles} articles ! +${tauxBoost}% de vues estimées — pixglow.app`;
-  const handleShare = () => {
-    if (navigator.share) { navigator.share({ text: shareText, url: 'https://pixglow.app' }); }
-    else { navigator.clipboard.writeText(shareText); }
-  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
@@ -817,55 +814,30 @@ function GainsTracker({ onClose }) {
 
         {/* Stat principale — gain euros */}
         <div className="pg-pop" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '14px', padding: '18px', textAlign: 'center', marginBottom: '14px' }}>
-          <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gains supplémentaires estimés</p>
+          <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Gain supplémentaire estimé</p>
           <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '52px', fontWeight: 900, color: '#10b981', lineHeight: 1, transition: 'all .15s ease' }}>~{gainEuros}€</div>
-          <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce aux photos optimisées PixGlow</p>
-        </div>
+          <p style={{ color: '#475569', fontSize: '12px', margin: '6px 0 0' }}>grâce à une vente plus rapide ou un prix mieux maintenu</p>
 
-        {/* Stats secondaires */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '16px' }}>
-          {[
-            { label: 'Vues / annonce', before: vuesMoyAvant, after: vuesMoyApres,
-              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="8" cy="8" r="2" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-            { label: 'Ventes estimées', value: ventesEstimees,
-              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h1.5l2 7h7l1.5-4.5H5.5" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/><circle cx="11" cy="13" r="1" stroke="#94a3b8" strokeWidth="1.2"/></svg> },
-            { label: 'Boost des vues', value: `+${tauxBoost}%`,
-              svg: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,12 6,7 9,10 14,4" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-          ].map((s, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{s.svg}</div>
-              {s.before !== undefined ? (
-                <>
-                  <div style={{ color: '#10b981', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.after}</div>
-                  <div style={{ color: '#334155', fontSize: '10px', textDecoration: 'line-through' }}>{s.before} avant</div>
-                </>
-              ) : (
-                <div style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '15px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{s.value}</div>
-              )}
-              <div style={{ color: '#475569', fontSize: '10px', marginTop: '2px' }}>{s.label}</div>
+          {/* Barre de progression vues — juste sous le chiffre */}
+          <div style={{ marginTop: '16px', background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '10px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>📈 Boost des vues</span>
+              <span style={{ color: '#10b981', fontWeight: 800, fontSize: '12px' }}>+{tauxBoost}%</span>
             </div>
-          ))}
-        </div>
-
-        {/* Barre de progression vues */}
-        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>📈 Boost des vues</span>
-            <span style={{ color: '#10b981', fontWeight: 800, fontSize: '13px' }}>+{tauxBoost}%</span>
-          </div>
-          <div style={{ position: 'relative', height: '6px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
-            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-            <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
-            <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow</span>
+            <div style={{ position: 'relative', height: '5px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: '33%', background: 'rgba(148,163,184,.4)', borderRadius: '100px' }} />
+              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(95, 33 + tauxBoost * 0.6)}%`, background: 'linear-gradient(90deg,#7c3aed,#10b981)', borderRadius: '100px', transition: 'width 1.5s ease' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+              <span style={{ color: '#334155', fontSize: '10px' }}>Avant PixGlow</span>
+              <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 600 }}>Après PixGlow</span>
+            </div>
           </div>
         </div>
 
-        {/* Bouton partager */}
-        <button onClick={handleShare} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
-          Partager ma simulation
+        {/* Bouton CTA */}
+        <button onClick={onOptimize} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '10px' }}>
+          ✨ Optimiser mes photos
         </button>
         <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
           Estimations basées sur les moyennes de nos utilisateurs · Résultats variables
@@ -878,7 +850,7 @@ function GainsTracker({ onClose }) {
 /* ══ DEMO SLIDER (landing) ══ */
 const DEMO_PAIRS = [
   {
-    beforeSrc: '/demo/veste-avant.png', afterSrc: '/demo/veste-apres.png',
+    beforeSrc: '/demo/bomber-avant.jpg', afterSrc: '/demo/bomber-apres.jpg',
     beforeLabel: 'Fond encombré', afterLabel: 'Fond blanc PixGlow',
     titre: 'Veste bomber noire — Taille M',
     desc: 'Veste bomber noire oversize, taille M. Fermeture éclair dorée. Portée 2 fois, comme neuve. Idéale mi-saison.',
@@ -886,14 +858,53 @@ const DEMO_PAIRS = [
     badgeBefore: 'Photo sur lit · Lumière inégale', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
   },
   {
-    beforeSrc: '/demo/beanie-avant.png', afterSrc: '/demo/beanie-apres.png',
+    beforeSrc: '/demo/carhartt-avant.jpg', afterSrc: '/demo/carhartt-apres.png',
     beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Bonnet Patagonia — Unisexe',
-    desc: 'Bonnet Patagonia authentique, unisexe, taille unique. Très chaud, parfait état. Patch logo brodé.',
-    tags: ['#patagonia','#bonnet','#outdoorstyle','#vintedmode','#modeoccasion'],
-    badgeBefore: 'Photo brute · Fond texturé', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Fleece Carhartt — Taille L',
+    desc: "Fleece Carhartt Heritage Relaxed Fit, taille L. Coloris naturel/olive. Étiquette présente, porté 5 fois. Très chaud.",
+    tags: ['#carhartt','#fleece','#vintedmode','#streetwear','#modeoccasion'],
+    badgeBefore: 'Photo sol · Fond encombré', badgeAfter: 'Fond blanc · Prêt à publier ✅',
   },
 ];
+/* ══ TRUST BAR ANIMATED ══ */
+const PLATFORMS = [
+  { name: 'Vinted',      color: '#09B1BA' },
+  { name: 'Leboncoin',   color: '#f56b2a' },
+  { name: 'Amazon',      color: '#FF9900' },
+  { name: 'Shopify',     color: '#96bf48' },
+  { name: 'Facebook',    color: '#1877f2' },
+  { name: 'BackMarket',  color: '#3d9970' },
+];
+function TrustBar({ darkMode, isMobile }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setActiveIdx(i => (i + 1) % PLATFORMS.length), 1300);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, padding: isMobile ? '16px 16px' : '18px 40px', background: darkMode ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.02)' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '20px' : '48px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap' }}>Compatible avec</span>
+        {PLATFORMS.map((p, i) => (
+          <span key={i} style={{
+            fontFamily: "'Bricolage Grotesque',sans-serif",
+            fontWeight: 800,
+            fontSize: isMobile ? '13px' : '15px',
+            letterSpacing: '-.3px',
+            whiteSpace: 'nowrap',
+            transition: 'color .4s ease, text-shadow .4s ease',
+            color: i === activeIdx ? p.color : (darkMode ? 'rgba(255,255,255,.28)' : 'rgba(0,0,0,.28)'),
+            textShadow: i === activeIdx ? `0 0 18px ${p.color}70` : 'none',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = p.color; e.currentTarget.style.textShadow = `0 0 18px ${p.color}70`; }}
+            onMouseLeave={e => { e.currentTarget.style.color = i === activeIdx ? p.color : (darkMode ? 'rgba(255,255,255,.28)' : 'rgba(0,0,0,.28)'); e.currentTarget.style.textShadow = i === activeIdx ? `0 0 18px ${p.color}70` : 'none'; }}
+          >{p.name}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DemoSlider({ darkMode, T, isMobile }) {
   const [demoIdx, setDemoIdx] = useState(0);
   const pair = DEMO_PAIRS[demoIdx];
@@ -905,7 +916,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
             <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
-              {i === 0 ? 'Bomber noire' : 'Patagonia'}
+              {i === 0 ? 'Bomber noire' : 'Carhartt fleece'}
             </button>
           ))}
         </div>
@@ -1065,11 +1076,11 @@ export default function PixGlow() {
   }, []);
 
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
-  const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setFreeLeft(null); setShowAuth(false); setPage('app'); };
+  const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   const handleLogout = () => { ['pg_token','pg_email','pg_free'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setFreeLeft(null); setPage('landing'); };
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
-  const limitReached = !isConnected && freeLeft !== null && freeLeft <= 0;
-  const canSelect = () => isConnected || freeLeft === null || freeLeft > 0;
+  const limitReached = freeLeft !== null && freeLeft <= 0 && (credits === null || credits <= 0);
+  const canSelect = () => (credits !== null && credits > 0) || freeLeft === null || freeLeft > 0;
 
   const handleSelectClick = (useCamera = false) => {
     if (!canSelect()) { setError(!isConnected ? 'Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.' : 'Crédits épuisés.'); return; }
@@ -1083,7 +1094,8 @@ export default function PixGlow() {
     // freeLeft === null signifie que le serveur n'a pas répondu (CORS, réseau)
     // → on suppose 5 crédits dispo pour ne pas bloquer l'utilisateur inutilement.
     // Le serveur refusera de toute façon si la limite est atteinte.
-    const available = isConnected ? (credits ?? 999) : (freeLeft ?? FREE_FREE_IMAGES);
+    // Connected users use credits; if 0 credits, fall back to remaining free IP quota
+    const available = isConnected && (credits ?? 0) > 0 ? credits : (freeLeft ?? (isConnected ? 0 : FREE_FREE_IMAGES));
     const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
     const chosen = selected.slice(0, maxAllowed);
     if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
@@ -1124,15 +1136,19 @@ export default function PixGlow() {
 
   const handleUpload = async () => {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
-    if (!isConnected && freeLeft !== null && freeLeft <= 0) { setError('Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.'); return; }
-    if (isConnected && credits !== null && credits < files.length) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
+    if (freeLeft !== null && freeLeft <= 0 && (!isConnected || (credits !== null && credits <= 0))) { setError(!isConnected ? 'Vos 5 photos gratuites ont été utilisées. Créez un compte pour continuer.' : 'Crédits épuisés — rechargez pour continuer.'); return; }
+    if (isConnected && credits !== null && credits < files.length && (freeLeft === null || freeLeft <= 0)) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
     setLoading(true); setError(null); setResults([]); setProgress(0);
+    // If connected but 0 credits and still have free IP slots → send without auth
+    // so the server uses the IP-based free quota (permanent per IP)
+    const useIpFree = isConnected && (credits ?? 0) === 0 && (freeLeft ?? 0) > 0;
+    const uploadHeaders = useIpFree ? {} : authHeaders();
     const newResults = [];
     for (let i = 0; i < files.length; i++) {
       setProgress(i + 1);
       try {
         const form = new FormData(); form.append('file', files[i]);
-        const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: authHeaders(), body: form });
+        const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: uploadHeaders, body: form });
         const data = await res.json();
         if (!res.ok) {
           newResults.push({ error: data.detail || 'Erreur serveur', original: previews[i] });
@@ -1300,14 +1316,15 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                <button onClick={() => isConnected ? setShowTracker(true) : setShowPlanModal(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
+                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>
               </>
             ) : (
               <>
-                <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Connexion</button>
-                <button onClick={() => setPage('landing')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)', color: '#64748b', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>← Accueil</button>
+                {(freeLeft !== null && freeLeft < 5) || hasResults ? <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button> : null}
+                <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '14px', fontFamily: 'inherit' }}>Connexion</button>
+                {!isMobile && <button onClick={() => setPage('landing')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)', color: '#64748b', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>← Accueil</button>}
               </>
             )}
           </>
@@ -1323,6 +1340,7 @@ export default function PixGlow() {
             {isConnected
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
+                  <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '10px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>
                   <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
                   <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
                 </>}
@@ -1395,6 +1413,7 @@ export default function PixGlow() {
     <div style={{ background: darkMode ? '#0a0a0f' : '#f8f9fc', minHeight: '100vh', color: darkMode ? '#e2e8f0' : '#111118', overflowX: 'hidden' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
+      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} onOptimize={() => { setShowTracker(false); setPage('app'); }} />}
       <Nav />
 
       {/* HERO */}
@@ -1457,9 +1476,9 @@ export default function PixGlow() {
           {/* Social proof */}
           <div className="pg-anim-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex' }}>
-              {['Lucas M.', 'Amélie T.', 'Karim B.', 'Thomas R.', 'Yasmine A.', 'Maxime D.'].map((name, i) => (
-                <AvatarInitials key={i} name={name} size={32}
-                  style={{ marginLeft: i ? '-10px' : '0', border: '2px solid #0a0a0f', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }} />
+              {[33, 44, 57, 15, 51, 27].map((imgId, i) => (
+                <img key={i} src={`https://i.pravatar.cc/64?img=${imgId}`} alt=""
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', marginLeft: i ? '-10px' : '0', border: '2px solid #0a0a0f', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }} />
               ))}
             </div>
             <div>
@@ -1473,24 +1492,7 @@ export default function PixGlow() {
       </section>
 
       {/* TRUST BAR — Plateformes */}
-      <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)'}`, padding: isMobile ? '16px 16px' : '18px 40px', background: darkMode ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.02)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '20px' : '48px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '11px', color: '#334155', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap' }}>Compatible avec</span>
-          {[
-            { name: 'Vinted', color: '#09B1BA' },
-            { name: 'Leboncoin', color: '#f56b2a' },
-            { name: 'Amazon', color: '#FF9900' },
-            { name: 'Shopify', color: '#96bf48' },
-            { name: 'Facebook', color: '#1877f2' },
-            { name: 'BackMarket', color: '#3d9970' },
-          ].map((p, i) => (
-            <span key={i} style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: isMobile ? '13px' : '15px', color: darkMode ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)', letterSpacing: '-.3px', whiteSpace: 'nowrap', transition: 'color .2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = p.color}
-              onMouseLeave={e => e.currentTarget.style.color = darkMode ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)'}
-            >{p.name}</span>
-          ))}
-        </div>
-      </div>
+      <TrustBar darkMode={darkMode} isMobile={isMobile} />
 
       {/* HOW IT WORKS + FEATURES — merged */}
       <section style={{ maxWidth: '1040px', margin: '0 auto', padding: isMobile ? '44px 16px 36px' : '72px 40px 56px' }}>
@@ -1608,8 +1610,8 @@ export default function PixGlow() {
           <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '28px', color: T.text, letterSpacing: '-.5px' }}>Ce que disent nos premiers testeurs</h2>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '14px', marginBottom: '20px' }}>
             {[
-              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', photo: 'https://i.pravatar.cc/80?img=3', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
-              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', photo: 'https://i.pravatar.cc/80?img=12', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
+              { nom: 'Lucas M.', tag: 'Vendeur Leboncoin · Beta testeur · Fév. 2026', note: 5, couleur: '#7c3aed', photo: 'https://i.pravatar.cc/80?img=33', txt: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante." },
+              { nom: 'Amélie T.', tag: 'Vendeuse Vinted · Beta testrice · Jan. 2026', note: 5, couleur: '#10b981', photo: 'https://i.pravatar.cc/80?img=44', txt: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots." },
             ].map((t,i) => (
               <div key={i} className="pg-card pg-reveal" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '22px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '14px', right: '18px', fontFamily: 'Georgia,serif', fontSize: '64px', color: t.couleur, opacity: .07, lineHeight: 1, userSelect: 'none', fontWeight: 900 }}>"</div>
@@ -1798,11 +1800,11 @@ export default function PixGlow() {
 
 /* ══ APP ══ */
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
+    <div style={{ background: T.pageBg, minHeight: '100vh', color: T.text, paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
-      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} />}
+      {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} onOptimize={() => { setShowTracker(false); isConnected ? null : setShowPlanModal(true); }} />}
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
@@ -1816,12 +1818,12 @@ export default function PixGlow() {
 
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
 
-        {!isConnected && <UpsellBanner freeLeft={freeLeft} onRegister={() => openAuth('register')} onLogin={() => openAuth('login')} />}
+        {!isConnected && <UpsellBanner freeLeft={freeLeft} onRegister={() => openAuth('register')} onLogin={() => openAuth('login')} darkMode={darkMode} />}
 
         {!isConnected && freeLeft !== null && (
-          <div className="pg-anim" style={{ background: limitReached ? 'rgba(239,68,68,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${limitReached ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.05)'}`, borderRadius: '16px', padding: '18px 22px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div className="pg-anim" style={{ background: limitReached ? 'rgba(239,68,68,.06)' : T.cardBg, border: `1px solid ${limitReached ? 'rgba(239,68,68,.2)' : T.cardBorder}`, borderRadius: '16px', padding: '18px 22px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <p style={{ color: '#334155', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '4px' }}>Photos gratuites restantes</p>
+              <p style={{ color: T.textSub, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '4px' }}>Photos gratuites restantes</p>
               <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '38px', fontWeight: 800, color: limitReached ? '#ef4444' : '#10b981', lineHeight: 1 }}>{freeLeft}/5</div>
               {limitReached && <p style={{ color: '#f87171', fontSize: '12px', fontWeight: 600, marginTop: '4px' }}>🔴 Vos 5 photos gratuites ont été utilisées</p>}
             </div>
@@ -1838,10 +1840,10 @@ export default function PixGlow() {
         {isConnected && credits !== null && !hasResults && (
           <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
-              <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '15px', margin: '0 0 2px' }}>
+              <p style={{ color: T.text, fontWeight: 700, fontSize: '15px', margin: '0 0 2px' }}>
                 {credits === 0 ? 'Plus de crédits — rechargez pour continuer' : `${credits} crédit${credits > 1 ? 's' : ''} disponible${credits > 1 ? 's' : ''}`}
               </p>
-              <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>
+              <p style={{ color: T.textSub, fontSize: '12px', margin: 0 }}>
                 {credits > 0 ? 'Déposez vos photos ci-dessous pour les améliorer instantanément' : 'Achetez des crédits pour continuer à traiter vos photos'}
               </p>
             </div>
@@ -1868,7 +1870,7 @@ export default function PixGlow() {
                       </div>
                   }
                 </div>
-                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : '#e2e8f0', letterSpacing: '-.3px' }}>{limitReached ? 'Limite atteinte' : "Dépose jusqu'à 5 photos ici"}</p>
+                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : T.text, letterSpacing: '-.3px' }}>{limitReached ? 'Limite atteinte' : "Dépose jusqu'à 5 photos ici"}</p>
                 <p style={{ color: '#475569', fontSize: '13px', marginBottom: limitReached ? 0 : '16px' }}>{limitReached ? 'Créez un compte pour continuer' : 'JPG · PNG · WEBP · HEIC (iPhone) · ou clique pour sélectionner'}</p>
                 {!limitReached && isMobile && (
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
@@ -1935,7 +1937,7 @@ export default function PixGlow() {
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="#10b981" strokeWidth="1.5"/><path d="M5.5 9l2.5 2.5L12.5 6" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {doneCount}/{results.length} photo{doneCount > 1 ? 's' : ''} traitée{doneCount > 1 ? 's' : ''}
                   </h3>
-                  <p style={{ color: '#334155', fontSize: '12px', margin: 0 }}>Prêtes à publier sur Vinted & Leboncoin</p>
+                  <p style={{ color: T.textSub, fontSize: '12px', margin: 0 }}>Prêtes à publier sur Vinted & Leboncoin</p>
                 </div>
                 {doneCount > 1 && !isMobile && (
                   <button onClick={handleDownloadAll} disabled={zipping} className="pg-btn" style={{ background: zipping ? 'rgba(16,185,129,.4)' : 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: 700, cursor: zipping ? 'wait' : 'pointer', fontSize: '14px', fontFamily: 'inherit', opacity: zipping ? .8 : 1, display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -1957,7 +1959,7 @@ export default function PixGlow() {
                   <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                       <div>
-                        <p style={{ color: '#334155', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
+                        <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
                         <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
                       </div>
                       <div>
@@ -1973,7 +1975,7 @@ export default function PixGlow() {
                         {!isMobile && (
                           <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '8px' }}>📥 Télécharger</button>
                         )}
-                        <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => openAuth('register')} />
+                        <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
                       </>
                     )}
                     {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
@@ -1982,7 +1984,7 @@ export default function PixGlow() {
               </div>
               {/* Bouton reset — desktop uniquement, sticky bar gère le mobile */}
               {!isMobile && (
-                <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', color: '#475569', borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
+                <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.textMuted, borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
               )}
             </>
           )}
@@ -1991,23 +1993,23 @@ export default function PixGlow() {
         {/* CTA bas */}
         {!isConnected ? (
           <div style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.07),rgba(79,70,229,.04))', border: '1px solid rgba(124,58,237,.18)', borderRadius: '20px', padding: isMobile ? '22px 18px' : '30px 36px', textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '22px', fontWeight: 800, marginBottom: '8px', color: '#fff' }}>Envie de plus de photos et descriptions optimisées ?</h3>
-            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '20px', lineHeight: 1.65 }}>Créez un compte gratuit et achetez des crédits.<br/><strong style={{ color: '#e2e8f0' }}>3 offres dès 7€ · 30, 100 ou 300 crédits · Valables à vie · Paiement sécurisé</strong></p>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '18px' : '22px', fontWeight: 800, marginBottom: '8px', color: T.text }}>Envie de plus de photos et descriptions optimisées ?</h3>
+            <p style={{ color: T.textMuted, fontSize: '14px', marginBottom: '20px', lineHeight: 1.65 }}>Créez un compte gratuit et achetez des crédits.<br/><strong style={{ color: T.text }}>3 offres dès 7€ · 30, 100 ou 300 crédits · Valables à vie · Paiement sécurisé</strong></p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => openAuth('register')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>Créer mon compte →</button>
-              <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '12px', padding: '14px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>J'ai déjà un compte</button>
+              <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.textMuted, borderRadius: '12px', padding: '14px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>J'ai déjà un compte</button>
             </div>
           </div>
         ) : (
           <div style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.07),rgba(79,70,229,.04))', border: '1px solid rgba(124,58,237,.18)', borderRadius: '20px', padding: isMobile ? '22px 18px' : '28px 36px', textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '17px' : '20px', fontWeight: 800, marginBottom: '6px', color: '#fff' }}>Besoin de plus de crédits ?</h3>
-            <p style={{ color: '#475569', fontSize: '13px', marginBottom: '16px' }}>Valables à vie · Sans abonnement · Description IA incluse à chaque crédit</p>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '17px' : '20px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Besoin de plus de crédits ?</h3>
+            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '16px' }}>Valables à vie · Sans abonnement · Description IA incluse à chaque crédit</p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
               {[{plan:'starter',label:'30 crédits — 7€',col:'#f59e0b'},{plan:'pro',label:'100 crédits — 15€',col:'#a78bfa'},{plan:'elite',label:'300 crédits — 35€',col:'#60a5fa'}].map(p => (
-                <button key={p.plan} onClick={() => handlePayment(p.plan)} className="pg-btn" style={{ background: p.plan==='pro' ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.05)', border: p.plan==='pro' ? 'none' : '1px solid rgba(255,255,255,.1)', color: p.col, borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{p.label}{p.plan==='pro' ? ' — Populaire' : ''}</button>
+                <button key={p.plan} onClick={() => handlePayment(p.plan)} className="pg-btn" style={{ background: p.plan==='pro' ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : T.cardBg, border: p.plan==='pro' ? 'none' : `1px solid ${T.cardBorder}`, color: p.col, borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{p.label}{p.plan==='pro' ? ' — Populaire' : ''}</button>
               ))}
             </div>
-            <p style={{ color: '#334155', fontSize: '11px' }}>Paiement sécurisé Stripe · Crédits valables à vie</p>
+            <p style={{ color: T.textSub, fontSize: '11px' }}>Paiement sécurisé Stripe · Crédits valables à vie</p>
           </div>
         )}
       </div>
