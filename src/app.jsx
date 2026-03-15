@@ -1425,55 +1425,45 @@ function FAQSection({ T, isMobile }) {
 }
 
 /* ══ CHANGELOG / NOUVEAUTÉS ══ */
+// 👇 Pour ajouter une news : copie un bloc { date, version, items:[...] }
+//    et colle-le EN PREMIER dans ce tableau. Types disponibles : 'new' | 'improve' | 'fix'
 const CHANGELOG = [
   {
     date: '15 mars 2026',
-    version: 'v2.4',
+    version: 'v1.3',
     items: [
       { type: 'new', label: 'Page Nouveautés', desc: 'Retrouvez toutes les mises à jour et nouvelles fonctionnalités directement dans l\'app.' },
-      { type: 'improve', label: 'Mode sombre amélioré', desc: 'Meilleurs contrastes et transitions plus fluides entre les thèmes.' },
+      { type: 'new', label: 'Formulaire de suggestion', desc: 'Envoyez vos idées directement depuis l\'app — sans quitter PixGlow.' },
+      { type: 'improve', label: 'Mode sombre affiné', desc: 'Meilleurs contrastes et transitions plus fluides entre les thèmes.' },
     ],
   },
   {
-    date: 'Février 2026',
-    version: 'v2.3',
+    date: 'Mars 2026',
+    version: 'v1.2',
     items: [
       { type: 'new', label: 'Tracker de gains', desc: 'Estimez vos revenus potentiels selon vos articles mis en ligne. Accessible depuis la barre de navigation.' },
-      { type: 'improve', label: 'Téléchargement ZIP', desc: 'Toutes vos photos traitées en un seul clic, compressées dans un fichier ZIP prêt à l\'emploi.' },
-    ],
-  },
-  {
-    date: 'Janvier 2026',
-    version: 'v2.2',
-    items: [
-      { type: 'new', label: 'Pack Elite 300 crédits', desc: 'Nouveau pack à 29€ — le meilleur prix par crédit (0,10€/photo). Idéal pour les vendeurs réguliers.' },
+      { type: 'new', label: 'Téléchargement ZIP', desc: 'Toutes vos photos traitées en un seul clic, compressées dans un fichier ZIP prêt à l\'emploi.' },
       { type: 'improve', label: 'Traitement jusqu\'à 10 photos', desc: 'Envoyez jusqu\'à 10 photos en une seule fois, toutes traitées simultanément.' },
       { type: 'fix', label: 'Affichage HEIC iPhone', desc: 'Correction d\'un bug d\'affichage sur certains modèles d\'iPhone avec les photos au format HEIC.' },
     ],
   },
   {
-    date: 'Décembre 2025',
-    version: 'v2.1',
-    items: [
-      { type: 'new', label: 'Génération IA multi-plateforme', desc: 'Textes optimisés pour Vinted, Leboncoin, Amazon, Shopify et Facebook Marketplace — en 1 clic.' },
-      { type: 'improve', label: 'Qualité fond blanc', desc: 'Nouveau modèle IA avec meilleure précision sur les contours fins (cheveux, textiles, bijoux).' },
-    ],
-  },
-  {
-    date: 'Novembre 2025',
-    version: 'v2.0',
+    date: 'Février 2026',
+    version: 'v1.1',
     items: [
       { type: 'new', label: 'Comptes utilisateurs', desc: 'Créez un compte, vérifiez votre email et recevez 5 crédits offerts. Vos crédits sont conservés à vie.' },
       { type: 'new', label: 'Système de crédits', desc: '3 packs disponibles sans abonnement. Chaque crédit = 1 photo traitée + description IA incluse.' },
+      { type: 'new', label: 'Génération IA d\'annonces', desc: 'Textes optimisés pour Vinted, Leboncoin, Amazon, Shopify et Facebook Marketplace — en 1 clic.' },
       { type: 'new', label: 'Mode clair / sombre', desc: 'Basculez entre les thèmes depuis la barre de navigation. Votre préférence est mémorisée.' },
     ],
   },
   {
-    date: 'Septembre 2025',
+    date: 'Février 2026',
     version: 'v1.0',
     items: [
       { type: 'new', label: 'Lancement de PixGlow', desc: 'Traitement automatique de photos avec fond blanc IA. 5 photos gratuites sans inscription.' },
       { type: 'new', label: 'Compatible mobile', desc: 'Prenez vos photos directement depuis l\'appareil photo de votre téléphone.' },
+      { type: 'new', label: 'Formats supportés', desc: 'JPG, PNG, WEBP et HEIC (iPhone). Jusqu\'à 15 Mo par photo.' },
     ],
   },
 ];
@@ -1486,6 +1476,17 @@ const BADGE = {
 
 function Changelog({ onBack, darkMode }) {
   const [filter, setFilter] = React.useState('all');
+  const [suggMsg, setSuggMsg] = React.useState('');
+  const [suggStatus, setSuggStatus] = React.useState(null); // null | 'sending' | 'ok' | 'err'
+
+  const sendSuggestion = async () => {
+    if (!suggMsg.trim()) return;
+    setSuggStatus('sending');
+    try {
+      const r = await fetch(`${API_URL}/suggestion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: suggMsg }) });
+      setSuggStatus(r.ok ? 'ok' : 'err');
+    } catch { setSuggStatus('err'); }
+  };
   const T2 = {
     bg:      darkMode ? '#0a0a0f' : '#f8f9fc',
     card:    darkMode ? 'rgba(255,255,255,.03)' : '#fff',
@@ -1567,11 +1568,33 @@ function Changelog({ onBack, darkMode }) {
           ))}
         </div>
 
-        {/* CTA bas de page */}
-        <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '16px', padding: '24px', textAlign: 'center', marginTop: '20px' }}>
-          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '15px', marginBottom: '6px' }}>Une idée de fonctionnalité ?</p>
-          <p style={{ color: T2.muted, fontSize: '13px', margin: '0 0 14px' }}>Vos suggestions sont les bienvenues pour améliorer PixGlow.</p>
-          <a href="mailto:pixglow.support@proton.me" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>Envoyer une suggestion →</a>
+        {/* CTA suggestion */}
+        <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '16px', padding: '24px', marginTop: '20px' }}>
+          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>Une idée de fonctionnalité ?</p>
+          <p style={{ color: T2.muted, fontSize: '13px', margin: '0 0 14px' }}>Vos suggestions sont lues et prises en compte pour améliorer PixGlow.</p>
+          {suggStatus === 'ok' ? (
+            <div style={{ background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '10px', padding: '12px 16px', color: '#34d399', fontWeight: 700, fontSize: '14px' }}>
+              ✅ Suggestion envoyée — merci !
+            </div>
+          ) : (
+            <>
+              <textarea
+                value={suggMsg}
+                onChange={e => { setSuggMsg(e.target.value); setSuggStatus(null); }}
+                placeholder="Décrivez votre idée ou la fonctionnalité souhaitée…"
+                rows={3}
+                style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)', border: `1px solid ${T2.border}`, borderRadius: '10px', padding: '11px 14px', color: T2.text, fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', outline: 'none', marginBottom: '10px' }}
+              />
+              {suggStatus === 'err' && <p style={{ color: '#f87171', fontSize: '12px', margin: '0 0 8px' }}>Erreur d'envoi — réessayez ou écrivez à pixglow.support@proton.me</p>}
+              <button
+                onClick={sendSuggestion}
+                disabled={suggStatus === 'sending' || !suggMsg.trim()}
+                style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: 700, cursor: suggMsg.trim() ? 'pointer' : 'default', opacity: suggMsg.trim() ? 1 : .5, fontFamily: 'inherit' }}
+              >
+                {suggStatus === 'sending' ? 'Envoi…' : 'Envoyer →'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
