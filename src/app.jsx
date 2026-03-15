@@ -938,20 +938,44 @@ function GainsTracker({ onClose, onOptimize }) {
 /* ══ DEMO SLIDER (landing) ══ */
 const DEMO_PAIRS = [
   {
-    beforeSrc: '/demo/veste-avant.png', afterSrc: '/demo/veste-apres.png',
-    beforeLabel: 'Fond encombré', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Veste oversize — Taille M',
-    desc: 'Veste oversize tendance, taille M. Coupe relâchée. Portée 2 fois, comme neuve. Idéale mi-saison.',
-    tags: ['#veste','#vintedfrançais','#modeoccasion','#overwear','#jacketstyle'],
+    beforeSrc: '/demo/bomber-avant.jpg', afterSrc: '/demo/bomber-apres.png',
+    beforeLabel: 'Photo sur le lit', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Bomber noir zippé',
+    desc: 'Bomber noir élégant, coupe droite. Fermeture éclair dorée. Très bon état, porté quelques fois.',
+    tags: ['#bomber','#vintedfrançais','#modeoccasion','#jacketstyle','#modehomme'],
     badgeBefore: 'Photo brute · Fond encombré', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
   },
   {
-    beforeSrc: '/demo/beanie-avant.png', afterSrc: '/demo/beanie-apres.png',
+    beforeSrc: '/demo/carhartt-fleece-avant.jpeg', afterSrc: '/demo/carhartt-fleece-apres.png',
     beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Bonnet laine — Taille unique',
-    desc: 'Bonnet laine douce, taille unique. Coloris naturel. Très peu porté, excellent état.',
-    tags: ['#bonnet','#vintedmode','#accessoires','#hivernale','#modeoccasion'],
-    badgeBefore: 'Photo sol · Fond encombré', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Carhartt Fleece — Taille L',
+    desc: 'Carhartt Relaxed Fit fleece, coloris naturel/kaki. Très chaud, excellent état. Taille L.',
+    tags: ['#carhartt','#fleece','#vintedmode','#streetwear','#modeoccasion'],
+    badgeBefore: 'Photo lit · Fond gris', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+  },
+  {
+    beforeSrc: '/demo/doudoune-avant.jpeg', afterSrc: '/demo/doudoune-apres.png',
+    beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Doudoune légère noire',
+    desc: 'Doudoune ultra-légère noire, coupe droite. Légère, chaude et compacte. Excellent état.',
+    tags: ['#doudoune','#vintedfrançais','#modeoccasion','#winterwear','#modehomme'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+  },
+  {
+    beforeSrc: '/demo/carhartt-rain-avant.jpeg', afterSrc: '/demo/carhartt-rain-apres.png',
+    beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Carhartt Nimbus — Imperméable',
+    desc: 'Veste imperméable Carhartt Nimbus, coloris natural. Neuve avec étiquettes. Taille L.',
+    tags: ['#carhartt','#imperméable','#vintedmode','#streetwear','#modeoccasion'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+  },
+  {
+    beforeSrc: '/demo/montre-avant.jpeg', afterSrc: '/demo/montre-apres.png',
+    beforeLabel: 'Photo table', afterLabel: 'Fond blanc PixGlow',
+    titre: 'Montre Poedagar Quartz',
+    desc: 'Montre Poedagar Quartz, cadran turquoise, bracelet acier. Très bon état, pile neuve.',
+    tags: ['#montre','#vintedmode','#accessoires','#quartz','#modeoccasion'],
+    badgeBefore: 'Photo table · Fond bois', badgeAfter: 'Fond blanc · Prêt à publier ✅',
   },
 ];
 /* ══ TRUST BAR ANIMATED ══ */
@@ -1004,7 +1028,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
             <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
-              {i === 0 ? 'Veste oversize' : 'Bonnet laine'}
+              {['Bomber noir', 'Carhartt fleece', 'Doudoune', 'Imperméable', 'Montre'][i]}
             </button>
           ))}
         </div>
