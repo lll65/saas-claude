@@ -900,9 +900,13 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div style={{ fontSize: '52px', marginBottom: '16px' }}>📧</div>
             <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>Email envoyé</h2>
-            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' }}>
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.6, marginBottom: '16px' }}>
               Si un compte existe pour <strong style={{ color: '#a78bfa' }}>{email}</strong>, vous recevrez un lien de réinitialisation dans quelques minutes.
             </p>
+            <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'left' }}>
+              <p style={{ color: '#fbbf24', fontSize: '13px', fontWeight: 700, margin: '0 0 4px' }}>📂 Vérifiez vos spams !</p>
+              <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>L'email peut arriver dans votre dossier <strong style={{ color: '#e2e8f0' }}>Indésirables / Spam</strong> ou <strong style={{ color: '#e2e8f0' }}>Promotions</strong> (Gmail). Pensez à le marquer "Pas du spam" pour les prochaines fois.</p>
+            </div>
             <button onClick={() => { setForgotSent(false); setMode('login'); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, padding: 0 }}>← Retour à la connexion</button>
           </div>
         ) : mode === 'forgot' ? (
@@ -928,12 +932,14 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
               <strong style={{ color: '#a78bfa' }}>{email}</strong><br/>
               Cliquez dessus pour activer votre compte et recevoir vos 5 crédits.
             </p>
-            <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(5,150,105,.06))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px' }}>
+            <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(5,150,105,.06))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '12px', padding: '14px 18px', marginBottom: '12px' }}>
               <div style={{ color: '#34d399', fontWeight: 700, fontSize: '13px' }}>🎁 5 crédits offerts après confirmation</div>
             </div>
-            <p style={{ color: '#475569', fontSize: '12px' }}>Pas reçu l'email ? Vérifiez vos spams ou{' '}
-              <button onClick={() => { setEmailVerificationSent(false); setMode('login'); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 600, padding: 0 }}>connectez-vous directement</button>.
-            </p>
+            <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', textAlign: 'left' }}>
+              <p style={{ color: '#fbbf24', fontSize: '12px', fontWeight: 700, margin: '0 0 3px' }}>📂 Regardez dans vos spams !</p>
+              <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0 }}>L'email peut atterrir dans <strong style={{ color: '#e2e8f0' }}>Indésirables / Spam</strong> ou l'onglet <strong style={{ color: '#e2e8f0' }}>Promotions</strong> sur Gmail.</p>
+            </div>
+            <p style={{ color: '#475569', fontSize: '12px' }}>Toujours pas reçu ? <button onClick={() => { setEmailVerificationSent(false); setMode('login'); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 600, padding: 0 }}>Connectez-vous directement</button>.</p>
           </div>
         ) : (
           <>
