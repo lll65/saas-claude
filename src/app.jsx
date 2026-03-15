@@ -18,13 +18,97 @@ const LegalLayout = ({ title, onBack, children }) => (
   </div>
 );
 function MentionsLegales({ onBack }) {
-  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de PixGlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. PixGlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
+  return (
+    <LegalLayout title="Mentions légales" onBack={onBack}>
+      <h2 style={LS.h2}>Éditeur du site</h2>
+      <p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
+      <h2 style={LS.h2}>Directeur de la publication</h2>
+      <p style={LS.p}>Le directeur de la publication est le représentant légal de l'entreprise éditrice.</p>
+      <h2 style={LS.h2}>Hébergement</h2>
+      <p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA<br/>Site : <a href="https://railway.app" style={{ color: '#7c3aed' }}>railway.app</a></p>
+      <h2 style={LS.h2}>Propriété intellectuelle</h2>
+      <p style={LS.p}>L'ensemble du contenu de PixGlow (textes, images, interface, code) est protégé par le droit d'auteur. Toute reproduction, même partielle, sans autorisation écrite préalable est interdite.</p>
+      <h2 style={LS.h2}>Traitement des paiements</h2>
+      <p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS niveau 1. PixGlow ne stocke aucune donnée bancaire.</p>
+      <h2 style={LS.h2}>Responsabilité</h2>
+      <p style={LS.p}>PixGlow s'efforce d'assurer la disponibilité et l'exactitude des informations. PixGlow ne saurait être tenu responsable des dommages directs ou indirects résultant de l'utilisation du service ou de l'indisponibilité temporaire du site.</p>
+      <h2 style={LS.h2}>Litiges</h2>
+      <p style={LS.p}>En cas de litige, une solution amiable sera recherchée avant tout recours judiciaire. En cas d'échec, les tribunaux français seront seuls compétents.</p>
+    </LegalLayout>
+  );
 }
 function PolitiqueConfidentialite({ onBack }) {
-  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
+  return (
+    <LegalLayout title="Politique de confidentialité" onBack={onBack}>
+      <p style={{ ...LS.p, color: '#475569' }}>Conformément au Règlement Général sur la Protection des Données (RGPD — Règlement UE 2016/679) et à la loi Informatique et Libertés.</p>
+      <h2 style={LS.h2}>Responsable du traitement</h2>
+      <p style={LS.p}>PixGlow — <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
+      <h2 style={LS.h2}>Données collectées</h2>
+      <p style={LS.p}>
+        <strong style={{ color: '#e2e8f0' }}>Compte utilisateur :</strong> adresse email, mot de passe chiffré (bcrypt), solde de crédits, statut de vérification email.<br/>
+        <strong style={{ color: '#e2e8f0' }}>Usage :</strong> adresse IP (pour le quota gratuit anonyme), horodatage des opérations.<br/>
+        <strong style={{ color: '#e2e8f0' }}>Images :</strong> photos uploadées pour traitement — supprimées immédiatement après traitement (max 24h).
+      </p>
+      <h2 style={LS.h2}>Finalités du traitement</h2>
+      <p style={LS.p}>
+        — Fourniture du service de traitement d'images et de génération d'annonces IA<br/>
+        — Gestion du compte et de l'authentification<br/>
+        — Vérification de l'adresse email<br/>
+        — Gestion des paiements (via Stripe)<br/>
+        — Prévention des abus (limitation de débit par IP)
+      </p>
+      <h2 style={LS.h2}>Durée de conservation</h2>
+      <p style={LS.p}>
+        Images traitées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>, et au plus tard sous 24h.<br/>
+        Données de compte : conservées jusqu'à la suppression du compte.<br/>
+        Données IP : 30 jours.<br/>
+        Tokens de réinitialisation de mot de passe : 1h (expiration automatique).
+      </p>
+      <h2 style={LS.h2}>Partage des données</h2>
+      <p style={LS.p}>Aucune donnée personnelle n'est vendue ni partagée à des fins commerciales. Seul Stripe Inc. reçoit les données nécessaires au paiement (email, montant). Les images ne sont jamais transmises à des tiers.</p>
+      <h2 style={LS.h2}>Vos droits (RGPD)</h2>
+      <p style={LS.p}>
+        Vous disposez des droits d'accès, de rectification, d'effacement, de portabilité et d'opposition concernant vos données personnelles.<br/>
+        Pour exercer ces droits : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a><br/>
+        Vous pouvez également adresser une réclamation à la <a href="https://www.cnil.fr" style={{ color: '#7c3aed' }}>CNIL</a>.
+      </p>
+      <h2 style={LS.h2}>Cookies et stockage local</h2>
+      <p style={LS.p}>Aucun cookie de tracking, publicité ou analytics. Un token d'authentification JWT est stocké dans le <em>localStorage</em> du navigateur uniquement pour maintenir votre session. Il est supprimé à la déconnexion.</p>
+      <h2 style={LS.h2}>Sécurité</h2>
+      <p style={LS.p}>Les mots de passe sont chiffrés avec bcrypt. Les communications sont chiffrées en transit (HTTPS/TLS). Les paiements sont traités par Stripe (certifié PCI-DSS niveau 1).</p>
+    </LegalLayout>
+  );
 }
 function CGV({ onBack }) {
-  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>PixGlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
+  return (
+    <LegalLayout title="Conditions Générales de Vente" onBack={onBack}>
+      <h2 style={LS.h2}>Vendeur</h2>
+      <p style={LS.p}>PixGlow — entrepreneur individuel — <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
+      <h2 style={LS.h2}>Service proposé</h2>
+      <p style={LS.p}>PixGlow est un service de traitement automatique d'images (suppression de fond, amélioration) et de génération d'annonces IA destiné aux vendeurs particuliers et professionnels sur plateformes e-commerce. PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p>
+      <h2 style={LS.h2}>Offre gratuite</h2>
+      <p style={LS.p}>5 crédits offerts à l'inscription après confirmation de l'adresse email. 5 traitements supplémentaires disponibles sans inscription par adresse IP. Ces crédits sont valables à vie, sans engagement, sans carte bancaire.</p>
+      <h2 style={LS.h2}>Tarifs — packs de crédits</h2>
+      <p style={LS.p}>Les achats de crédits sont des transactions uniques (pas d'abonnement). Les crédits sont valables à vie.<br/><br/>
+        <strong style={{ color: '#e2e8f0' }}>Pack Starter :</strong> 30 crédits — 7,00 € TTC (0,23 €/crédit)<br/>
+        <strong style={{ color: '#e2e8f0' }}>Pack Pro :</strong> 100 crédits — 12,99 € TTC (0,13 €/crédit)<br/>
+        <strong style={{ color: '#e2e8f0' }}>Pack Elite :</strong> 300 crédits — 29,00 € TTC (0,10 €/crédit)<br/><br/>
+        1 crédit = 1 photo traitée (fond blanc) + génération du titre et de la description IA incluse.
+      </p>
+      <h2 style={LS.h2}>Paiement</h2>
+      <p style={LS.p}>Les paiements sont effectués via Stripe (carte bancaire). Les crédits sont crédités immédiatement après confirmation du paiement. Tous les prix sont indiqués TTC, en euros.</p>
+      <h2 style={LS.h2}>Droit de rétractation</h2>
+      <p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation à compter de l'achat.<br/>Toutefois, conformément à l'article L221-28 12°, le droit de rétractation ne peut être exercé pour les prestations de services pleinement exécutées avant la fin du délai de rétractation, avec votre accord préalable.<br/>Contact : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
+      <h2 style={LS.h2}>Transparence des prix</h2>
+      <p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus 2021/771 et au Code de la consommation.</p>
+      <h2 style={LS.h2}>Propriété des crédits</h2>
+      <p style={LS.p}>Les crédits achetés sont liés au compte utilisateur. En cas de suppression du compte, les crédits non utilisés sont perdus sans remboursement possible.</p>
+      <h2 style={LS.h2}>Responsabilité</h2>
+      <p style={LS.p}>PixGlow traite les images de façon automatique. Les résultats peuvent varier selon la qualité des photos soumises. PixGlow ne saurait être tenu responsable de l'utilisation des images ou textes générés sur les plateformes de vente.</p>
+      <h2 style={LS.h2}>Litiges</h2>
+      <p style={LS.p}>En cas de litige, contacter <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a> en premier lieu. En cas d'échec de la résolution amiable, les tribunaux français seront compétents.</p>
+    </LegalLayout>
+  );
 }
 
 const API_URL = "https://web-production-f1129.up.railway.app";
@@ -696,8 +780,8 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
   useEffect(() => {
     if (show) {
       setMode(resetToken ? 'reset' : (initialMode || 'login'));
-      setErrMsg(''); setConfirmPassword(''); setEmailVerificationSent(false);
-      setForgotSent(false); setResetSuccess(false);
+      setErrMsg(''); setPassword(''); setConfirmPassword('');
+      setEmailVerificationSent(false); setForgotSent(false); setResetSuccess(false);
     }
   }, [show, initialMode, resetToken]);
 
@@ -740,7 +824,13 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
       if (!email.includes('@')) { setErrMsg('Entrez un email valide'); return; }
       setLoading(true);
       try {
-        await fetch(`${API_URL}/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        const res = await fetch(`${API_URL}/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        const data = await res.json();
+        if (!res.ok) { setErrMsg(data.detail || 'Erreur serveur'); setLoading(false); return; }
+        if (data.email_sent === false) {
+          setErrMsg("L'envoi d'email n'est pas configuré. Contactez le support : pixglow.support@proton.me");
+          setLoading(false); return;
+        }
         setForgotSent(true);
       } catch { setErrMsg('Impossible de contacter le serveur.'); }
       finally { setLoading(false); }
@@ -871,7 +961,7 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
             )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,.4)', borderRadius: '12px', padding: '4px', marginBottom: '18px' }}>
               {['login','register'].map(m => (
-                <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
+                <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setPassword(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
                   {m === 'login' ? 'Se connecter' : "S'inscrire"}
                 </button>
               ))}
@@ -886,8 +976,8 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
               {loading ? '...' : mode === 'login' ? 'Me connecter' : 'Créer mon compte →'}
             </button>
             {mode === 'login' && (
-              <p style={{ textAlign: 'center', marginTop: '12px' }}>
-                <button onClick={() => { setMode('forgot'); setErrMsg(''); }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', padding: 0 }}>
+              <p style={{ textAlign: 'center', marginTop: '14px' }}>
+                <button onClick={() => { setMode('forgot'); setErrMsg(''); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '3px' }}>
                   Mot de passe oublié ?
                 </button>
               </p>
@@ -918,6 +1008,70 @@ function LoadingTip() {
     <div className="pg-tip" style={{ marginTop: '10px', textAlign: 'center' }}>
       {tips[idx]}
     </div>
+  );
+}
+
+/* ══ SIMULATEUR GAINS — LANDING TEASER ══ */
+function GainsLandingTeaser({ T, isMobile, onStart }) {
+  const [articles, setArticles] = useState(20);
+  const [prixMoyen, setPrixMoyen] = useState(25);
+  const tauxBoost = Math.min(42, 18 + Math.round(articles / 3.5));
+  const gainEuros = Math.round(articles * prixMoyen * (tauxBoost / 100) * 0.35);
+
+  return (
+    <section style={{ maxWidth: '980px', margin: '0 auto', padding: isMobile ? '40px 16px' : '64px 40px' }}>
+      <div className="pg-divider" style={{ marginBottom: '52px' }} />
+      <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Simulateur de revenus</p>
+      <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '26px' : '38px', fontWeight: 800, textAlign: 'center', marginBottom: '8px', color: T.text, letterSpacing: '-.5px' }}>Combien peux-tu gagner de plus ?</h2>
+      <p className="pg-reveal" style={{ color: '#475569', textAlign: 'center', marginBottom: '40px', fontSize: '15px' }}>Glisse les curseurs — résultat en temps réel</p>
+
+      <div className="pg-reveal" style={{ background: T.cardBg, border: '1px solid rgba(16,185,129,.25)', borderRadius: '24px', padding: isMobile ? '24px 18px' : '36px 40px', maxWidth: '640px', margin: '0 auto' }}>
+
+        <button onClick={onStart} className="pg-btn" style={{ width: '100%', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.3)', color: '#10b981', borderRadius: '10px', padding: '11px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '24px' }}>
+          💰 Calculer mes gains personnalisés →
+        </button>
+
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '28px', marginBottom: '28px' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
+              <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 600 }}>Articles à vendre</label>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '26px', fontWeight: 800, color: '#a78bfa' }}>{articles}</span>
+            </div>
+            <input type="range" min="1" max="100" value={articles} onChange={e => setArticles(+e.target.value)} style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer', height: '4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ color: '#334155', fontSize: '10px' }}>1</span><span style={{ color: '#334155', fontSize: '10px' }}>100</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
+              <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 600 }}>Prix moyen</label>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '26px', fontWeight: 800, color: '#a78bfa' }}>{prixMoyen}€</span>
+            </div>
+            <input type="range" min="5" max="200" step="5" value={prixMoyen} onChange={e => setPrixMoyen(+e.target.value)} style={{ width: '100%', accentColor: '#7c3aed', cursor: 'pointer', height: '4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ color: '#334155', fontSize: '10px' }}>5€</span><span style={{ color: '#334155', fontSize: '10px' }}>200€</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08))', border: '1px solid rgba(16,185,129,.3)', borderRadius: '16px', padding: isMobile ? '20px 16px' : '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <div>
+            <p style={{ color: '#64748b', fontSize: '12px', fontWeight: 600, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Gain supplémentaire estimé</p>
+            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '48px' : '60px', fontWeight: 900, color: '#10b981', lineHeight: 1 }}>~{gainEuros}€</div>
+            <p style={{ color: '#475569', fontSize: '12px', marginTop: '4px' }}>grâce à +{tauxBoost}% de vues sur tes annonces</p>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '14px 18px', textAlign: 'center' }}>
+            <p style={{ color: '#64748b', fontSize: '11px', margin: '0 0 4px' }}>Boost des vues</p>
+            <p style={{ color: '#10b981', fontWeight: 800, fontSize: '28px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>+{tauxBoost}%</p>
+          </div>
+        </div>
+
+        <button onClick={onStart} className="pg-btn pg-glow" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit' }}>
+          ✨ Optimiser mes photos maintenant →
+        </button>
+        <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', marginTop: '10px' }}>Estimations basées sur les moyennes de nos utilisateurs. Résultats variables.</p>
+      </div>
+    </section>
   );
 }
 
@@ -1256,7 +1410,8 @@ function FAQSection({ T, isMobile }) {
 
 /* ══ COMPOSANT PRINCIPAL ══ */
 export default function PixGlow() {
-  const [page, setPage] = useState('landing');
+  const [page, setPageRaw] = useState('landing');
+  const setPage = (p) => { setPageRaw(p); window.scrollTo({ top: 0, behavior: 'instant' }); };
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1524,7 +1679,7 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
+                <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '7px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : 'Mes gains'}</button>
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>
               </>
@@ -1545,7 +1700,10 @@ export default function PixGlow() {
               }
             </button>
             {isConnected
-              ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
+              ? <>
+                  <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 11px' : '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : '💰 Mes gains'}</button>
+                  <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
+                </>
               : <>
                   <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
                   <button onClick={() => openAuth('register')} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
@@ -1843,6 +2001,9 @@ export default function PixGlow() {
 
       {/* FAQ ACCORDION */}
       <FAQSection T={T} isMobile={isMobile} />
+
+      {/* SIMULATEUR DE GAINS — landing teaser */}
+      <GainsLandingTeaser T={T} isMobile={isMobile} onStart={goToApp} />
 
       {/* PRICING */}
       <section style={{ maxWidth: '980px', margin: '0 auto', padding: isMobile ? '40px 16px 60px' : '72px 40px 80px' }}>
