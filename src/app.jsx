@@ -682,7 +682,7 @@ function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits
 }
 
 /* ─── AUTH MODAL ─── */
-function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
+function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken }) {
   const [mode, setMode] = useState(initialMode || 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -690,10 +690,16 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   useEffect(() => {
-    if (show) { setMode(initialMode || 'login'); setErrMsg(''); setConfirmPassword(''); setEmailVerificationSent(false); }
-  }, [show, initialMode]);
+    if (show) {
+      setMode(resetToken ? 'reset' : (initialMode || 'login'));
+      setErrMsg(''); setConfirmPassword(''); setEmailVerificationSent(false);
+      setForgotSent(false); setResetSuccess(false);
+    }
+  }, [show, initialMode, resetToken]);
 
   // Google Sign-In
   useEffect(() => {
@@ -730,6 +736,30 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
 
   const handleSubmit = async () => {
     setErrMsg('');
+    if (mode === 'forgot') {
+      if (!email.includes('@')) { setErrMsg('Entrez un email valide'); return; }
+      setLoading(true);
+      try {
+        await fetch(`${API_URL}/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        setForgotSent(true);
+      } catch { setErrMsg('Impossible de contacter le serveur.'); }
+      finally { setLoading(false); }
+      return;
+    }
+    if (mode === 'reset') {
+      if (password.length < 6) { setErrMsg('Mot de passe : minimum 6 caractères'); return; }
+      if (password !== confirmPassword) { setErrMsg('Les mots de passe ne correspondent pas'); return; }
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken, password }) });
+        const data = await res.json();
+        if (!res.ok) { setErrMsg(data.detail || 'Lien invalide ou expiré'); setLoading(false); return; }
+        localStorage.setItem('pg_token', data.token);
+        setResetSuccess(true);
+      } catch { setErrMsg('Impossible de contacter le serveur.'); }
+      finally { setLoading(false); }
+      return;
+    }
     if (!email.includes('@')) { setErrMsg('Entrez un email valide'); return; }
     if (password.length < 6) { setErrMsg('Mot de passe : minimum 6 caractères'); return; }
     if (mode === 'register' && password !== confirmPassword) { setErrMsg('Les mots de passe ne correspondent pas'); return; }
@@ -738,8 +768,6 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
       const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
       const data = await res.json();
       if (!res.ok) { setErrMsg(data.detail || 'Identifiants incorrects'); setLoading(false); return; }
-      // If backend supports email verification it returns verification_required=true
-      // and no token; otherwise auto-login directly (current backend behaviour)
       if (mode === 'register' && data.verification_required) {
         setEmailVerificationSent(true);
         setLoading(false);
@@ -759,8 +787,49 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
       <div className="pg-anim" style={{ background: 'linear-gradient(160deg,#16102a,#0d0d1a)', border: '1px solid rgba(124,58,237,.35)', borderRadius: '24px', padding: isMobile ? '28px 20px' : '44px', width: '100%', maxWidth: '420px', position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(255,255,255,.08)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', width: '34px', height: '34px', fontSize: '16px', fontFamily: 'inherit' }}>✕</button>
 
-        {/* Email verification sent screen */}
-        {emailVerificationSent ? (
+        {/* Reset password success */}
+        {resetSuccess ? (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ fontSize: '52px', marginBottom: '16px' }}>✅</div>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>Mot de passe mis à jour</h2>
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' }}>Votre mot de passe a été réinitialisé avec succès.</p>
+            <button onClick={onClose} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px 28px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit' }}>Fermer</button>
+          </div>
+        ) : mode === 'reset' ? (
+          <>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>🔑 Nouveau mot de passe</h2>
+            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '20px' }}>Choisissez un nouveau mot de passe pour votre compte.</p>
+            <input className="pg-input" type="password" placeholder="Nouveau mot de passe (min. 6 caractères)" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete="new-password" style={{ marginBottom: '12px' }} />
+            <input className="pg-input" type="password" placeholder="Confirmer le mot de passe" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoComplete="new-password" style={{ marginBottom: '16px' }} />
+            {errMsg && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', color: '#f87171', fontSize: '13px' }}>{errMsg}</div>}
+            <button className="pg-btn pg-glow" disabled={loading} onClick={handleSubmit} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? .7 : 1 }}>
+              {loading ? '...' : 'Enregistrer le mot de passe →'}
+            </button>
+          </>
+        ) : forgotSent ? (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ fontSize: '52px', marginBottom: '16px' }}>📧</div>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>Email envoyé</h2>
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' }}>
+              Si un compte existe pour <strong style={{ color: '#a78bfa' }}>{email}</strong>, vous recevrez un lien de réinitialisation dans quelques minutes.
+            </p>
+            <button onClick={() => { setForgotSent(false); setMode('login'); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, padding: 0 }}>← Retour à la connexion</button>
+          </div>
+        ) : mode === 'forgot' ? (
+          <>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>🔐 Mot de passe oublié</h2>
+            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '20px' }}>Entrez votre email et nous vous enverrons un lien de réinitialisation.</p>
+            <input className="pg-input" type="email" placeholder="Votre adresse email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} autoFocus autoComplete="email" style={{ marginBottom: '16px' }} />
+            {errMsg && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', color: '#f87171', fontSize: '13px' }}>{errMsg}</div>}
+            <button className="pg-btn pg-glow" disabled={loading} onClick={handleSubmit} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? .7 : 1 }}>
+              {loading ? '...' : 'Envoyer le lien →'}
+            </button>
+            <p style={{ textAlign: 'center', marginTop: '14px' }}>
+              <button onClick={() => { setMode('login'); setErrMsg(''); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 600, padding: 0 }}>← Retour à la connexion</button>
+            </p>
+          </>
+        ) : /* Email verification sent screen */
+        emailVerificationSent ? (
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div style={{ fontSize: '52px', marginBottom: '16px' }}>📧</div>
             <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>Vérifiez votre email</h2>
@@ -816,7 +885,14 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
             <button className="pg-btn pg-glow" disabled={loading} onClick={handleSubmit} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: 800, fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? .7 : 1 }}>
               {loading ? '...' : mode === 'login' ? 'Me connecter' : 'Créer mon compte →'}
             </button>
-            <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', marginTop: '14px' }}>🔒 Paiement sécurisé Stripe · Données protégées RGPD</p>
+            {mode === 'login' && (
+              <p style={{ textAlign: 'center', marginTop: '12px' }}>
+                <button onClick={() => { setMode('forgot'); setErrMsg(''); }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', padding: 0 }}>
+                  Mot de passe oublié ?
+                </button>
+              </p>
+            )}
+            <p style={{ color: '#334155', fontSize: '11px', textAlign: 'center', marginTop: mode === 'login' ? '8px' : '14px' }}>🔒 Paiement sécurisé Stripe · Données protégées RGPD</p>
           </>
         )}
       </div>
@@ -1197,6 +1273,8 @@ export default function PixGlow() {
   const [paymentSuccess, setPaymentSuccess] = useState(null); // crédits affichés après paiement réussi
   const [showTracker, setShowTracker] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
+  const [resetToken, setResetToken] = useState(null);
+  const [verifyMsg, setVerifyMsg] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -1216,6 +1294,21 @@ export default function PixGlow() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
       setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { setCredits(d.credits); setPaymentSuccess(d.credits); window.history.replaceState({}, '', window.location.pathname); } }); }, 2000);
+    }
+    const verifyT = params.get('verify');
+    if (verifyT) {
+      window.history.replaceState({}, '', window.location.pathname);
+      fetch(`${API_URL}/verify-email/${verifyT}`).then(r => r.json()).then(d => {
+        if (d.status === 'verified' || d.status === 'already_verified') {
+          if (d.token) { localStorage.setItem('pg_token', d.token); localStorage.setItem('pg_email', d.email); setUserEmail(d.email); setCredits(d.credits); setIsConnected(true); }
+          setVerifyMsg({ ok: true, text: d.status === 'already_verified' ? 'Email déjà vérifié. Connectez-vous.' : '✅ Email confirmé ! Vos 5 crédits ont été ajoutés.' });
+        } else { setVerifyMsg({ ok: false, text: 'Lien de vérification invalide ou expiré.' }); }
+      }).catch(() => setVerifyMsg({ ok: false, text: 'Erreur lors de la vérification.' }));
+    }
+    const resetT = params.get('reset');
+    if (resetT) {
+      window.history.replaceState({}, '', window.location.pathname);
+      setResetToken(resetT); setAuthMode('login'); setShowAuth(true);
     }
   }, []);
 
@@ -1525,7 +1618,7 @@ export default function PixGlow() {
   if (page === 'landing') return (
     <div style={{ background: darkMode ? '#0a0a0f' : '#f8f9fc', minHeight: '100vh', color: darkMode ? '#e2e8f0' : '#111118', overflowX: 'hidden' }}>
       <InjectCSS />
-      <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
+      <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} onOptimize={() => { setShowTracker(false); setPage('app'); }} />}
       <Nav />
 
@@ -1917,7 +2010,7 @@ export default function PixGlow() {
   return (
     <div style={{ background: T.pageBg, minHeight: '100vh', color: T.text, paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
       <InjectCSS />
-      <AuthModal show={showAuth} initialMode={authMode} onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} isMobile={isMobile} />
+      <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} onOptimize={() => { setShowTracker(false); isConnected ? null : setShowPlanModal(true); }} />}
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
@@ -1928,6 +2021,12 @@ export default function PixGlow() {
         <div className="pg-slide-up" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.3)', borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <p style={{ color: '#10b981', fontWeight: 700, fontSize: '14px', margin: 0 }}>Paiement confirmé — {paymentSuccess} crédits ajoutés à votre compte.</p>
           <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
+        </div>
+      )}
+      {verifyMsg && (
+        <div className="pg-slide-up" style={{ background: verifyMsg.ok ? 'rgba(16,185,129,.08)' : 'rgba(239,68,68,.08)', border: `1px solid ${verifyMsg.ok ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}`, borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <p style={{ color: verifyMsg.ok ? '#10b981' : '#f87171', fontWeight: 700, fontSize: '14px', margin: 0 }}>{verifyMsg.text}</p>
+          <button onClick={() => setVerifyMsg(null)} style={{ background: 'none', border: 'none', color: verifyMsg.ok ? '#10b981' : '#f87171', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
         </div>
       )}
 
