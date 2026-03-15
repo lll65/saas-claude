@@ -1102,6 +1102,21 @@ Génère UNIQUEMENT ce JSON (sans markdown) :
         print(f"[generate-boosted] {type(e).__name__}: {e}")
         raise HTTPException(500, f"Erreur boost: {str(e)}")
 
+class SuggestionRequest(BaseModel):
+    message: str
+
+@app.post("/suggestion")
+async def receive_suggestion(body: SuggestionRequest):
+    msg = body.message.strip()
+    if not msg or len(msg) < 5:
+        raise HTTPException(400, "Message trop court.")
+    if len(msg) > 2000:
+        raise HTTPException(400, "Message trop long (max 2000 caractères).")
+    if RESEND_API_KEY:
+        html = f"<h2>💡 Suggestion PixGlow</h2><p style='white-space:pre-wrap'>{msg}</p>"
+        _send_via_resend("pixglow.support@proton.me", "💡 Nouvelle suggestion PixGlow", html)
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
