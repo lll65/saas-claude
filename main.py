@@ -216,24 +216,51 @@ async def startup_event():
 # ─────────────────────────────────────────────
 #  EMAIL
 # ─────────────────────────────────────────────
-def send_email(to: str, subject: str, html: str):
-    if not EMAIL_ENABLED:
-        print(f"[EMAIL] SMTP non configuré — email ignoré pour {to} : {subject}")
-        return
+import re as _email_re
+
+def _extract_email_addr(addr: str) -> str:
+    """Extrait l'adresse email brute depuis 'Nom <email@ex.com>' ou 'email@ex.com'."""
+    m = _email_re.search(r'<([^>]+)>', addr)
+    return m.group(1).strip() if m else addr.strip()
+
+def _send_email_sync(to: str, subject: str, html: str):
+    """Envoi SMTP synchrone — appelé dans un thread pour ne pas bloquer."""
+    from_addr = SMTP_FROM if SMTP_FROM else SMTP_USER
+    from_display = f"PixGlow <{_extract_email_addr(from_addr)}>" if '<' not in from_addr else from_addr
+    from_raw = _extract_email_addr(from_display)
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = f"PixGlow <{SMTP_FROM}>"
+        msg["From"]    = from_display
         msg["To"]      = to
         msg.attach(MIMEText(html, "html"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(SMTP_FROM, to, msg.as_string())
+        if SMTP_PORT == 465:
+            import ssl
+            ctx = ssl.create_default_context()
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15, context=ctx) as server:
+                server.login(SMTP_USER, SMTP_PASS)
+                server.sendmail(from_raw, to, msg.as_string())
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(SMTP_USER, SMTP_PASS)
+                server.sendmail(from_raw, to, msg.as_string())
         print(f"[EMAIL] ✅ Envoyé à {to} : {subject}")
+        return True
     except Exception as e:
         print(f"[EMAIL] ❌ Erreur envoi à {to} : {e}")
+        return False
+
+def send_email(to: str, subject: str, html: str) -> bool:
+    """Lance l'envoi dans un thread. Retourne True si SMTP configuré (pas garanti livré)."""
+    if not EMAIL_ENABLED:
+        print(f"[EMAIL] SMTP non configuré — email ignoré pour {to} : {subject}")
+        return False
+    t = threading.Thread(target=_send_email_sync, args=(to, subject, html), daemon=True)
+    t.start()
+    return True
 
 # ─────────────────────────────────────────────
 #  NETTOYAGE AUTO DES IMAGES (toutes les 6h)
@@ -257,6 +284,15 @@ def _cleanup_images():
         if deleted: print(f"[CLEANUP] {deleted} entrées IP > 30j supprimées")
     except Exception as e:
         print(f"[CLEANUP] Erreur purge IP: {e}")
+    # Purge expired/used password reset tokens
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used = TRUE")
+        deleted = cur.rowcount
+        conn.commit(); cur.close(); conn.close()
+        if deleted: print(f"[CLEANUP] {deleted} tokens reset expirés supprimés")
+    except Exception as e:
+        print(f"[CLEANUP] Erreur purge tokens: {e}")
 
 def _schedule_cleanup():
     def loop():
@@ -553,8 +589,8 @@ async def forgot_password(body: ForgotPasswordBody, request: Request):
       <a href="{reset_url}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Réinitialiser mon mot de passe →</a>
       <p style="color:#475569;font-size:12px;">Lien valable 1h. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
     </div>"""
-    send_email(email, "Réinitialisation de mot de passe — PixGlow", html)
-    return {"status": "sent"}
+    email_sent = send_email(email, "Réinitialisation de mot de passe — PixGlow", html)
+    return {"status": "sent", "email_sent": email_sent}
 
 @app.post("/reset-password")
 async def reset_password(body: ResetPasswordBody, request: Request):

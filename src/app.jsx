@@ -780,8 +780,8 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
   useEffect(() => {
     if (show) {
       setMode(resetToken ? 'reset' : (initialMode || 'login'));
-      setErrMsg(''); setConfirmPassword(''); setEmailVerificationSent(false);
-      setForgotSent(false); setResetSuccess(false);
+      setErrMsg(''); setPassword(''); setConfirmPassword('');
+      setEmailVerificationSent(false); setForgotSent(false); setResetSuccess(false);
     }
   }, [show, initialMode, resetToken]);
 
@@ -824,7 +824,13 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
       if (!email.includes('@')) { setErrMsg('Entrez un email valide'); return; }
       setLoading(true);
       try {
-        await fetch(`${API_URL}/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        const res = await fetch(`${API_URL}/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        const data = await res.json();
+        if (!res.ok) { setErrMsg(data.detail || 'Erreur serveur'); setLoading(false); return; }
+        if (data.email_sent === false) {
+          setErrMsg("L'envoi d'email n'est pas configuré. Contactez le support : pixglow.support@proton.me");
+          setLoading(false); return;
+        }
         setForgotSent(true);
       } catch { setErrMsg('Impossible de contacter le serveur.'); }
       finally { setLoading(false); }
@@ -955,7 +961,7 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
             )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,.4)', borderRadius: '12px', padding: '4px', marginBottom: '18px' }}>
               {['login','register'].map(m => (
-                <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
+                <button key={m} className="pg-tab" onClick={() => { setMode(m); setErrMsg(''); setPassword(''); setConfirmPassword(''); }} style={{ background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent', color: mode === m ? '#fff' : '#64748b' }}>
                   {m === 'login' ? 'Se connecter' : "S'inscrire"}
                 </button>
               ))}
@@ -1010,8 +1016,7 @@ function GainsLandingTeaser({ T, isMobile, onStart }) {
   const [articles, setArticles] = useState(20);
   const [prixMoyen, setPrixMoyen] = useState(25);
   const tauxBoost = Math.min(42, 18 + Math.round(articles / 3.5));
-  const ventesEstimees = Math.max(1, Math.round(articles * 0.35));
-  const gainEuros = Math.round(ventesEstimees * prixMoyen * (tauxBoost / 100));
+  const gainEuros = Math.round(articles * prixMoyen * (tauxBoost / 100) * 0.35);
 
   return (
     <section style={{ maxWidth: '980px', margin: '0 auto', padding: isMobile ? '40px 16px' : '64px 40px' }}>
@@ -1021,6 +1026,11 @@ function GainsLandingTeaser({ T, isMobile, onStart }) {
       <p className="pg-reveal" style={{ color: '#475569', textAlign: 'center', marginBottom: '40px', fontSize: '15px' }}>Glisse les curseurs — résultat en temps réel</p>
 
       <div className="pg-reveal" style={{ background: T.cardBg, border: '1px solid rgba(16,185,129,.25)', borderRadius: '24px', padding: isMobile ? '24px 18px' : '36px 40px', maxWidth: '640px', margin: '0 auto' }}>
+
+        <button onClick={onStart} className="pg-btn" style={{ width: '100%', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.3)', color: '#10b981', borderRadius: '10px', padding: '11px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '24px' }}>
+          💰 Calculer mes gains personnalisés →
+        </button>
+
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '28px', marginBottom: '28px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
@@ -1050,15 +1060,9 @@ function GainsLandingTeaser({ T, isMobile, onStart }) {
             <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '48px' : '60px', fontWeight: 900, color: '#10b981', lineHeight: 1 }}>~{gainEuros}€</div>
             <p style={{ color: '#475569', fontSize: '12px', marginTop: '4px' }}>grâce à +{tauxBoost}% de vues sur tes annonces</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '140px' }}>
-            <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '10px 14px' }}>
-              <p style={{ color: '#64748b', fontSize: '11px', margin: '0 0 2px' }}>Ventes estimées</p>
-              <p style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '16px', margin: 0 }}>{ventesEstimees} / mois</p>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '10px 14px' }}>
-              <p style={{ color: '#64748b', fontSize: '11px', margin: '0 0 2px' }}>Boost des vues</p>
-              <p style={{ color: '#10b981', fontWeight: 800, fontSize: '16px', margin: 0 }}>+{tauxBoost}%</p>
-            </div>
+          <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '14px 18px', textAlign: 'center' }}>
+            <p style={{ color: '#64748b', fontSize: '11px', margin: '0 0 4px' }}>Boost des vues</p>
+            <p style={{ color: '#10b981', fontWeight: 800, fontSize: '28px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>+{tauxBoost}%</p>
           </div>
         </div>
 
@@ -1406,7 +1410,8 @@ function FAQSection({ T, isMobile }) {
 
 /* ══ COMPOSANT PRINCIPAL ══ */
 export default function PixGlow() {
-  const [page, setPage] = useState('landing');
+  const [page, setPageRaw] = useState('landing');
+  const setPage = (p) => { setPageRaw(p); window.scrollTo({ top: 0, behavior: 'instant' }); };
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1695,7 +1700,10 @@ export default function PixGlow() {
               }
             </button>
             {isConnected
-              ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
+              ? <>
+                  <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 11px' : '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : '💰 Mes gains'}</button>
+                  <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
+                </>
               : <>
                   <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
                   <button onClick={() => openAuth('register')} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
