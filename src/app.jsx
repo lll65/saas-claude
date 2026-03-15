@@ -738,8 +738,9 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile }) {
       const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
       const data = await res.json();
       if (!res.ok) { setErrMsg(data.detail || 'Identifiants incorrects'); setLoading(false); return; }
-      if (mode === 'register') {
-        // Show email verification screen; backend sends verification email
+      // If backend supports email verification it returns verification_required=true
+      // and no token; otherwise auto-login directly (current backend behaviour)
+      if (mode === 'register' && data.verification_required) {
         setEmailVerificationSent(true);
         setLoading(false);
         return;
@@ -937,19 +938,19 @@ function GainsTracker({ onClose, onOptimize }) {
 /* ══ DEMO SLIDER (landing) ══ */
 const DEMO_PAIRS = [
   {
-    beforeSrc: '/demo/bomber-avant.jpg', afterSrc: '/demo/bomber-apres.jpg',
+    beforeSrc: '/demo/veste-avant.png', afterSrc: '/demo/veste-apres.png',
     beforeLabel: 'Fond encombré', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Veste bomber noire — Taille M',
-    desc: 'Veste bomber noire oversize, taille M. Fermeture éclair dorée. Portée 2 fois, comme neuve. Idéale mi-saison.',
-    tags: ['#vestebomber','#vintedfrançais','#modeoccasion','#overwear','#jacketstyle'],
-    badgeBefore: 'Photo sur lit · Lumière inégale', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
+    titre: 'Veste oversize — Taille M',
+    desc: 'Veste oversize tendance, taille M. Coupe relâchée. Portée 2 fois, comme neuve. Idéale mi-saison.',
+    tags: ['#veste','#vintedfrançais','#modeoccasion','#overwear','#jacketstyle'],
+    badgeBefore: 'Photo brute · Fond encombré', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
   },
   {
-    beforeSrc: '/demo/carhartt-avant.jpg', afterSrc: '/demo/carhartt-apres.png',
+    beforeSrc: '/demo/beanie-avant.png', afterSrc: '/demo/beanie-apres.png',
     beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Fleece Carhartt — Taille L',
-    desc: "Fleece Carhartt Heritage Relaxed Fit, taille L. Coloris naturel/olive. Étiquette présente, porté 5 fois. Très chaud.",
-    tags: ['#carhartt','#fleece','#vintedmode','#streetwear','#modeoccasion'],
+    titre: 'Bonnet laine — Taille unique',
+    desc: 'Bonnet laine douce, taille unique. Coloris naturel. Très peu porté, excellent état.',
+    tags: ['#bonnet','#vintedmode','#accessoires','#hivernale','#modeoccasion'],
     badgeBefore: 'Photo sol · Fond encombré', badgeAfter: 'Fond blanc · Prêt à publier ✅',
   },
 ];
@@ -1051,6 +1052,49 @@ function TypedText({ text, className, style }) {
     return () => clearInterval(timer);
   }, [started, text]);
   return <span ref={ref} className={className} style={style}>{displayed || '\u00a0'}</span>;
+}
+
+/* ══ HERO PHONE ══ */
+function HeroPhone({ isMobile }) {
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [showAfter, setShowAfter] = useState(false);
+  // If video fails, cycle between before/after images
+  useEffect(() => {
+    if (!videoFailed) return;
+    const t = setInterval(() => setShowAfter(v => !v), 2200);
+    return () => clearInterval(t);
+  }, [videoFailed]);
+
+  const phoneW = isMobile ? '200px' : '260px';
+  return (
+    <div className="pg-anim-4" style={{ marginTop: '44px', position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', width: phoneW, flexShrink: 0 }}>
+        <div style={{ background: 'linear-gradient(180deg,#1a1025,#0d0d1a)', border: '2px solid rgba(124,58,237,.45)', borderRadius: '36px', padding: '12px 10px', boxShadow: '0 0 60px rgba(124,58,237,.2), 0 32px 80px rgba(0,0,0,.6)' }}>
+          <div style={{ width: '60px', height: '6px', background: 'rgba(124,58,237,.4)', borderRadius: '4px', margin: '0 auto 10px' }} />
+          <div style={{ borderRadius: '22px', overflow: 'hidden', aspectRatio: '9/16', background: '#000', position: 'relative' }}>
+            {videoFailed ? (
+              <img
+                src={showAfter ? '/demo/veste-apres.png' : '/demo/veste-avant.png'}
+                alt={showAfter ? 'Après PixGlow' : 'Avant PixGlow'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .5s' }}
+              />
+            ) : (
+              <video autoPlay muted loop playsInline
+                onError={() => setVideoFailed(true)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}>
+                <source src="/demo/hero-demo.mp4" type="video/mp4" onError={() => setVideoFailed(true)} />
+              </video>
+            )}
+            <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+              {videoFailed && <span style={{ background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', color: '#94a3b8', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: '1px solid rgba(255,255,255,.08)', transition: 'opacity .4s', opacity: showAfter ? 0 : 1 }}>AVANT</span>}
+              <span style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.9),rgba(79,70,229,.9))', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', opacity: videoFailed && !showAfter ? 0 : 1, transition: 'opacity .4s' }}>APRÈS ✨</span>
+            </div>
+          </div>
+          <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,.15)', borderRadius: '2px', margin: '10px auto 0' }} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ══ SCROLL REVEAL ══ */
@@ -1534,29 +1578,7 @@ export default function PixGlow() {
         </div>
 
         {/* Hero video — before/after 30s — format téléphone portrait */}
-        <div className="pg-anim-4" style={{ marginTop: '44px', position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
-          {/* Phone frame */}
-          <div style={{ position: 'relative', width: isMobile ? '200px' : '260px', flexShrink: 0 }}>
-            {/* Outer phone shell */}
-            <div style={{ background: 'linear-gradient(180deg,#1a1025,#0d0d1a)', border: '2px solid rgba(124,58,237,.45)', borderRadius: '36px', padding: '12px 10px', boxShadow: '0 0 60px rgba(124,58,237,.2), 0 32px 80px rgba(0,0,0,.6)', position: 'relative' }}>
-              {/* Notch */}
-              <div style={{ width: '60px', height: '6px', background: 'rgba(124,58,237,.4)', borderRadius: '4px', margin: '0 auto 10px', border: '1px solid rgba(124,58,237,.3)' }} />
-              {/* Video screen */}
-              <div style={{ borderRadius: '22px', overflow: 'hidden', aspectRatio: '9/16', background: '#000', position: 'relative' }}>
-                <video autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}>
-                  <source src="/demo/hero-demo.mp4" type="video/mp4" />
-                </video>
-                {/* Overlay labels */}
-                <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-                  <span style={{ background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', color: '#94a3b8', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: '1px solid rgba(255,255,255,.08)' }}>AVANT</span>
-                  <span style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.9),rgba(79,70,229,.9))', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px' }}>APRÈS ✨</span>
-                </div>
-              </div>
-              {/* Home indicator */}
-              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,.15)', borderRadius: '2px', margin: '10px auto 0' }} />
-            </div>
-          </div>
-        </div>
+        <HeroPhone isMobile={isMobile} />
       </section>
 
       {/* TRUST BAR — Plateformes */}
