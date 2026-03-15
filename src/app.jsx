@@ -18,13 +18,13 @@ const LegalLayout = ({ title, onBack, children }) => (
   </div>
 );
 function MentionsLegales({ onBack }) {
-  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de PixGlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. PixGlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
+  return (<LegalLayout title="Mentions légales" onBack={onBack}><h2 style={LS.h2}>Éditeur du site</h2><p style={LS.p}>Le site pixglow.app est édité par un entrepreneur individuel.<br/>Email : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p><h2 style={LS.h2}>Hébergement</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Railway Corp</strong> — 548 Market St, San Francisco, CA 94104, USA</p><h2 style={LS.h2}>Propriété intellectuelle</h2><p style={LS.p}>L'ensemble du contenu de PixGlow est protégé par le droit d'auteur. Toute reproduction sans autorisation est interdite.</p><h2 style={LS.h2}>Traitement des paiements</h2><p style={LS.p}>Les paiements sont traités par <strong style={{ color: '#e2e8f0' }}>Stripe Inc.</strong>, certifié PCI-DSS. PixGlow ne stocke aucune donnée bancaire.</p></LegalLayout>);
 }
 function PolitiqueConfidentialite({ onBack }) {
-  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
+  return (<LegalLayout title="Politique de confidentialité" onBack={onBack}><p style={{ ...LS.p, color: '#334155' }}>Conformément au RGPD</p><h2 style={LS.h2}>Données collectées</h2><p style={LS.p}>Adresse email, mot de passe chiffré, adresse IP (quota gratuit), images uploadées (supprimées immédiatement après traitement).</p><h2 style={LS.h2}>Durée de conservation</h2><p style={LS.p}>Images uploadées : <strong style={{ color: '#e2e8f0' }}>supprimées immédiatement après traitement</strong>. Elles ne sont ni stockées, ni analysées à des fins commerciales, ni revendues. · Données IP : 30 jours</p><h2 style={LS.h2}>Vos droits (RGPD)</h2><p style={LS.p}>Contact : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p><h2 style={LS.h2}>Cookies</h2><p style={LS.p}>Aucun cookie de tracking. Un token d'authentification est stocké localement.</p></LegalLayout>);
 }
 function CGV({ onBack }) {
-  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>PixGlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
+  return (<LegalLayout title="Conditions Générales de Vente" onBack={onBack}><h2 style={LS.h2}>Service proposé</h2><p style={LS.p}>PixGlow est un service de traitement automatique d'images et de génération d'annonces IA destiné aux vendeurs e-commerce. PixGlow n'est pas affilié à Leboncoin, Vinted, Amazon, Facebook ou Shopify. Les noms de marques appartiennent à leurs propriétaires respectifs.</p><h2 style={LS.h2}>Tarifs</h2><p style={LS.p}><strong style={{ color: '#e2e8f0' }}>Offre gratuite :</strong> 5 photos offertes par adresse IP, sans inscription, sans carte bancaire.<br/><strong style={{ color: '#e2e8f0' }}>Plan Pro :</strong> 9 € TTC/mois ou 79 € TTC/an. 100 photos/mois incluses (puis 0,09 €/photo supplémentaire). Sans engagement, annulable à tout moment.</p><h2 style={LS.h2}>Droit de rétractation</h2><p style={LS.p}>Conformément à l'article L221-18 du Code de la consommation, vous disposez d'un délai de 14 jours pour exercer votre droit de rétractation. Contact : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a>.</p><h2 style={LS.h2}>Prix</h2><p style={LS.p}>Tous les prix affichés sont des prix réels TTC, sans réduction fictive, conformément à la directive Omnibus et au Code de la consommation.</p></LegalLayout>);
 }
 
 const API_URL = "https://web-production-f1129.up.railway.app";
@@ -1025,9 +1025,9 @@ function DemoSlider({ darkMode, T, isMobile }) {
       <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemples réels · avant / après PixGlow</p>
         <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
-            <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
+            <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '6px 12px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '11px' : '12px', fontFamily: 'inherit', transition: 'all .2s', whiteSpace: 'nowrap' }}>
               {['Bomber noir', 'Carhartt fleece', 'Doudoune', 'Imperméable', 'Montre'][i]}
             </button>
           ))}
@@ -1146,6 +1146,7 @@ function FAQSection({ T, isMobile }) {
     { q: "Est-ce que mes photos sont conservées ?", a: "Non. Tes photos sont supprimées automatiquement après traitement. Nous ne les utilisons jamais à d'autres fins." },
     { q: "La qualité est-elle toujours parfaite ?", a: "Notre IA est entraînée sur des millions d'images produit. Certains cas complexes (transparence, fourrures) peuvent nécessiter un ajustement manuel." },
     { q: "PixGlow est-il légal en France ?", a: "Oui. Droit de rétractation 14 jours (art. L221-18 Code consommation). PixGlow n'est pas affilié à Vinted, Leboncoin ou Amazon. Conforme RGPD." },
+    { q: "Affichage sur mobile — Pourquoi ma photo ne s'affiche pas après l'envoi ?", a: "Sur certains téléphones, il arrive que l'image semble « bloquée » ou ne s'affiche pas visuellement à cause de la mémoire du navigateur. Pas de panique : le traitement fonctionne en arrière-plan ! Attendez quelques secondes : dès que le bouton « Télécharger » devient actif, vous pouvez récupérer votre résultat normalement." },
   ];
   return (
     <section style={{ maxWidth: '780px', margin: '0 auto', padding: isMobile ? '40px 16px' : '72px 40px' }}>
@@ -1171,7 +1172,7 @@ function FAQSection({ T, isMobile }) {
       </div>
       <div style={{ textAlign: 'center', marginTop: '28px' }}>
         <p style={{ color: '#475569', fontSize: '14px', marginBottom: '10px' }}>Une autre question ?</p>
-        <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>support@pixglow.app →</a>
+        <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>pixglow.support@proton.me →</a>
       </div>
     </section>
   );
@@ -1475,9 +1476,9 @@ export default function PixGlow() {
             <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, maxWidth: '260px', marginBottom: '16px' }}>
               Outil IA de traitement photo et rédaction d'annonces pour marketplaces. Développé en France 🇫🇷
             </p>
-            <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="3" width="11" height="8" rx="1.5" stroke="#7c3aed" strokeWidth="1.2"/><path d="M1 4l5.5 4L12 4" stroke="#7c3aed" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-              support@pixglow.app
+              pixglow.support@proton.me
             </a>
           </div>
           {/* Produit */}
@@ -1676,7 +1677,7 @@ export default function PixGlow() {
               <tr style={{ background: darkMode ? 'rgba(124,58,237,.08)' : 'rgba(124,58,237,.05)' }}>
                 <th style={{ padding: '13px 16px', textAlign: 'left', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '12px', color: T.text, borderBottom: `1px solid ${T.cardBorder}` }}>Fonctionnalité</th>
                 {['PixGlow','Remove.bg','Photoroom'].map((brand, bi) => (
-                  <th key={bi} style={{ padding: '13px 12px', textAlign: 'center', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '12px', color: bi === 0 ? '#a78bfa' : '#475569', borderBottom: `1px solid ${T.cardBorder}`, background: bi === 0 ? (darkMode ? 'rgba(124,58,237,.1)' : 'rgba(124,58,237,.06)') : 'transparent', minWidth: '90px' }}>{brand}{bi === 0 && <span style={{ display: 'block', fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>🇫🇷 ici</span>}</th>
+                  <th key={bi} style={{ padding: '13px 12px', textAlign: 'center', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: '12px', color: bi === 0 ? '#a78bfa' : '#475569', borderBottom: `1px solid ${T.cardBorder}`, background: bi === 0 ? (darkMode ? 'rgba(124,58,237,.1)' : 'rgba(124,58,237,.06)') : 'transparent', minWidth: '90px' }}>{brand}{bi === 0 && <span style={{ display: 'block', fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>🇫🇷 Solution française</span>}</th>
                 ))}
               </tr>
             </thead>
@@ -1906,7 +1907,7 @@ export default function PixGlow() {
         ))}
         <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '14px', padding: '20px', marginTop: '18px', textAlign: 'center' }}>
           <p style={{ color: '#a78bfa', fontWeight: 700, marginBottom: '6px' }}>Une autre question ?</p>
-          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:support@pixglow.app" style={{ color: '#7c3aed' }}>support@pixglow.app</a></p>
+          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
         </div>
       </div>
     </div>
