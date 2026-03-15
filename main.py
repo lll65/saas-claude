@@ -823,7 +823,33 @@ async def stripe_webhook(request: Request):
                 result = cur.fetchone()
                 conn.commit(); cur.close(); conn.close()
                 plan_name = metadata.get("plan", "?")
-                print(f"[WEBHOOK] ✅ +{credits_to_add} crédits ({plan_name}) → {email} (total: {result['credits'] if result else '?'})")
+                total_credits = result['credits'] if result else '?'
+                print(f"[WEBHOOK] ✅ +{credits_to_add} crédits ({plan_name}) → {email} (total: {total_credits})")
+                # Prix affiché
+                price_map = {"starter": "7,00 €", "pro": "12,99 €", "elite": "29,00 €"}
+                price_str = price_map.get(plan_name, "—")
+                receipt_html = f"""
+<div style="font-family:DM Sans,Arial,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;border-radius:16px;overflow:hidden">
+  <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:32px 36px 28px;text-align:center">
+    <h1 style="margin:0;font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px">PixGlow</h1>
+    <p style="margin:8px 0 0;color:rgba(255,255,255,.8);font-size:14px">Reçu de paiement</p>
+  </div>
+  <div style="padding:32px 36px">
+    <p style="font-size:16px;font-weight:700;margin:0 0 6px;color:#e2e8f0">Merci pour votre achat !</p>
+    <p style="color:#64748b;font-size:14px;margin:0 0 28px">Vos crédits ont été ajoutés à votre compte.</p>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:20px 22px;margin-bottom:24px">
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr><td style="color:#64748b;padding:6px 0">Pack</td><td style="text-align:right;color:#e2e8f0;font-weight:700;text-transform:capitalize">{plan_name}</td></tr>
+        <tr><td style="color:#64748b;padding:6px 0">Crédits ajoutés</td><td style="text-align:right;color:#a78bfa;font-weight:800">+{credits_to_add} crédits</td></tr>
+        <tr><td style="color:#64748b;padding:6px 0">Total crédits</td><td style="text-align:right;color:#e2e8f0;font-weight:700">{total_credits} crédits</td></tr>
+        <tr><td style="color:#64748b;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">Montant payé</td><td style="text-align:right;color:#e2e8f0;font-weight:800;border-top:1px solid rgba(255,255,255,.07)">{price_str}</td></tr>
+      </table>
+    </div>
+    <p style="color:#64748b;font-size:13px;margin:0 0 6px">Les crédits sont valables à vie, sans abonnement.</p>
+    <p style="color:#64748b;font-size:13px;margin:0">Une question ? <a href="mailto:pixglow.support@proton.me" style="color:#a78bfa">pixglow.support@proton.me</a></p>
+  </div>
+</div>"""
+                send_email(email, f"Reçu PixGlow — {credits_to_add} crédits ajoutés", receipt_html)
             except Exception as e:
                 print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
