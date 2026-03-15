@@ -413,10 +413,10 @@ async def register(body: AuthBody, request: Request):
     if cur.fetchone():
         cur.close(); conn.close()
         raise HTTPException(400, "Cet email est déjà utilisé. Essayez de vous connecter.")
-    cur.execute("INSERT INTO users (email, password_hash, credits) VALUES (%s, %s, 0)",
+    cur.execute("INSERT INTO users (email, password_hash, credits) VALUES (%s, %s, 5)",
                 (email, hash_password(body.password)))
     conn.commit(); cur.close(); conn.close()
-    return {"status": "success", "token": create_token(email), "credits": 0}
+    return {"status": "success", "token": create_token(email), "credits": 5}
 
 @app.post("/login")
 async def login(body: AuthBody, request: Request):

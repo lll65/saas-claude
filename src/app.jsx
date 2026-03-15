@@ -1025,9 +1025,9 @@ function DemoSlider({ darkMode, T, isMobile }) {
       <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemples réels · avant / après PixGlow</p>
         <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>Le curseur se déplace automatiquement — glisse-le ensuite pour explorer</p>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
           {DEMO_PAIRS.map((p, i) => (
-            <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', transition: 'all .2s' }}>
+            <button key={i} onClick={() => setDemoIdx(i)} style={{ background: demoIdx === i ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.04)', border: `1px solid ${demoIdx === i ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.1)'}`, color: demoIdx === i ? '#fff' : '#64748b', borderRadius: '8px', padding: '6px 12px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '11px' : '12px', fontFamily: 'inherit', transition: 'all .2s', whiteSpace: 'nowrap' }}>
               {['Bomber noir', 'Carhartt fleece', 'Doudoune', 'Imperméable', 'Montre'][i]}
             </button>
           ))}
