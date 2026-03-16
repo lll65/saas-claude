@@ -765,6 +765,26 @@ function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits
   );
 }
 
+/* ══ MOBILE NAV BAR (news / gains / aide) ══ */
+function MobileNavBar({ isMobile, show, onNews, onGains, onHelp, darkMode }) {
+  if (!isMobile || !show) return null;
+  const items = [
+    { icon: '📰', label: 'Nouveautés', onClick: onNews },
+    { icon: '💰', label: 'Mes gains',  onClick: onGains },
+    { icon: '❓', label: 'Aide',        onClick: onHelp  },
+  ];
+  return (
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 198, background: darkMode ? 'rgba(10,8,20,.97)' : 'rgba(255,255,255,.97)', backdropFilter: 'blur(16px)', borderTop: `1px solid ${darkMode ? 'rgba(124,58,237,.2)' : 'rgba(0,0,0,.08)'}`, padding: '6px 0 calc(6px + env(safe-area-inset-bottom,0px))', display: 'flex' }}>
+      {items.map(({ icon, label, onClick }) => (
+        <button key={label} onClick={onClick} style={{ flex: 1, background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '4px 0', cursor: 'pointer', color: darkMode ? '#94a3b8' : '#6b7280', fontFamily: 'inherit' }}>
+          <span style={{ fontSize: '20px', lineHeight: 1 }}>{icon}</span>
+          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.2px' }}>{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ─── AUTH MODAL ─── */
 function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken }) {
   const [mode, setMode] = useState(initialMode || 'login');
@@ -1646,8 +1666,8 @@ export default function PixGlow() {
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
-      const prevCredits = credits;
-      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { const added = prevCredits !== null ? d.credits - prevCredits : d.credits; setCredits(d.credits); setPaymentSuccess({ total: d.credits, added }); setPage('app'); window.history.replaceState({}, '', window.location.pathname); } }); }, 1500);
+      const purchasedCredits = parseInt(params.get('credits') || '0', 10);
+      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { const added = purchasedCredits > 0 ? purchasedCredits : d.credits; setCredits(d.credits); setPaymentSuccess({ total: d.credits, added }); setPage('app'); window.history.replaceState({}, '', window.location.pathname); } }); }, 1500);
     }
     const verifyT = params.get('verify');
     if (verifyT) {
@@ -1973,7 +1993,7 @@ export default function PixGlow() {
 
   /* ══ LANDING ══ */
   if (page === 'landing') return (
-    <div style={{ background: darkMode ? '#0a0a0f' : '#f8f9fc', minHeight: '100vh', color: darkMode ? '#e2e8f0' : '#111118', overflowX: 'hidden' }}>
+    <div style={{ background: darkMode ? '#0a0a0f' : '#f8f9fc', minHeight: '100vh', color: darkMode ? '#e2e8f0' : '#111118', overflowX: 'hidden', paddingBottom: isMobile ? '64px' : '0' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} onOptimize={() => { setShowTracker(false); setPage('app'); }} />}
@@ -2333,6 +2353,14 @@ export default function PixGlow() {
       </section>
 
       <Footer />
+      <MobileNavBar
+        isMobile={isMobile}
+        show={true}
+        onNews={() => setPage('nouveautes')}
+        onGains={() => setShowTracker(true)}
+        onHelp={() => setPage('help')}
+        darkMode={darkMode}
+      />
     </div>
   );
 
@@ -2368,7 +2396,7 @@ export default function PixGlow() {
 
 /* ══ APP ══ */
   return (
-    <div style={{ background: T.pageBg, minHeight: '100vh', color: T.text, paddingBottom: isMobile && hasResults ? '80px' : '0' }}>
+    <div style={{ background: T.pageBg, minHeight: '100vh', color: T.text, paddingBottom: isMobile ? (hasResults ? '80px' : '64px') : '0' }}>
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
@@ -2587,6 +2615,14 @@ export default function PixGlow() {
         onBuyCredits={isConnected ? () => setShowPlanModal(true) : () => openAuth('register')}
         isMobile={isMobile}
         zipping={zipping}
+      />
+      <MobileNavBar
+        isMobile={isMobile}
+        show={!hasResults}
+        onNews={() => setPage('nouveautes')}
+        onGains={() => setShowTracker(true)}
+        onHelp={() => setPage('help')}
+        darkMode={darkMode}
       />
     </div>
   );

@@ -786,7 +786,7 @@ async def create_checkout_session(body: CheckoutBody, current_user: str = Depend
                 "product_data": {"name": plan["name"],
                     "description": f"{plan['credits']} credits - 1 credit = 1 photo fond blanc - Valables a vie."},
                 "unit_amount": plan["amount"]}, "quantity": 1}],
-            success_url=f"{FRONTEND_URL}/?payment=success",
+            success_url=f"{FRONTEND_URL}/?payment=success&credits={plan['credits']}",
             cancel_url=f"{FRONTEND_URL}/?payment=cancel",
             metadata={"email": current_user, "plan": body.plan, "credits": str(plan["credits"])}
         )
