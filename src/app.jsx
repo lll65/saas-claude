@@ -180,9 +180,9 @@ const GLOBAL_CSS = `
 
   @keyframes pg-badge-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
   .pg-live { animation: pg-badge-pulse 2s infinite; }
-  @keyframes pg-glow-green { 0%,100%{box-shadow:0 4px 20px rgba(16,185,129,.35), 0 0 0 0 rgba(16,185,129,.4);} 50%{box-shadow:0 8px 40px rgba(16,185,129,.55), 0 0 0 10px rgba(16,185,129,0);} }
-  .pg-glow-green { animation: pg-glow-green 2.2s infinite; }
-  @keyframes pg-credits-glow { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.15), inset 0 1px 0 rgba(16,185,129,.1);} 50%{box-shadow:0 0 40px rgba(16,185,129,.18), inset 0 1px 0 rgba(16,185,129,.15);} }
+  @keyframes pg-glow-purple { 0%,100%{box-shadow:0 4px 18px rgba(124,58,237,.3), 0 0 0 0 rgba(124,58,237,.35);} 50%{box-shadow:0 8px 32px rgba(124,58,237,.5), 0 0 0 8px rgba(124,58,237,0);} }
+  .pg-glow-purple { animation: pg-glow-purple 2.2s infinite; }
+  @keyframes pg-credits-glow { 0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.1);} 50%{box-shadow:0 0 32px rgba(124,58,237,.15);} }
   .pg-credits-card { animation: pg-credits-glow 3s ease-in-out infinite; }
 
   @keyframes pg-reveal { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
@@ -1466,7 +1466,7 @@ const CHANGELOG = [
     date: '16 mars 2026',
     version: 'v1.4',
     items: [
-      { type: 'new', label: '🎁 Parrainage', desc: 'Invitez vos amis et gagnez des crédits gratuits ! Pour chaque ami qui vérifie son email via votre lien, vous recevez +1 crédit et votre ami reçoit +5 crédits bonus. Limite : 10 parrainages par mois.' },
+      { type: 'new', label: '🎁 Parrainage', desc: 'Invitez vos amis et gagnez des crédits gratuits ! Pour chaque ami qui vérifie son email via votre lien, vous recevez +5 crédits et votre ami reçoit +5 crédits bonus. Limite : 10 parrainages par mois.' },
       { type: 'improve', label: 'Section crédits redessinée', desc: 'La section "Plus de crédits" est maintenant plus lisible avec des cartes par offre, les prix au format large et l\'économie par photo.' },
       { type: 'improve', label: 'Bouton Inviter sur mobile', desc: 'Le bouton Inviter est désormais accessible directement depuis la barre de navigation sur téléphone.' },
     ],
@@ -2040,7 +2040,7 @@ export default function PixGlow() {
               <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '18px', margin: 0 }}>🎁 Inviter un ami</h3>
               <button onClick={() => setShowReferral(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', fontFamily: 'inherit' }}>✕</button>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+1 crédit</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+5 crédits</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
             <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
               <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
               <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
@@ -2466,7 +2466,7 @@ export default function PixGlow() {
               <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '18px', margin: 0 }}>🎁 Inviter un ami</h3>
               <button onClick={() => setShowReferral(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', fontFamily: 'inherit' }}>✕</button>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+1 crédit</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+5 crédits</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
             <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
               <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
               <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
@@ -2671,49 +2671,29 @@ export default function PixGlow() {
             </div>
           </div>
         ) : (
-          <div className="pg-credits-card" style={{ background: darkMode ? 'linear-gradient(160deg,rgba(16,185,129,.07),rgba(245,158,11,.05))' : 'linear-gradient(160deg,rgba(16,185,129,.1),rgba(245,158,11,.07))', border: '1px solid rgba(16,185,129,.28)', borderRadius: '22px', padding: isMobile ? '24px 16px' : '32px 36px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-            {/* glows décoratifs pulsants */}
-            <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(16,185,129,.15) 0%, transparent 65%)', pointerEvents: 'none', animation: 'pg-badge-pulse 3s ease-in-out infinite' }} />
-            <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '180px', height: '180px', background: 'radial-gradient(circle, rgba(245,158,11,.12) 0%, transparent 65%)', pointerEvents: 'none', animation: 'pg-badge-pulse 4s ease-in-out infinite reverse' }} />
-            {/* badge Live */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span className="pg-live" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', borderRadius: '100px', padding: '4px 14px', fontSize: '11px', fontWeight: 800, letterSpacing: '.6px', textTransform: 'uppercase' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff', display: 'inline-block', animation: 'pg-pulse-score 1.4s infinite' }} />
-                Recharger mes crédits
-              </span>
-            </div>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '21px' : '26px', fontWeight: 800, marginBottom: '4px', color: T.text, lineHeight: 1.2 }}>
-              <span className="pg-shimmer">Plus de crédits</span> = plus de ventes 💸
-            </h3>
-            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '22px' }}>Paiement unique · Crédits à vie · Description IA offerte</p>
-            <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'stretch' }}>
-              {/* Starter */}
-              <button onClick={() => handlePayment('starter')} className="pg-btn" style={{ background: T.cardBg, border: `1.5px solid rgba(245,158,11,.4)`, borderRadius: '16px', padding: isMobile ? '14px 16px' : '16px 22px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '100px' : '130px', transition: 'transform .15s, box-shadow .15s' }} onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(245,158,11,.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
-                <div style={{ fontSize: '10px', fontWeight: 800, color: '#f59e0b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.8px' }}>Starter</div>
-                <div style={{ fontSize: isMobile ? '24px' : '28px', fontWeight: 900, color: T.text, lineHeight: 1 }}>7€</div>
-                <div style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 700, marginTop: '4px' }}>30 crédits</div>
-                <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '2px' }}>0,23€/photo</div>
+          <div className="pg-credits-card" style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.08),rgba(79,70,229,.05))', border: '1px solid rgba(124,58,237,.25)', borderRadius: '18px', padding: isMobile ? '16px 14px' : '20px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '140px', height: '140px', background: 'radial-gradient(circle, rgba(124,58,237,.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '16px' : '18px', fontWeight: 800, marginBottom: '3px', color: T.text }}>Besoin de plus de crédits ?</h3>
+            <p style={{ color: T.textMuted, fontSize: '12px', marginBottom: '14px' }}>Valables à vie · Sans abonnement · Description IA incluse</p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+              <button onClick={() => handlePayment('starter')} className="pg-btn" style={{ background: T.cardBg, border: `1px solid rgba(245,158,11,.35)`, borderRadius: '12px', padding: '10px 14px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '90px' : '110px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '.5px' }}>Starter</div>
+                <div style={{ fontSize: '20px', fontWeight: 900, color: T.text, lineHeight: 1.1 }}>7€</div>
+                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>30 crédits</div>
               </button>
-              {/* Pro — vert émeraude avec glow pulsant */}
-              <button onClick={() => handlePayment('pro')} className="pg-btn pg-glow-green" style={{ background: 'linear-gradient(145deg,#10b981,#059669,#047857)', border: 'none', borderRadius: '16px', padding: isMobile ? '18px 16px' : '20px 26px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '120px' : '150px', position: 'relative', transform: 'scale(1.06)', transition: 'transform .15s' }} onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform='scale(1.06)'}>
-                <div style={{ position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', color: '#000', borderRadius: '100px', padding: '3px 12px', fontSize: '10px', fontWeight: 900, whiteSpace: 'nowrap', letterSpacing: '.3px', boxShadow: '0 2px 8px rgba(245,158,11,.4)' }}>⭐ POPULAIRE</div>
-                <div style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,.85)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.8px', marginTop: '4px' }}>Pro</div>
-                <div style={{ fontSize: isMobile ? '26px' : '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>12,99€</div>
-                <div style={{ fontSize: '13px', color: '#a7f3d0', fontWeight: 700, marginTop: '4px' }}>100 crédits</div>
-                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,.65)', marginTop: '2px' }}>0,13€/photo</div>
+              <button onClick={() => handlePayment('pro')} className="pg-btn pg-glow-purple" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', border: 'none', borderRadius: '12px', padding: '10px 16px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '105px' : '125px', position: 'relative', transform: 'scale(1.05)' }}>
+                <div style={{ position: 'absolute', top: '-9px', left: '50%', transform: 'translateX(-50%)', background: '#fbbf24', color: '#000', borderRadius: '100px', padding: '2px 9px', fontSize: '9px', fontWeight: 900, whiteSpace: 'nowrap' }}>⭐ POPULAIRE</div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,.8)', textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '2px' }}>Pro</div>
+                <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>12,99€</div>
+                <div style={{ fontSize: '11px', color: '#ddd6fe', fontWeight: 700 }}>100 crédits</div>
               </button>
-              {/* Elite */}
-              <button onClick={() => handlePayment('elite')} className="pg-btn" style={{ background: T.cardBg, border: `1.5px solid rgba(96,165,250,.4)`, borderRadius: '16px', padding: isMobile ? '14px 16px' : '16px 22px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '100px' : '130px', transition: 'transform .15s, box-shadow .15s' }} onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(96,165,250,.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
-                <div style={{ fontSize: '10px', fontWeight: 800, color: '#60a5fa', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.8px' }}>Elite</div>
-                <div style={{ fontSize: isMobile ? '24px' : '28px', fontWeight: 900, color: T.text, lineHeight: 1 }}>29€</div>
-                <div style={{ fontSize: '13px', color: '#60a5fa', fontWeight: 700, marginTop: '4px' }}>300 crédits</div>
-                <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '2px' }}>0,10€/photo</div>
+              <button onClick={() => handlePayment('elite')} className="pg-btn" style={{ background: T.cardBg, border: `1px solid rgba(96,165,250,.35)`, borderRadius: '12px', padding: '10px 14px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '90px' : '110px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.5px' }}>Elite</div>
+                <div style={{ fontSize: '20px', fontWeight: 900, color: T.text, lineHeight: 1.1 }}>29€</div>
+                <div style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 700 }}>300 crédits</div>
               </button>
             </div>
-            <p style={{ color: T.textSub, fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 3L5 9 2 6" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Paiement sécurisé Stripe · Crédits valables à vie · Sans abonnement
-            </p>
+            <p style={{ color: T.textSub, fontSize: '11px' }}>🔒 Paiement sécurisé Stripe · Crédits valables à vie</p>
           </div>
         )}
       </div>
