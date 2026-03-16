@@ -766,21 +766,24 @@ function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits
 }
 
 /* ══ MOBILE NAV BAR (news / gains / aide) ══ */
-function MobileNavBar({ isMobile, show, onNews, onGains, onHelp, darkMode }) {
-  if (!isMobile || !show) return null;
+function MobileNavBar({ isMobile, show, onNews, onGains, onHelp, onShare, darkMode }) {
+  const [hidden, setHidden] = React.useState(false);
+  if (!isMobile || !show || hidden) return null;
   const items = [
     { icon: '📰', label: 'Nouveautés', onClick: onNews },
     { icon: '💰', label: 'Mes gains',  onClick: onGains },
+    { icon: '🎁', label: 'Inviter',    onClick: onShare },
     { icon: '❓', label: 'Aide',        onClick: onHelp  },
   ];
   return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 198, background: darkMode ? 'rgba(10,8,20,.97)' : 'rgba(255,255,255,.97)', backdropFilter: 'blur(16px)', borderTop: `1px solid ${darkMode ? 'rgba(124,58,237,.2)' : 'rgba(0,0,0,.08)'}`, padding: '6px 0 calc(6px + env(safe-area-inset-bottom,0px))', display: 'flex' }}>
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 198, background: darkMode ? 'rgba(10,8,20,.97)' : 'rgba(255,255,255,.97)', backdropFilter: 'blur(16px)', borderTop: `1px solid ${darkMode ? 'rgba(124,58,237,.2)' : 'rgba(0,0,0,.08)'}`, padding: '6px 0 calc(6px + env(safe-area-inset-bottom,0px))', display: 'flex', alignItems: 'stretch' }}>
       {items.map(({ icon, label, onClick }) => (
         <button key={label} onClick={onClick} style={{ flex: 1, background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '4px 0', cursor: 'pointer', color: darkMode ? '#94a3b8' : '#6b7280', fontFamily: 'inherit' }}>
           <span style={{ fontSize: '20px', lineHeight: 1 }}>{icon}</span>
           <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.2px' }}>{label}</span>
         </button>
       ))}
+      <button onClick={() => setHidden(true)} style={{ background: 'none', border: 'none', borderLeft: `1px solid ${darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'}`, color: darkMode ? '#475569' : '#9ca3af', cursor: 'pointer', padding: '4px 12px', fontSize: '16px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Masquer">✕</button>
     </div>
   );
 }
@@ -875,7 +878,9 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
     if (mode === 'register' && password !== confirmPassword) { setErrMsg('Les mots de passe ne correspondent pas'); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
+      const body = { email: email.trim().toLowerCase(), password };
+      if (mode === 'register') { const ref = sessionStorage.getItem('pg_ref'); if (ref) body.referral_code = ref; }
+      const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { setErrMsg(data.detail || 'Identifiants incorrects'); setLoading(false); return; }
       if (mode === 'register' && data.verification_required) {
@@ -1468,7 +1473,7 @@ const CHANGELOG = [
     items: [
       { type: 'new', label: 'Tracker de gains', desc: 'Estimez vos revenus potentiels selon vos articles mis en ligne. Accessible depuis la barre de navigation.' },
       { type: 'new', label: 'Téléchargement ZIP', desc: 'Toutes vos photos traitées en un seul clic, compressées dans un fichier ZIP prêt à l\'emploi.' },
-      { type: 'improve', label: 'Traitement jusqu\'à 10 photos', desc: 'Envoyez jusqu\'à 10 photos en une seule fois, toutes traitées simultanément.' },
+      { type: 'improve', label: 'Traitement jusqu\'à 5 photos', desc: 'Envoyez jusqu\'à 5 photos en une seule fois, toutes traitées simultanément.' },
       { type: 'fix', label: 'Affichage HEIC iPhone', desc: 'Correction d\'un bug d\'affichage sur certains modèles d\'iPhone avec les photos au format HEIC.' },
     ],
   },
@@ -1645,6 +1650,8 @@ export default function PixGlow() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(null); // crédits affichés après paiement réussi
   const [showTracker, setShowTracker] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
+  const [referralData, setReferralData] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const [resetToken, setResetToken] = useState(null);
   const [verifyMsg, setVerifyMsg] = useState(null);
@@ -1679,6 +1686,9 @@ export default function PixGlow() {
         } else { setVerifyMsg({ ok: false, text: 'Lien de vérification invalide ou expiré.' }); }
       }).catch(() => setVerifyMsg({ ok: false, text: 'Erreur lors de la vérification.' }));
     }
+    // Referral code in URL → store for registration
+    const refCode = params.get('ref');
+    if (refCode) { sessionStorage.setItem('pg_ref', refCode.toUpperCase()); window.history.replaceState({}, '', window.location.pathname); }
     const resetT = params.get('reset');
     if (resetT) {
       window.history.replaceState({}, '', window.location.pathname);
@@ -1690,6 +1700,10 @@ export default function PixGlow() {
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   useEffect(() => { if (page === 'app' && !isConnected) { openAuth('register'); setPage('landing'); } }, [page, isConnected]);
   const handleLogout = () => { ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setPage('landing'); };
+  const openReferral = () => {
+    if (!isConnected) { openAuth('register'); return; }
+    fetch(`${API_URL}/my-referral`, { headers: authHeaders() }).then(r => r.json()).then(d => { setReferralData(d); setShowReferral(true); }).catch(() => {});
+  };
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
   const limitReached = isConnected && credits !== null && credits <= 0;
   const canSelect = () => isConnected && credits !== null && credits > 0;
@@ -1900,6 +1914,7 @@ export default function PixGlow() {
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
                 {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
+                {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
@@ -2358,6 +2373,7 @@ export default function PixGlow() {
         show={true}
         onNews={() => setPage('nouveautes')}
         onGains={() => setShowTracker(true)}
+        onShare={openReferral}
         onHelp={() => setPage('help')}
         darkMode={darkMode}
       />
@@ -2401,6 +2417,27 @@ export default function PixGlow() {
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} onOptimize={() => { setShowTracker(false); isConnected ? null : setShowPlanModal(true); }} />}
+      {showReferral && referralData && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowReferral(false)}>
+          <div style={{ background: '#0d0d1a', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', padding: '28px', maxWidth: '380px', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '18px', margin: 0 }}>🎁 Inviter un ami</h3>
+              <button onClick={() => setShowReferral(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', fontFamily: 'inherit' }}>✕</button>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami crée un compte et vérifie son email, vous recevez <strong style={{ color: '#a78bfa' }}>+1 crédit offert</strong>.</p>
+            <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
+              <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
+              <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px' }}>
+              <span style={{ color: '#6ee7b7', fontSize: '14px' }}>Parrainages effectués</span>
+              <span style={{ color: '#10b981', fontWeight: 800, fontSize: '16px' }}>{referralData.referrals_given} / {referralData.max_referrals}</span>
+            </div>
+            <button onClick={() => { const url = `${window.location.origin}/?ref=${referralData.code}`; if (navigator.share) { navigator.share({ title: 'PixGlow — Photos fond blanc', text: 'Transforme tes photos en fond blanc en 1 clic pour Vinted !', url }); } else { navigator.clipboard.writeText(url).catch(()=>{}); } }} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>📤 Partager le lien</button>
+            {referralData.referrals_given >= referralData.max_referrals && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>Limite atteinte — 5 parrainages maximum.</p>}
+          </div>
+        </div>
+      )}
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
@@ -2621,6 +2658,7 @@ export default function PixGlow() {
         show={!hasResults}
         onNews={() => setPage('nouveautes')}
         onGains={() => setShowTracker(true)}
+        onShare={openReferral}
         onHelp={() => setPage('help')}
         darkMode={darkMode}
       />
