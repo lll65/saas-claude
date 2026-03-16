@@ -400,11 +400,11 @@ def _can_refer(cur, referral_code: str) -> bool:
     return count < MAX_REFERRALS_PER_MONTH
 
 def _apply_referral_credit(cur, referral_code: str):
-    """Give +1 credit to referrer, reset monthly counter if needed."""
+    """Give +5 credits to referrer, reset monthly counter if needed."""
     mk = _current_month_key()
     cur.execute("""
         UPDATE users SET
-            credits = credits + 1,
+            credits = credits + 5,
             referrals_given = CASE WHEN referrals_month_key = %s THEN referrals_given + 1 ELSE 1 END,
             referrals_month_key = %s
         WHERE referral_code = %s
