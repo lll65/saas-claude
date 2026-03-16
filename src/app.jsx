@@ -1936,6 +1936,7 @@ export default function PixGlow() {
               }
             </button>
             {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>}
+            {!isMobile && isConnected && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
             {isConnected
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
@@ -2012,6 +2013,27 @@ export default function PixGlow() {
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} onOptimize={() => { setShowTracker(false); setPage('app'); }} />}
+      {showReferral && referralData && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowReferral(false)}>
+          <div style={{ background: '#0d0d1a', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', padding: '28px', maxWidth: '380px', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '18px', margin: 0 }}>🎁 Inviter un ami</h3>
+              <button onClick={() => setShowReferral(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', fontFamily: 'inherit' }}>✕</button>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+1 crédit</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
+            <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
+              <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
+              <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px' }}>
+              <span style={{ color: '#6ee7b7', fontSize: '14px' }}>Parrainages ce mois-ci</span>
+              <span style={{ color: '#10b981', fontWeight: 800, fontSize: '16px' }}>{referralData.referrals_given} / {referralData.max_referrals}</span>
+            </div>
+            <button onClick={() => { const url = `${window.location.origin}/?ref=${referralData.code}`; if (navigator.share) { navigator.share({ title: 'PixGlow — Photos fond blanc', text: 'Transforme tes photos en fond blanc en 1 clic pour Vinted !', url }); } else { navigator.clipboard.writeText(url).catch(()=>{}); } }} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>📤 Partager le lien</button>
+            {referralData.referrals_given >= referralData.max_referrals && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>Limite atteinte — 10 parrainages maximum ce mois-ci.</p>}
+          </div>
+        </div>
+      )}
       <Nav />
 
       {/* HERO */}
@@ -2382,12 +2404,12 @@ export default function PixGlow() {
 
   /* ══ AIDE ══ */
   if (page === 'help') return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0' }}>
+    <div style={{ background: T.pageBg, minHeight: '100vh', color: T.text }}>
       <InjectCSS />
       <Nav />
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: isMobile ? '32px 16px' : '60px 40px' }}>
         <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '28px' : '40px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Centre d'aide</h1>
-        <p style={{ color: '#334155', marginBottom: '36px' }}>Tout ce que tu dois savoir sur PixGlow</p>
+        <p style={{ color: T.textSub, marginBottom: '36px' }}>Tout ce que tu dois savoir sur PixGlow</p>
         {[
           { q: 'Comment fonctionnent les 5 photos gratuites ?', r: "Chaque adresse IP bénéficie de 5 traitements gratuits, sans inscription ni carte bancaire. Ils sont comptés sur nos serveurs et ne se réinitialisent jamais." },
           { q: 'Comment fonctionne la description automatique ?', r: "Après traitement de ta photo, un bouton \"Prêt pour Vinted ?\" apparaît. En 1 clic, un texte optimisé est généré : titre, description avec emojis et hashtags pour Vinted et Leboncoin. Fonctionnalité réservée aux comptes créés." },
@@ -2398,13 +2420,13 @@ export default function PixGlow() {
           { q: 'Les statistiques du tracker de gains sont-elles réelles ?', r: "Le tracker de gains fournit des estimations basées sur les moyennes observées chez nos utilisateurs. Ce ne sont pas des données récupérées depuis votre profil Vinted." },
         ].map((item,i) => (
           <div key={i} style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: '14px', padding: '20px 22px', marginBottom: '10px' }}>
-            <p style={{ fontWeight: 700, color: '#e2e8f0', marginBottom: '8px', fontSize: '15px' }}>{item.q}</p>
-            <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, margin: 0 }}>{item.r}</p>
+            <p style={{ fontWeight: 700, color: T.text, marginBottom: '8px', fontSize: '15px' }}>{item.q}</p>
+            <p style={{ color: T.textMuted, fontSize: '14px', lineHeight: 1.65, margin: 0 }}>{item.r}</p>
           </div>
         ))}
         <div style={{ background: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.18)', borderRadius: '14px', padding: '20px', marginTop: '18px', textAlign: 'center' }}>
           <p style={{ color: '#a78bfa', fontWeight: 700, marginBottom: '6px' }}>Une autre question ?</p>
-          <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
+          <p style={{ color: T.textMuted, fontSize: '14px', margin: 0 }}>Contactez-nous : <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed' }}>pixglow.support@proton.me</a></p>
         </div>
       </div>
     </div>
