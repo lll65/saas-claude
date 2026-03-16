@@ -2424,7 +2424,7 @@ export default function PixGlow() {
               <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '18px', margin: 0 }}>🎁 Inviter un ami</h3>
               <button onClick={() => setShowReferral(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', fontFamily: 'inherit' }}>✕</button>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami crée un compte et vérifie son email, vous recevez <strong style={{ color: '#a78bfa' }}>+1 crédit offert</strong>.</p>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+1 crédit</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
             <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
               <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
               <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
@@ -2434,7 +2434,7 @@ export default function PixGlow() {
               <span style={{ color: '#10b981', fontWeight: 800, fontSize: '16px' }}>{referralData.referrals_given} / {referralData.max_referrals}</span>
             </div>
             <button onClick={() => { const url = `${window.location.origin}/?ref=${referralData.code}`; if (navigator.share) { navigator.share({ title: 'PixGlow — Photos fond blanc', text: 'Transforme tes photos en fond blanc en 1 clic pour Vinted !', url }); } else { navigator.clipboard.writeText(url).catch(()=>{}); } }} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>📤 Partager le lien</button>
-            {referralData.referrals_given >= referralData.max_referrals && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>Limite atteinte — 5 parrainages maximum.</p>}
+            {referralData.referrals_given >= referralData.max_referrals && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>Limite atteinte — 10 parrainages maximum ce mois-ci.</p>}
           </div>
         </div>
       )}
