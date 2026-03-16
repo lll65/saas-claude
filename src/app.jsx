@@ -1372,11 +1372,16 @@ function useScrollReveal() {
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
-    }, { threshold: 0.25 });
-    const observe = () => document.querySelectorAll('.pg-reveal').forEach(el => observer.observe(el));
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    const observe = () => {
+      document.querySelectorAll('.pg-reveal, .pg-reveal-left, .pg-reveal-right').forEach(el => {
+        if (!el.classList.contains('visible')) observer.observe(el);
+      });
+    };
     observe();
-    const t = setTimeout(observe, 300);
-    return () => { observer.disconnect(); clearTimeout(t); };
+    const t1 = setTimeout(observe, 300);
+    const t2 = setTimeout(observe, 800);
+    return () => { observer.disconnect(); clearTimeout(t1); clearTimeout(t2); };
   }, []);
 }
 
@@ -1641,7 +1646,8 @@ export default function PixGlow() {
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
-      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { setCredits(d.credits); setPaymentSuccess(d.credits); window.history.replaceState({}, '', window.location.pathname); } }); }, 2000);
+      const prevCredits = credits;
+      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { const added = prevCredits !== null ? d.credits - prevCredits : d.credits; setCredits(d.credits); setPaymentSuccess({ total: d.credits, added }); setPage('app'); window.history.replaceState({}, '', window.location.pathname); } }); }, 1500);
     }
     const verifyT = params.get('verify');
     if (verifyT) {
@@ -1873,9 +1879,9 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '7px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : 'Mes gains'}</button>
+                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
-                <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>
+                <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
             ) : (
               <>
@@ -1894,12 +1900,12 @@ export default function PixGlow() {
                 : <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
               }
             </button>
-            <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : '💰 Mes gains'}</button>
+            {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>}
             {isConnected
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
-                  <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>
-                  <button onClick={() => openAuth('register')} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 12px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
+                  {!isMobile && <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>}
+                  <button onClick={() => openAuth('register')} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
                 </>}
           </>
         )}
@@ -2372,9 +2378,15 @@ export default function PixGlow() {
       <Nav showBack={true} />
 
       {paymentSuccess !== null && (
-        <div className="pg-slide-up" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.3)', borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-          <p style={{ color: '#10b981', fontWeight: 700, fontSize: '14px', margin: 0 }}>Paiement confirmé — {paymentSuccess} crédits ajoutés à votre compte.</p>
-          <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
+        <div className="pg-slide-up" style={{ background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.35)', borderRadius: '0', padding: isMobile ? '14px 16px' : '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '20px' }}>🎉</span>
+            <div>
+              <p style={{ color: '#10b981', fontWeight: 800, fontSize: '14px', margin: 0 }}>Paiement confirmé !</p>
+              <p style={{ color: '#6ee7b7', fontSize: '13px', margin: '2px 0 0' }}>+{paymentSuccess.added} crédits ajoutés · Total : <strong>{paymentSuccess.total} crédits</strong> · Un reçu a été envoyé par email.</p>
+            </div>
+          </div>
+          <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '18px', fontFamily: 'inherit', padding: '0 4px', flexShrink: 0 }}>✕</button>
         </div>
       )}
       {verifyMsg && (

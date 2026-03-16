@@ -29,5 +29,5 @@ Thumbs.db
 
 # Project
 output/
-*.png
-*.jpg
+output/*.png
+output/*.jpg
