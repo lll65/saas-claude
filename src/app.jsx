@@ -180,6 +180,10 @@ const GLOBAL_CSS = `
 
   @keyframes pg-badge-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
   .pg-live { animation: pg-badge-pulse 2s infinite; }
+  @keyframes pg-glow-green { 0%,100%{box-shadow:0 4px 20px rgba(16,185,129,.35), 0 0 0 0 rgba(16,185,129,.4);} 50%{box-shadow:0 8px 40px rgba(16,185,129,.55), 0 0 0 10px rgba(16,185,129,0);} }
+  .pg-glow-green { animation: pg-glow-green 2.2s infinite; }
+  @keyframes pg-credits-glow { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.15), inset 0 1px 0 rgba(16,185,129,.1);} 50%{box-shadow:0 0 40px rgba(16,185,129,.18), inset 0 1px 0 rgba(16,185,129,.15);} }
+  .pg-credits-card { animation: pg-credits-glow 3s ease-in-out infinite; }
 
   @keyframes pg-reveal { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
   .pg-reveal { opacity:0; }
@@ -1459,6 +1463,15 @@ function FAQSection({ T, isMobile }) {
 //    et colle-le EN PREMIER dans ce tableau. Types disponibles : 'new' | 'improve' | 'fix'
 const CHANGELOG = [
   {
+    date: '16 mars 2026',
+    version: 'v1.4',
+    items: [
+      { type: 'new', label: '🎁 Parrainage', desc: 'Invitez vos amis et gagnez des crédits gratuits ! Pour chaque ami qui vérifie son email via votre lien, vous recevez +1 crédit et votre ami reçoit +5 crédits bonus. Limite : 10 parrainages par mois.' },
+      { type: 'improve', label: 'Section crédits redessinée', desc: 'La section "Plus de crédits" est maintenant plus lisible avec des cartes par offre, les prix au format large et l\'économie par photo.' },
+      { type: 'improve', label: 'Bouton Inviter sur mobile', desc: 'Le bouton Inviter est désormais accessible directement depuis la barre de navigation sur téléphone.' },
+    ],
+  },
+  {
     date: '15 mars 2026',
     version: 'v1.3',
     items: [
@@ -1702,7 +1715,14 @@ export default function PixGlow() {
   const handleLogout = () => { ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setPage('landing'); };
   const openReferral = () => {
     if (!isConnected) { openAuth('register'); return; }
-    fetch(`${API_URL}/my-referral`, { headers: authHeaders() }).then(r => r.json()).then(d => { setReferralData(d); setShowReferral(true); }).catch(() => {});
+    fetch(`${API_URL}/my-referral`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => { setReferralData(d); setShowReferral(true); })
+      .catch(() => {
+        // fallback : on ouvre quand même le modal avec données minimales
+        setReferralData({ code: null, referrals_given: 0, max_referrals: 10 });
+        setShowReferral(true);
+      });
   };
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
   const limitReached = isConnected && credits !== null && credits <= 0;
@@ -1913,8 +1933,8 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
-                {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
+                <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : 'Mes gains'}</button>
+                <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁{isMobile ? '' : ' Inviter'}</button>
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
@@ -2651,34 +2671,42 @@ export default function PixGlow() {
             </div>
           </div>
         ) : (
-          <div style={{ background: darkMode ? 'linear-gradient(160deg,rgba(16,185,129,.06),rgba(245,158,11,.04))' : 'linear-gradient(160deg,rgba(16,185,129,.08),rgba(245,158,11,.06))', border: '1px solid rgba(16,185,129,.22)', borderRadius: '22px', padding: isMobile ? '22px 16px' : '30px 36px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-            {/* glow décoratif */}
-            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', background: 'radial-gradient(circle, rgba(16,185,129,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: '-30px', left: '-30px', width: '120px', height: '120px', background: 'radial-gradient(circle, rgba(245,158,11,.10) 0%, transparent 70%)', pointerEvents: 'none' }} />
-            <span style={{ display: 'inline-block', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', borderRadius: '100px', padding: '3px 12px', fontSize: '11px', fontWeight: 800, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '10px' }}>Recharger mes crédits</span>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '20px' : '24px', fontWeight: 800, marginBottom: '4px', color: T.text }}>Plus de crédits = plus de ventes 💸</h3>
-            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '20px' }}>Paiement unique · Crédits à vie · Description IA offerte</p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
+          <div className="pg-credits-card" style={{ background: darkMode ? 'linear-gradient(160deg,rgba(16,185,129,.07),rgba(245,158,11,.05))' : 'linear-gradient(160deg,rgba(16,185,129,.1),rgba(245,158,11,.07))', border: '1px solid rgba(16,185,129,.28)', borderRadius: '22px', padding: isMobile ? '24px 16px' : '32px 36px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            {/* glows décoratifs pulsants */}
+            <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(16,185,129,.15) 0%, transparent 65%)', pointerEvents: 'none', animation: 'pg-badge-pulse 3s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '180px', height: '180px', background: 'radial-gradient(circle, rgba(245,158,11,.12) 0%, transparent 65%)', pointerEvents: 'none', animation: 'pg-badge-pulse 4s ease-in-out infinite reverse' }} />
+            {/* badge Live */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span className="pg-live" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', borderRadius: '100px', padding: '4px 14px', fontSize: '11px', fontWeight: 800, letterSpacing: '.6px', textTransform: 'uppercase' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff', display: 'inline-block', animation: 'pg-pulse-score 1.4s infinite' }} />
+                Recharger mes crédits
+              </span>
+            </div>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '21px' : '26px', fontWeight: 800, marginBottom: '4px', color: T.text, lineHeight: 1.2 }}>
+              <span className="pg-shimmer">Plus de crédits</span> = plus de ventes 💸
+            </h3>
+            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '22px' }}>Paiement unique · Crédits à vie · Description IA offerte</p>
+            <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'stretch' }}>
               {/* Starter */}
-              <button onClick={() => handlePayment('starter')} className="pg-btn" style={{ background: T.cardBg, border: `1px solid rgba(245,158,11,.35)`, borderRadius: '14px', padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '120px' : '140px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '.5px' }}>Starter</div>
-                <div style={{ fontSize: '22px', fontWeight: 800, color: T.text, lineHeight: 1 }}>7€</div>
-                <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 700, marginTop: '2px' }}>30 crédits</div>
+              <button onClick={() => handlePayment('starter')} className="pg-btn" style={{ background: T.cardBg, border: `1.5px solid rgba(245,158,11,.4)`, borderRadius: '16px', padding: isMobile ? '14px 16px' : '16px 22px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '100px' : '130px', transition: 'transform .15s, box-shadow .15s' }} onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(245,158,11,.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#f59e0b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.8px' }}>Starter</div>
+                <div style={{ fontSize: isMobile ? '24px' : '28px', fontWeight: 900, color: T.text, lineHeight: 1 }}>7€</div>
+                <div style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 700, marginTop: '4px' }}>30 crédits</div>
                 <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '2px' }}>0,23€/photo</div>
               </button>
-              {/* Pro — mise en avant avec couleur distincte (vert émeraude) */}
-              <button onClick={() => handlePayment('pro')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', borderRadius: '14px', padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '140px' : '160px', boxShadow: '0 4px 20px rgba(16,185,129,.35)', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '-9px', left: '50%', transform: 'translateX(-50%)', background: '#fbbf24', color: '#000', borderRadius: '100px', padding: '2px 10px', fontSize: '10px', fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: '.3px' }}>⭐ POPULAIRE</div>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,.8)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '4px' }}>Pro</div>
-                <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>12,99€</div>
-                <div style={{ fontSize: '12px', color: '#d1fae5', fontWeight: 700, marginTop: '2px' }}>100 crédits</div>
-                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,.7)', marginTop: '2px' }}>0,13€/photo</div>
+              {/* Pro — vert émeraude avec glow pulsant */}
+              <button onClick={() => handlePayment('pro')} className="pg-btn pg-glow-green" style={{ background: 'linear-gradient(145deg,#10b981,#059669,#047857)', border: 'none', borderRadius: '16px', padding: isMobile ? '18px 16px' : '20px 26px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '120px' : '150px', position: 'relative', transform: 'scale(1.06)', transition: 'transform .15s' }} onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform='scale(1.06)'}>
+                <div style={{ position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', color: '#000', borderRadius: '100px', padding: '3px 12px', fontSize: '10px', fontWeight: 900, whiteSpace: 'nowrap', letterSpacing: '.3px', boxShadow: '0 2px 8px rgba(245,158,11,.4)' }}>⭐ POPULAIRE</div>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,.85)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.8px', marginTop: '4px' }}>Pro</div>
+                <div style={{ fontSize: isMobile ? '26px' : '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>12,99€</div>
+                <div style={{ fontSize: '13px', color: '#a7f3d0', fontWeight: 700, marginTop: '4px' }}>100 crédits</div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,.65)', marginTop: '2px' }}>0,13€/photo</div>
               </button>
               {/* Elite */}
-              <button onClick={() => handlePayment('elite')} className="pg-btn" style={{ background: T.cardBg, border: `1px solid rgba(96,165,250,.35)`, borderRadius: '14px', padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '120px' : '140px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#60a5fa', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '.5px' }}>Elite</div>
-                <div style={{ fontSize: '22px', fontWeight: 800, color: T.text, lineHeight: 1 }}>29€</div>
-                <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 700, marginTop: '2px' }}>300 crédits</div>
+              <button onClick={() => handlePayment('elite')} className="pg-btn" style={{ background: T.cardBg, border: `1.5px solid rgba(96,165,250,.4)`, borderRadius: '16px', padding: isMobile ? '14px 16px' : '16px 22px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '100px' : '130px', transition: 'transform .15s, box-shadow .15s' }} onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(96,165,250,.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#60a5fa', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.8px' }}>Elite</div>
+                <div style={{ fontSize: isMobile ? '24px' : '28px', fontWeight: 900, color: T.text, lineHeight: 1 }}>29€</div>
+                <div style={{ fontSize: '13px', color: '#60a5fa', fontWeight: 700, marginTop: '4px' }}>300 crédits</div>
                 <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '2px' }}>0,10€/photo</div>
               </button>
             </div>
