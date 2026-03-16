@@ -208,6 +208,16 @@ async def startup_event():
             expires_at TIMESTAMP NOT NULL,
             used BOOLEAN DEFAULT FALSE
         )""")
+        # Referral system
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referrals_given INTEGER DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referrals_month_key TEXT DEFAULT ''")
+        # Generate referral codes for existing users who don't have one
+        cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
+        for u in cur.fetchall():
+            code = secrets.token_hex(4).upper()
+            cur.execute("UPDATE users SET referral_code = %s WHERE email = %s AND referral_code IS NULL", (code, u["email"]))
         conn.commit(); cur.close(); conn.close()
         print("[STARTUP] ✅ Tables OK")
     except Exception as e:
@@ -356,6 +366,7 @@ def reduce_wrinkles(img: Image.Image, strength: float = 0.45) -> Image.Image:
 class AuthBody(BaseModel):
     email: str
     password: str
+    referral_code: str | None = None
 
 def hash_password(p: str) -> str:
     return _bcrypt.hashpw(p.encode("utf-8")[:72], _bcrypt.gensalt(12)).decode()
@@ -373,6 +384,32 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
     except JWTError:
         return None
+
+MAX_REFERRALS_PER_MONTH = 10
+
+def _current_month_key() -> str:
+    return datetime.utcnow().strftime("%Y%m")
+
+def _can_refer(cur, referral_code: str) -> bool:
+    """Return True if the referrer can still earn a credit this month."""
+    cur.execute("SELECT referrals_given, referrals_month_key FROM users WHERE referral_code = %s", (referral_code,))
+    r = cur.fetchone()
+    if not r: return False
+    mk = _current_month_key()
+    count = r["referrals_given"] if r["referrals_month_key"] == mk else 0
+    return count < MAX_REFERRALS_PER_MONTH
+
+def _apply_referral_credit(cur, referral_code: str):
+    """Give +1 credit to referrer, reset monthly counter if needed."""
+    mk = _current_month_key()
+    cur.execute("""
+        UPDATE users SET
+            credits = credits + 1,
+            referrals_given = CASE WHEN referrals_month_key = %s THEN referrals_given + 1 ELSE 1 END,
+            referrals_month_key = %s
+        WHERE referral_code = %s
+          AND (referrals_month_key != %s OR referrals_given < %s)
+    """, (mk, mk, referral_code, mk, MAX_REFERRALS_PER_MONTH))
 
 def get_real_ip(request: Request) -> str:
     PRIVATE_PREFIXES = ("100.64.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
@@ -513,10 +550,18 @@ async def register(body: AuthBody, request: Request):
     if cur.fetchone():
         cur.close(); conn.close()
         raise HTTPException(400, "Cet email est déjà utilisé. Essayez de vous connecter.")
+    # Validate referral code
+    ref_code = body.referral_code.strip().upper() if body.referral_code else None
+    if ref_code:
+        cur.execute("SELECT email FROM users WHERE referral_code = %s", (ref_code,))
+        referrer = cur.fetchone()
+        if not referrer or referrer["email"] == email:
+            ref_code = None  # invalid or self-referral
     verification_token = secrets.token_urlsafe(32)
+    new_ref_code = secrets.token_hex(4).upper()
     cur.execute(
-        "INSERT INTO users (email, password_hash, credits, email_verified, verification_token) VALUES (%s, %s, 0, FALSE, %s)",
-        (email, hash_password(body.password), verification_token)
+        "INSERT INTO users (email, password_hash, credits, email_verified, verification_token, referral_code, referred_by) VALUES (%s, %s, 0, FALSE, %s, %s, %s)",
+        (email, hash_password(body.password), verification_token, new_ref_code, ref_code)
     )
     conn.commit(); cur.close(); conn.close()
     # Send verification email
@@ -533,9 +578,14 @@ async def register(body: AuthBody, request: Request):
     if not EMAIL_ENABLED:
         # Dev mode: auto-login without verification
         conn2 = get_db(); cur2 = conn2.cursor()
-        cur2.execute("UPDATE users SET email_verified=TRUE, credits=5, verification_token=NULL WHERE email=%s", (email,))
+        cur2.execute("SELECT referred_by FROM users WHERE email=%s", (email,))
+        row2 = cur2.fetchone()
+        bonus = 5 if row2 and row2["referred_by"] else 0
+        cur2.execute("UPDATE users SET email_verified=TRUE, credits=%s, verification_token=NULL WHERE email=%s", (5 + bonus, email))
+        if row2 and row2["referred_by"] and _can_refer(cur2, row2["referred_by"]):
+            _apply_referral_credit(cur2, row2["referred_by"])
         conn2.commit(); cur2.close(); conn2.close()
-        return {"status": "success", "token": create_token(email), "credits": 5}
+        return {"status": "success", "token": create_token(email), "credits": 5 + bonus}
     return {"status": "success", "verification_required": True}
 
 @app.post("/login")
@@ -548,6 +598,22 @@ async def login(body: AuthBody, request: Request):
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(401, "Email ou mot de passe incorrect")
     return {"status": "success", "token": create_token(email), "credits": user["credits"]}
+
+@app.get("/my-referral")
+async def get_my_referral(current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT referral_code, referrals_given, referrals_month_key FROM users WHERE email = %s", (current_user,))
+    user = cur.fetchone()
+    code = user["referral_code"]
+    if not code:
+        code = secrets.token_hex(4).upper()
+        cur.execute("UPDATE users SET referral_code = %s WHERE email = %s", (code, current_user))
+        conn.commit()
+    mk = _current_month_key()
+    monthly_count = user["referrals_given"] if user["referrals_month_key"] == mk else 0
+    cur.close(); conn.close()
+    return {"code": code, "referrals_given": monthly_count, "max_referrals": MAX_REFERRALS_PER_MONTH}
 
 @app.get("/me")
 async def get_me(current_user: str = Depends(get_current_user)):
@@ -569,11 +635,18 @@ async def verify_email(token: str):
     if user["email_verified"]:
         cur.close(); conn.close()
         return {"status": "already_verified"}
+    cur.execute("SELECT email, referred_by FROM users WHERE verification_token = %s", (token,))
+    ref_row = cur.fetchone()
+    ref_code = ref_row["referred_by"] if ref_row else None
+    bonus = 5 if ref_code and _can_refer(cur, ref_code) else 0
     cur.execute(
-        "UPDATE users SET email_verified=TRUE, credits=5, verification_token=NULL WHERE verification_token=%s RETURNING email, credits",
-        (token,)
+        "UPDATE users SET email_verified=TRUE, credits=%s, verification_token=NULL WHERE verification_token=%s RETURNING email, credits",
+        (5 + bonus, token,)
     )
     row = cur.fetchone()
+    # Give referrer +1 credit (max 10/month)
+    if ref_code and bonus:
+        _apply_referral_credit(cur, ref_code)
     conn.commit(); cur.close(); conn.close()
     email = row["email"]
     return {"status": "verified", "token": create_token(email), "credits": row["credits"], "email": email}
