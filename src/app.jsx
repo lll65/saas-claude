@@ -2651,15 +2651,41 @@ export default function PixGlow() {
             </div>
           </div>
         ) : (
-          <div style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.07),rgba(79,70,229,.04))', border: '1px solid rgba(124,58,237,.18)', borderRadius: '20px', padding: isMobile ? '22px 18px' : '28px 36px', textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '17px' : '20px', fontWeight: 800, marginBottom: '6px', color: T.text }}>Besoin de plus de crédits ?</h3>
-            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '16px' }}>Valables à vie · Sans abonnement · Description IA incluse à chaque crédit</p>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
-              {[{plan:'starter',label:'30 crédits — 7€',col:'#f59e0b'},{plan:'pro',label:'100 crédits — 12,99€',col:'#a78bfa'},{plan:'elite',label:'300 crédits — 29€',col:'#60a5fa'}].map(p => (
-                <button key={p.plan} onClick={() => handlePayment(p.plan)} className="pg-btn" style={{ background: p.plan==='pro' ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : T.cardBg, border: p.plan==='pro' ? 'none' : `1px solid ${T.cardBorder}`, color: p.col, borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>{p.label}{p.plan==='pro' ? ' — Populaire' : ''}</button>
-              ))}
+          <div style={{ background: darkMode ? 'linear-gradient(160deg,rgba(16,185,129,.06),rgba(245,158,11,.04))' : 'linear-gradient(160deg,rgba(16,185,129,.08),rgba(245,158,11,.06))', border: '1px solid rgba(16,185,129,.22)', borderRadius: '22px', padding: isMobile ? '22px 16px' : '30px 36px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            {/* glow décoratif */}
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', background: 'radial-gradient(circle, rgba(16,185,129,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-30px', left: '-30px', width: '120px', height: '120px', background: 'radial-gradient(circle, rgba(245,158,11,.10) 0%, transparent 70%)', pointerEvents: 'none' }} />
+            <span style={{ display: 'inline-block', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', borderRadius: '100px', padding: '3px 12px', fontSize: '11px', fontWeight: 800, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '10px' }}>Recharger mes crédits</span>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '20px' : '24px', fontWeight: 800, marginBottom: '4px', color: T.text }}>Plus de crédits = plus de ventes 💸</h3>
+            <p style={{ color: T.textMuted, fontSize: '13px', marginBottom: '20px' }}>Paiement unique · Crédits à vie · Description IA offerte</p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
+              {/* Starter */}
+              <button onClick={() => handlePayment('starter')} className="pg-btn" style={{ background: T.cardBg, border: `1px solid rgba(245,158,11,.35)`, borderRadius: '14px', padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '120px' : '140px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '.5px' }}>Starter</div>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: T.text, lineHeight: 1 }}>7€</div>
+                <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 700, marginTop: '2px' }}>30 crédits</div>
+                <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '2px' }}>0,23€/photo</div>
+              </button>
+              {/* Pro — mise en avant avec couleur distincte (vert émeraude) */}
+              <button onClick={() => handlePayment('pro')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', borderRadius: '14px', padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '140px' : '160px', boxShadow: '0 4px 20px rgba(16,185,129,.35)', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '-9px', left: '50%', transform: 'translateX(-50%)', background: '#fbbf24', color: '#000', borderRadius: '100px', padding: '2px 10px', fontSize: '10px', fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: '.3px' }}>⭐ POPULAIRE</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,.8)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '4px' }}>Pro</div>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>12,99€</div>
+                <div style={{ fontSize: '12px', color: '#d1fae5', fontWeight: 700, marginTop: '2px' }}>100 crédits</div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,.7)', marginTop: '2px' }}>0,13€/photo</div>
+              </button>
+              {/* Elite */}
+              <button onClick={() => handlePayment('elite')} className="pg-btn" style={{ background: T.cardBg, border: `1px solid rgba(96,165,250,.35)`, borderRadius: '14px', padding: '12px 18px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', minWidth: isMobile ? '120px' : '140px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#60a5fa', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '.5px' }}>Elite</div>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: T.text, lineHeight: 1 }}>29€</div>
+                <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 700, marginTop: '2px' }}>300 crédits</div>
+                <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '2px' }}>0,10€/photo</div>
+              </button>
             </div>
-            <p style={{ color: T.textSub, fontSize: '11px' }}>Paiement sécurisé Stripe · Crédits valables à vie</p>
+            <p style={{ color: T.textSub, fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 3L5 9 2 6" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Paiement sécurisé Stripe · Crédits valables à vie · Sans abonnement
+            </p>
           </div>
         )}
       </div>
