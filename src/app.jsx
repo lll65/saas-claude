@@ -2670,7 +2670,7 @@ export default function PixGlow() {
               <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.textMuted, borderRadius: '12px', padding: '14px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>J'ai déjà un compte</button>
             </div>
           </div>
-        ) : (
+        ) : (credits !== null && credits < 10 ? (
           <div className="pg-credits-card" style={{ background: 'linear-gradient(160deg,rgba(124,58,237,.08),rgba(79,70,229,.05))', border: '1px solid rgba(124,58,237,.25)', borderRadius: '18px', padding: isMobile ? '16px 14px' : '20px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '140px', height: '140px', background: 'radial-gradient(circle, rgba(124,58,237,.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
             <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '16px' : '18px', fontWeight: 800, marginBottom: '3px', color: T.text }}>Besoin de plus de crédits ?</h3>
@@ -2695,7 +2695,7 @@ export default function PixGlow() {
             </div>
             <p style={{ color: T.textSub, fontSize: '11px' }}>🔒 Paiement sécurisé Stripe · Crédits valables à vie</p>
           </div>
-        )}
+        ) : null)}
       </div>
       <Footer />
 
