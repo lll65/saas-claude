@@ -182,6 +182,10 @@ const GLOBAL_CSS = `
   .pg-live { animation: pg-badge-pulse 2s infinite; }
   @keyframes pg-glow-purple { 0%,100%{box-shadow:0 4px 18px rgba(124,58,237,.3), 0 0 0 0 rgba(124,58,237,.35);} 50%{box-shadow:0 8px 32px rgba(124,58,237,.5), 0 0 0 8px rgba(124,58,237,0);} }
   .pg-glow-purple { animation: pg-glow-purple 2.2s infinite; }
+  @keyframes pg-glow-amber { 0%,100%{box-shadow:0 4px 18px rgba(245,158,11,.25), 0 0 0 0 rgba(245,158,11,.35);} 50%{box-shadow:0 8px 28px rgba(245,158,11,.4), 0 0 0 8px rgba(245,158,11,0);} }
+  .pg-glow-amber { animation: pg-glow-amber 2.4s infinite; }
+  @keyframes pg-glow-blue { 0%,100%{box-shadow:0 4px 18px rgba(96,165,250,.25), 0 0 0 0 rgba(96,165,250,.35);} 50%{box-shadow:0 8px 28px rgba(96,165,250,.4), 0 0 0 8px rgba(96,165,250,0);} }
+  .pg-glow-blue { animation: pg-glow-blue 2.4s infinite; }
   @keyframes pg-credits-glow { 0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.1);} 50%{box-shadow:0 0 32px rgba(124,58,237,.15);} }
   .pg-credits-card { animation: pg-credits-glow 3s ease-in-out infinite; }
 
@@ -2320,7 +2324,7 @@ export default function PixGlow() {
                 </div>
               ))}
             </div>
-            <button onClick={() => isConnected ? handlePayment('starter') : openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir →</button>
+            <button onClick={() => isConnected ? handlePayment('starter') : openAuth('register')} className="pg-btn pg-glow-amber" style={{ width: '100%', background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir →</button>
           </div>
 
           {/* Pro — highlighted */}
@@ -2356,7 +2360,7 @@ export default function PixGlow() {
                 </div>
               ))}
             </div>
-            <button onClick={() => isConnected ? handlePayment('elite') : openAuth('register')} className="pg-btn" style={{ width: '100%', background: 'rgba(96,165,250,.12)', border: '1px solid rgba(96,165,250,.3)', color: '#60a5fa', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir Elite →</button>
+            <button onClick={() => isConnected ? handlePayment('elite') : openAuth('register')} className="pg-btn pg-glow-blue" style={{ width: '100%', background: 'rgba(96,165,250,.12)', border: '1px solid rgba(96,165,250,.3)', color: '#60a5fa', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir Elite →</button>
           </div>
 
         </div>
