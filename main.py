@@ -822,34 +822,56 @@ async def stripe_webhook(request: Request):
                 cur.execute("UPDATE users SET credits = credits + %s WHERE email = %s RETURNING credits", (credits_to_add, email))
                 result = cur.fetchone()
                 conn.commit(); cur.close(); conn.close()
+                import datetime
                 plan_name = metadata.get("plan", "?")
                 total_credits = result['credits'] if result else '?'
                 print(f"[WEBHOOK] ✅ +{credits_to_add} crédits ({plan_name}) → {email} (total: {total_credits})")
-                # Prix affiché
-                price_map = {"starter": "7,00 €", "pro": "12,99 €", "elite": "29,00 €"}
-                price_str = price_map.get(plan_name, "—")
-                receipt_html = f"""
-<div style="font-family:DM Sans,Arial,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0f;color:#e2e8f0;border-radius:16px;overflow:hidden">
-  <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:32px 36px 28px;text-align:center">
-    <h1 style="margin:0;font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px">PixGlow</h1>
-    <p style="margin:8px 0 0;color:rgba(255,255,255,.8);font-size:14px">Reçu de paiement</p>
+                price_map    = {"starter": "7,00 €", "pro": "12,99 €", "elite": "29,00 €"}
+                ht_map       = {"starter": "5,84 €", "pro": "10,83 €", "elite": "24,17 €"}
+                tva_map      = {"starter": "1,16 €", "pro": "2,16 €",  "elite": "4,83 €"}
+                price_str    = price_map.get(plan_name, "—")
+                ht_str       = ht_map.get(plan_name, "—")
+                tva_str      = tva_map.get(plan_name, "—")
+                invoice_num  = f"PG-{datetime.datetime.utcnow().strftime('%Y%m%d')}-{obj.get('id','???')[-6:].upper()}"
+                invoice_date = datetime.datetime.utcnow().strftime('%d/%m/%Y')
+                plan_label_map = {"starter": "Pack Starter — 30 crédits", "pro": "Pack Pro — 100 crédits", "elite": "Pack Elite — 300 crédits"}
+                plan_label   = plan_label_map.get(plan_name, plan_name)
+                receipt_html = f"""<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:20px;background:#f1f5f9;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+  <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:28px 32px;text-align:center">
+    <h1 style="margin:0;font-size:26px;font-weight:800;color:#fff">PixGlow</h1>
+    <p style="margin:6px 0 0;color:rgba(255,255,255,.85);font-size:13px">Facture de vente</p>
   </div>
-  <div style="padding:32px 36px">
-    <p style="font-size:16px;font-weight:700;margin:0 0 6px;color:#e2e8f0">Merci pour votre achat !</p>
-    <p style="color:#64748b;font-size:14px;margin:0 0 28px">Vos crédits ont été ajoutés à votre compte.</p>
-    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:20px 22px;margin-bottom:24px">
-      <table style="width:100%;border-collapse:collapse;font-size:14px">
-        <tr><td style="color:#64748b;padding:6px 0">Pack</td><td style="text-align:right;color:#e2e8f0;font-weight:700;text-transform:capitalize">{plan_name}</td></tr>
-        <tr><td style="color:#64748b;padding:6px 0">Crédits ajoutés</td><td style="text-align:right;color:#a78bfa;font-weight:800">+{credits_to_add} crédits</td></tr>
-        <tr><td style="color:#64748b;padding:6px 0">Total crédits</td><td style="text-align:right;color:#e2e8f0;font-weight:700">{total_credits} crédits</td></tr>
-        <tr><td style="color:#64748b;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)">Montant payé</td><td style="text-align:right;color:#e2e8f0;font-weight:800;border-top:1px solid rgba(255,255,255,.07)">{price_str}</td></tr>
-      </table>
+  <div style="padding:28px 32px">
+    <table style="width:100%;font-size:13px;color:#64748b;margin-bottom:24px;border-collapse:collapse">
+      <tr><td style="padding:3px 0">N° Facture</td><td style="text-align:right;font-weight:700;color:#111">{invoice_num}</td></tr>
+      <tr><td style="padding:3px 0">Date</td><td style="text-align:right;color:#111">{invoice_date}</td></tr>
+      <tr><td style="padding:3px 0">Client</td><td style="text-align:right;color:#111">{email}</td></tr>
+    </table>
+    <table style="width:100%;font-size:13px;color:#64748b;margin-bottom:8px;border-collapse:collapse">
+      <tr><td style="padding:3px 0">Vendeur</td><td style="text-align:right;color:#111">PixGlow — Entrepreneur individuel</td></tr>
+      <tr><td style="padding:3px 0">Contact</td><td style="text-align:right;color:#111">pixglow.support@proton.me</td></tr>
+    </table>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0">
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px 12px;color:#475569;font-weight:600;border-radius:6px 0 0 6px">Description</th><th style="text-align:right;padding:10px 12px;color:#475569;font-weight:600">Crédits</th><th style="text-align:right;padding:10px 12px;color:#475569;font-weight:600;border-radius:0 6px 6px 0">Montant</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:12px;color:#111;font-weight:600">{plan_label}<br><span style="font-weight:400;color:#64748b;font-size:12px">Traitement photo IA — valables à vie</span></td><td style="padding:12px;text-align:right;color:#7c3aed;font-weight:800">+{credits_to_add}</td><td style="padding:12px;text-align:right;font-weight:700;color:#111">{ht_str}</td></tr>
+      </tbody>
+    </table>
+    <table style="width:100%;font-size:13px;color:#64748b;margin-top:12px;border-collapse:collapse">
+      <tr><td style="padding:4px 12px">Sous-total HT</td><td style="text-align:right;padding:4px 12px">{ht_str}</td></tr>
+      <tr><td style="padding:4px 12px">TVA 20 %</td><td style="text-align:right;padding:4px 12px">{tva_str}</td></tr>
+      <tr style="border-top:2px solid #e2e8f0"><td style="padding:10px 12px;font-weight:800;color:#111;font-size:15px">Total TTC</td><td style="text-align:right;padding:10px 12px;font-weight:800;color:#7c3aed;font-size:15px">{price_str}</td></tr>
+    </table>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0">
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin-bottom:20px">
+      <p style="margin:0;font-size:13px;color:#15803d;font-weight:700">✅ {credits_to_add} crédits ajoutés · Solde actuel : {total_credits} crédits</p>
     </div>
-    <p style="color:#64748b;font-size:13px;margin:0 0 6px">Les crédits sont valables à vie, sans abonnement.</p>
-    <p style="color:#64748b;font-size:13px;margin:0">Une question ? <a href="mailto:pixglow.support@proton.me" style="color:#a78bfa">pixglow.support@proton.me</a></p>
+    <p style="color:#94a3b8;font-size:11px;line-height:1.6;margin:0">Conformément à l'art. L221-28 12° du Code de la consommation, le droit de rétractation ne s'applique pas aux prestations numériques immédiatement exécutées. Paiement traité par Stripe. En cas de question : <a href="mailto:pixglow.support@proton.me" style="color:#7c3aed">pixglow.support@proton.me</a></p>
   </div>
-</div>"""
-                send_email(email, f"Reçu PixGlow — {credits_to_add} crédits ajoutés", receipt_html)
+</div></body></html>"""
+                send_email(email, f"Facture PixGlow n° {invoice_num} — {price_str}", receipt_html)
             except Exception as e:
                 print(f"[WEBHOOK] ❌ Erreur DB: {e}")
     return {"status": "success"}
