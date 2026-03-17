@@ -8,12 +8,10 @@ __pycache__/
 env/
 venv/
 *.egg-info/
-dist/
 build/
 
 # Node
 node_modules/
-dist/
 .env.local
 .env.*.local
 
