@@ -1982,11 +1982,11 @@ export default function PixGlow() {
   );
 
   const Footer = () => (
-    <footer style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)'}`, padding: isMobile ? '36px 20px 28px' : '52px 48px 36px', background: darkMode ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.02)' }}>
+    <footer style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)'}`, padding: isMobile ? '24px 20px 20px' : '52px 48px 36px', background: darkMode ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.02)' }}>
       <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr', gap: isMobile ? '28px' : '40px', marginBottom: '40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr 1fr 1fr', gap: isMobile ? '20px 24px' : '40px', marginBottom: isMobile ? '24px' : '40px' }}>
           {/* Brand */}
-          <div>
+          <div style={isMobile ? { gridColumn: '1 / -1' } : {}}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px' }}>✨</div>
               <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
