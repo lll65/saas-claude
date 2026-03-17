@@ -1671,6 +1671,11 @@ export default function PixGlow() {
   const [showTracker, setShowTracker] = useState(false);
   const [showReferral, setShowReferral] = useState(false);
   const [referralData, setReferralData] = useState(null);
+  const [refCopied, setRefCopied] = useState(false);
+  const copyRefLink = (text) => {
+    const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); } catch(e) {} };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }).catch(fallback); } else { fallback(); }
+  };
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const [resetToken, setResetToken] = useState(null);
   const [verifyMsg, setVerifyMsg] = useState(null);
@@ -2050,7 +2055,7 @@ export default function PixGlow() {
             <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+5 crédits</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
             <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
               <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
-              <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
+              <button onClick={() => copyRefLink(`${window.location.origin}/?ref=${referralData.code}`)} style={{ background: refCopied ? 'rgba(16,185,129,.25)' : 'rgba(124,58,237,.2)', border: 'none', color: refCopied ? '#34d399' : '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0, transition: 'all .2s' }}>{refCopied ? '✓ Copié !' : 'Copier'}</button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px' }}>
               <span style={{ color: '#6ee7b7', fontSize: '14px' }}>Parrainages ce mois-ci</span>
@@ -2476,7 +2481,7 @@ export default function PixGlow() {
             <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>Partagez votre lien. Quand un ami vérifie son email : vous gagnez <strong style={{ color: '#a78bfa' }}>+5 crédits</strong> et votre ami reçoit <strong style={{ color: '#34d399' }}>+5 crédits bonus</strong> (soit 10 crédits au total). Limite : 10 parrainages par mois.</p>
             <div style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.25)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
               <span style={{ color: '#a78bfa', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{`${window.location.origin}/?ref=${referralData.code}`}</span>
-              <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`).catch(()=>{}); }} style={{ background: 'rgba(124,58,237,.2)', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0 }}>Copier</button>
+              <button onClick={() => copyRefLink(`${window.location.origin}/?ref=${referralData.code}`)} style={{ background: refCopied ? 'rgba(16,185,129,.25)' : 'rgba(124,58,237,.2)', border: 'none', color: refCopied ? '#34d399' : '#a78bfa', borderRadius: '8px', padding: '6px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', flexShrink: 0, transition: 'all .2s' }}>{refCopied ? '✓ Copié !' : 'Copier'}</button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px' }}>
               <span style={{ color: '#6ee7b7', fontSize: '14px' }}>Parrainages effectués</span>
