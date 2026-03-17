@@ -111,7 +111,7 @@ function CGV({ onBack }) {
   );
 }
 
-const API_URL = "https://web-production-f1129.up.railway.app";
+const API_URL = "https://www.pixglow.app";
 const MAX_SIMULTANEOUS = 5;
 const GOOGLE_CLIENT_ID = ''; // Remplis avec ton Google OAuth Client ID (console.cloud.google.com)
 

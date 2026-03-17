@@ -1260,6 +1260,10 @@ if os.path.exists(_dist):
 
     @app.get("/{full_path:path}")
     def spa_fallback(full_path: str):
+        # Sert les fichiers statiques racine (favicon.svg, icon-512.png, etc.)
+        candidate = os.path.join(_dist, full_path)
+        if full_path and os.path.isfile(candidate):
+            return FileResponse(candidate)
         return FileResponse(os.path.join(_dist, "index.html"))
 
 if __name__ == "__main__":
