@@ -213,6 +213,7 @@ async def startup_event():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referrals_given INTEGER DEFAULT 0")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referrals_month_key TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS parrain_notif INTEGER DEFAULT 0")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -406,7 +407,8 @@ def _apply_referral_credit(cur, referral_code: str):
         UPDATE users SET
             credits = credits + 5,
             referrals_given = CASE WHEN referrals_month_key = %s THEN referrals_given + 1 ELSE 1 END,
-            referrals_month_key = %s
+            referrals_month_key = %s,
+            parrain_notif = parrain_notif + 1
         WHERE referral_code = %s
           AND (referrals_month_key != %s OR referrals_given < %s)
     """, (mk, mk, referral_code, mk, MAX_REFERRALS_PER_MONTH))
@@ -619,10 +621,15 @@ async def get_my_referral(current_user: str = Depends(get_current_user)):
 async def get_me(current_user: str = Depends(get_current_user)):
     if not current_user: raise HTTPException(401, "Non authentifié")
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
-    user = cur.fetchone(); cur.close(); conn.close()
-    if not user: raise HTTPException(404, "Utilisateur introuvable")
-    return {"email": current_user, "credits": user["credits"]}
+    cur.execute("SELECT credits, parrain_notif FROM users WHERE email = %s", (current_user,))
+    user = cur.fetchone()
+    if not user: cur.close(); conn.close(); raise HTTPException(404, "Utilisateur introuvable")
+    notif = user["parrain_notif"] or 0
+    if notif > 0:
+        cur.execute("UPDATE users SET parrain_notif = 0 WHERE email = %s", (current_user,))
+        conn.commit()
+    cur.close(); conn.close()
+    return {"email": current_user, "credits": user["credits"], "parrain_notif": notif}
 
 @app.get("/verify-email/{token}")
 async def verify_email(token: str):
@@ -649,7 +656,7 @@ async def verify_email(token: str):
         _apply_referral_credit(cur, ref_code)
     conn.commit(); cur.close(); conn.close()
     email = row["email"]
-    return {"status": "verified", "token": create_token(email), "credits": row["credits"], "email": email}
+    return {"status": "verified", "token": create_token(email), "credits": row["credits"], "email": email, "bonus": bonus}
 
 class ForgotPasswordBody(BaseModel):
     email: str

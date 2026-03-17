@@ -186,6 +186,8 @@ const GLOBAL_CSS = `
   .pg-glow-amber { animation: pg-glow-amber 2.4s infinite; }
   @keyframes pg-glow-blue { 0%,100%{box-shadow:0 4px 18px rgba(96,165,250,.25), 0 0 0 0 rgba(96,165,250,.35);} 50%{box-shadow:0 8px 28px rgba(96,165,250,.4), 0 0 0 8px rgba(96,165,250,0);} }
   .pg-glow-blue { animation: pg-glow-blue 2.4s infinite; }
+  @keyframes pg-glow-green { 0%,100%{box-shadow:0 4px 18px rgba(16,185,129,.25), 0 0 0 0 rgba(16,185,129,.35);} 50%{box-shadow:0 8px 28px rgba(16,185,129,.4), 0 0 0 8px rgba(16,185,129,0);} }
+  .pg-glow-green { animation: pg-glow-green 2.4s infinite; }
   @keyframes pg-credits-glow { 0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.1);} 50%{box-shadow:0 0 32px rgba(124,58,237,.15);} }
   .pg-credits-card { animation: pg-credits-glow 3s ease-in-out infinite; }
 
@@ -741,7 +743,7 @@ function PlanModal({ show, onClose, onSelect, isMobile }) {
                   </>
                 )
               }
-              <button onClick={() => onSelect(p.id)} className="pg-btn" style={{ width: '100%', marginTop: isMobile ? '10px' : '0', background: p.highlight ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : `rgba(${p.color},.15)`, border: p.highlight ? 'none' : `1px solid rgba(${p.color},.3)`, color: '#fff', borderRadius: '10px', padding: isMobile ? '10px' : '11px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir {p.label}</button>
+              <button onClick={() => onSelect(p.id)} className={`pg-btn ${p.id === 'pro' ? 'pg-glow' : p.id === 'elite' ? 'pg-glow-blue' : 'pg-glow-green'}`} style={{ width: '100%', marginTop: isMobile ? '10px' : '0', background: p.highlight ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : `rgba(${p.color},.15)`, border: p.highlight ? 'none' : `1px solid rgba(${p.color},.3)`, color: '#fff', borderRadius: '10px', padding: isMobile ? '10px' : '11px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Choisir {p.label}</button>
             </div>
           ))}
         </div>
@@ -1672,6 +1674,7 @@ export default function PixGlow() {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pg_theme') !== 'light');
   const [resetToken, setResetToken] = useState(null);
   const [verifyMsg, setVerifyMsg] = useState(null);
+  const [parrainNotif, setParrainNotif] = useState(0);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -1686,7 +1689,7 @@ export default function PixGlow() {
     const token = getToken(); const savedEmail = localStorage.getItem('pg_email');
     if (token && savedEmail) {
       setUserEmail(savedEmail); setIsConnected(true);
-      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); }).catch(() => {});
+      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); }).catch(() => {});
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
@@ -1699,7 +1702,7 @@ export default function PixGlow() {
       fetch(`${API_URL}/verify-email/${verifyT}`).then(r => r.json()).then(d => {
         if (d.status === 'verified' || d.status === 'already_verified') {
           if (d.token) { localStorage.setItem('pg_token', d.token); localStorage.setItem('pg_email', d.email); setUserEmail(d.email); setCredits(d.credits); setIsConnected(true); }
-          setVerifyMsg({ ok: true, text: d.status === 'already_verified' ? 'Email déjà vérifié. Connectez-vous.' : '✅ Email confirmé ! Vos 5 crédits ont été ajoutés.' });
+          setVerifyMsg({ ok: true, text: d.status === 'already_verified' ? 'Email déjà vérifié. Connectez-vous.' : d.bonus > 0 ? `🎉 Email confirmé ! +5 crédits offerts + 5 crédits bonus de parrainage = ${d.credits} crédits au total !` : '✅ Email confirmé ! Vos 5 crédits ont été ajoutés.' });
         } else { setVerifyMsg({ ok: false, text: 'Lien de vérification invalide ou expiré.' }); }
       }).catch(() => setVerifyMsg({ ok: false, text: 'Erreur lors de la vérification.' }));
     }
@@ -1937,8 +1940,8 @@ export default function PixGlow() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
-                <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '💰' : 'Mes gains'}</button>
-                <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁{isMobile ? '' : ' Inviter'}</button>
+                {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
+                {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
@@ -2504,6 +2507,12 @@ export default function PixGlow() {
         <div className="pg-slide-up" style={{ background: verifyMsg.ok ? 'rgba(16,185,129,.08)' : 'rgba(239,68,68,.08)', border: `1px solid ${verifyMsg.ok ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}`, borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <p style={{ color: verifyMsg.ok ? '#10b981' : '#f87171', fontWeight: 700, fontSize: '14px', margin: 0 }}>{verifyMsg.text}</p>
           <button onClick={() => setVerifyMsg(null)} style={{ background: 'none', border: 'none', color: verifyMsg.ok ? '#10b981' : '#f87171', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
+        </div>
+      )}
+      {parrainNotif > 0 && (
+        <div className="pg-slide-up" style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.35)', borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '14px', margin: 0 }}>🎁 {parrainNotif === 1 ? 'Un filleul vient de s\'inscrire' : `${parrainNotif} filleuls viennent de s'inscrire`} — +{parrainNotif * 5} crédits ajoutés à votre compte !</p>
+          <button onClick={() => setParrainNotif(0)} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '16px', fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
         </div>
       )}
 
