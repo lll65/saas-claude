@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
 import os, uuid, json, time, base64, secrets
@@ -492,8 +493,15 @@ class DescriptionRequest(BaseModel):
 # ─────────────────────────────────────────────
 #  ROUTES
 # ─────────────────────────────────────────────
-@app.get("/")
+@app.get("/health-api")
 def root():
+    return {"status": "ok", "version": "2.5", "db": bool(DATABASE_URL)}
+
+@app.get("/")
+def serve_index():
+    index = os.path.join(os.path.dirname(__file__), "dist", "index.html")
+    if os.path.exists(index):
+        return FileResponse(index)
     return {"status": "ok", "version": "2.5", "db": bool(DATABASE_URL)}
 
 @app.get("/health")
@@ -1244,6 +1252,15 @@ async def receive_suggestion(body: SuggestionRequest):
         html = f"<h2>💡 Suggestion PixGlow</h2><p style='white-space:pre-wrap'>{msg}</p>"
         _send_via_resend("pixglow.support@proton.me", "💡 Nouvelle suggestion PixGlow", html)
     return {"status": "ok"}
+
+# ── Serve React SPA (doit être après toutes les routes API) ──────────────────
+_dist = os.path.join(os.path.dirname(__file__), "dist")
+if os.path.exists(_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(_dist, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    def spa_fallback(full_path: str):
+        return FileResponse(os.path.join(_dist, "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
