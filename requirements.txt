@@ -11,4 +11,5 @@ python-jose[cryptography]
 python-multipart
 psycopg2-binary
 httpx
-numpyaiofiles
+numpy
+aiofiles
