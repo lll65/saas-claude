@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABsklEQVR4nMVXS04CQRCtnvQNBGWu4oKfHMGFxgURxeiCRPcewESN7Ew0muDGSyiYgbPAIHgFysUg9nRPf2oY4E06HaZeVb0uKt097Hr3BzRAnSElWNJLPlPzZJ1YjhsTwjGZtEqgKILPWMywLixEeBj9wvmc6bgZbI0MdkRI7oFMYYvvIQNEBpD1uB3kRgDRbOChl6a0d/2clSPCxBObkFZaye8hiFachPv+v+2qOPVFG8eUPSD7XRYnscDtID/S2UR4MwCgjHaQ/0tg5Ikw8Txqc8WqYOC1StGqW6WJb+LJOyEJLr42zlL7gIuvjcPOS2NnBY9f28q7i/K3q3siuNwwVCzrz5plfQWeeuqKbTir0CrCTsvhQsBzb4ec0IZmZWwW0BAEyHhJIejEklARcFzRC5Dx2lUFNaq0hDI23oQegvtTr4Yx53o1JHgnPyvbipEBdLqFjo1DPozk8uvG22ehA/N5I4fRUS2sA0SziccO9obkw+D9w4fDmvb+QQLH6HpMFpHRVZZxuazOAlL6KQr2a8NFzGxCuucGiN8JU/0VyyQHUG/F6xBh/DgVCWv5PP8FFL+QR+BzqtAAAAAASUVORK5CYII=">
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABHAQAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAQ5JREFUeJyVU81qwkAQ/ibkDaKGvEoPEjGP4EEQFFpa6KXQu2dBKBQ8CoJ5EQNRX8WNP32EdXvQ1XHiSvxg2OGbmW92llkavvyBwaAayDq+PtVULZSNyNMEVLXROlCS8zQZo8lA2ngVlDgAGK8CxTjja3Lf08Z+85ri/M+ypr6bh4i/wX2Bc+yruY8AYJLXlfUtvCMB0iZ5HeeCGx4o5/p2NvcY1/hnvIsgRqb3eGumWeOhCMdHa3cr8BoXpSvMsvDiv7W2DwXv7gEH52dZmJb24EgG0vrtAgDQbxcXbr4IUwCYL8KU5zo3UXbvJcUAOJ2c9zUMwfEX5I50EzUQKUSdZAOXQAWQ3QP7dE9/53/xxK4OhnGdLgAAAABJRU5ErkJggg==">
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+    <!-- SEO Google -->
+    <title>PixGlow — Photos fond blanc pour Vinted</title>
+    <meta name="description" content="Transforme tes photos en fond blanc en 1 clic. Conçu pour les vendeurs Vinted. 5 photos gratuites, sans inscription.">
+    <meta name="theme-color" content="#0f172a">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="PixGlow — Photos fond blanc pour Vinted">
+    <meta property="og:description" content="Suppression du fond automatique, luminosité parfaite. 5 photos gratuites.">
+    <meta property="og:url" content="https://www.pixglow.app">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.pixglow.app/og-image.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        code { font-family: 'Space Mono', monospace; }
+    </style>
+  <script type="module" crossorigin src="/assets/index-4ab39613.js"></script>
+</head>
+<body class="antialiased">
+    <div id="root"></div>
+    
+</body>
+</html>
