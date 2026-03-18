@@ -1981,12 +1981,28 @@ export default function PixGlow() {
     </nav>
   );
 
-  const Footer = () => (
-    <footer style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)'}`, padding: isMobile ? '24px 20px 20px' : '52px 48px 36px', background: darkMode ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.02)' }}>
+  const Footer = () => isMobile ? (
+    <footer style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)'}`, padding: '16px 20px', background: darkMode ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.02)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '26px', height: '26px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>✨</div>
+          <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '16px', fontWeight: 800, color: T.text }}>PixGlow</span>
+        </div>
+        <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>pixglow.support@proton.me</a>
+      </div>
+      <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '10px' }}>
+        {[['mentions','Mentions légales'],['cgv','CGV'],['confidentialite','Confidentialité']].map(([p, label]) => (
+          <button key={p} onClick={() => setPage(p)} className="pg-navlink" style={{ color: '#64748b', fontSize: '12px', padding: 0 }}>{label}</button>
+        ))}
+      </div>
+      <p style={{ color: '#475569', fontSize: '11px', margin: 0 }}>© {new Date().getFullYear()} PixGlow · Non affilié à Vinted, Leboncoin, Amazon, Shopify ou Facebook.</p>
+    </footer>
+  ) : (
+    <footer style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)'}`, padding: '52px 48px 36px', background: darkMode ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.02)' }}>
       <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr 1fr 1fr', gap: isMobile ? '20px 24px' : '40px', marginBottom: isMobile ? '24px' : '40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '40px', marginBottom: '40px' }}>
           {/* Brand */}
-          <div style={isMobile ? { gridColumn: '1 / -1' } : {}}>
+          <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px' }}>✨</div>
               <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
