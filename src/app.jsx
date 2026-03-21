@@ -892,7 +892,14 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
       if (mode === 'register') { const ref = sessionStorage.getItem('pg_ref'); if (ref) body.referral_code = ref; }
       const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) { setErrMsg(data.detail || 'Identifiants incorrects'); setLoading(false); return; }
+      if (!res.ok) {
+        if (res.status === 403 && data.detail === 'EMAIL_NOT_VERIFIED') {
+          setEmailVerificationSent(true);
+          setLoading(false);
+          return;
+        }
+        setErrMsg(data.detail || 'Identifiants incorrects'); setLoading(false); return;
+      }
       if (mode === 'register' && data.verification_required) {
         setEmailVerificationSent(true);
         setLoading(false);

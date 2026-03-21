@@ -607,6 +607,19 @@ async def login(body: AuthBody, request: Request):
     user = cur.fetchone(); cur.close(); conn.close()
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(401, "Email ou mot de passe incorrect")
+    if not user["email_verified"]:
+        # Renvoyer l'email de vérification et bloquer la connexion
+        verify_url = f"{FRONTEND_URL}?verify={user['verification_token']}"
+        html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#0d0d1a;color:#e2e8f0;border-radius:16px;">
+      <h1 style="color:#a78bfa;font-size:28px;margin-bottom:8px;">✨ PixGlow</h1>
+      <h2 style="font-size:20px;color:#fff;margin-bottom:16px;">Confirmez votre adresse email</h2>
+      <p style="color:#94a3b8;line-height:1.6;">Voici un nouveau lien pour confirmer votre email et recevoir vos <strong style="color:#34d399;">5 crédits offerts</strong>.</p>
+      <a href="{verify_url}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Confirmer mon email →</a>
+      <p style="color:#475569;font-size:12px;">Lien valable 48h. Si vous n'avez pas créé de compte PixGlow, ignorez cet email.</p>
+    </div>"""
+        send_email(email, "Confirmez votre email — PixGlow", html)
+        raise HTTPException(403, "EMAIL_NOT_VERIFIED")
     return {"status": "success", "token": create_token(email), "credits": user["credits"]}
 
 @app.get("/my-referral")
@@ -642,7 +655,7 @@ async def get_me(current_user: str = Depends(get_current_user)):
 @app.get("/verify-email/{token}")
 async def verify_email(token: str):
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT email, email_verified FROM users WHERE verification_token = %s", (token,))
+    cur.execute("SELECT email, email_verified, referred_by FROM users WHERE verification_token = %s", (token,))
     user = cur.fetchone()
     if not user:
         cur.close(); conn.close()
@@ -650,9 +663,7 @@ async def verify_email(token: str):
     if user["email_verified"]:
         cur.close(); conn.close()
         return {"status": "already_verified"}
-    cur.execute("SELECT email, referred_by FROM users WHERE verification_token = %s", (token,))
-    ref_row = cur.fetchone()
-    ref_code = ref_row["referred_by"] if ref_row else None
+    ref_code = user["referred_by"]
     bonus = 5 if ref_code and _can_refer(cur, ref_code) else 0
     cur.execute(
         "UPDATE users SET email_verified=TRUE, credits=%s, verification_token=NULL WHERE verification_token=%s RETURNING email, credits",
@@ -672,6 +683,40 @@ class ForgotPasswordBody(BaseModel):
 class ResetPasswordBody(BaseModel):
     token: str
     password: str
+
+class ResendVerifBody(BaseModel):
+    email: str
+    password: str
+
+@app.post("/resend-verification")
+async def resend_verification(body: ResendVerifBody, request: Request):
+    rate_limit(get_real_ip(request), max_calls=5, window_sec=3600)
+    email = body.email.strip().lower()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT email_verified, verification_token, password_hash FROM users WHERE email = %s", (email,))
+    user = cur.fetchone(); cur.close(); conn.close()
+    if not user or not verify_password(body.password, user["password_hash"]):
+        raise HTTPException(401, "Email ou mot de passe incorrect")
+    if user["email_verified"]:
+        return {"status": "already_verified"}
+    token = user["verification_token"]
+    if not token:
+        # Regénérer un token si absent
+        token = secrets.token_urlsafe(32)
+        conn2 = get_db(); cur2 = conn2.cursor()
+        cur2.execute("UPDATE users SET verification_token=%s WHERE email=%s", (token, email))
+        conn2.commit(); cur2.close(); conn2.close()
+    verify_url = f"{FRONTEND_URL}?verify={token}"
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#0d0d1a;color:#e2e8f0;border-radius:16px;">
+      <h1 style="color:#a78bfa;font-size:28px;margin-bottom:8px;">✨ PixGlow</h1>
+      <h2 style="font-size:20px;color:#fff;margin-bottom:16px;">Confirmez votre adresse email</h2>
+      <p style="color:#94a3b8;line-height:1.6;">Voici un nouveau lien pour confirmer votre email et recevoir vos <strong style="color:#34d399;">5 crédits offerts</strong>.</p>
+      <a href="{verify_url}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Confirmer mon email →</a>
+      <p style="color:#475569;font-size:12px;">Lien valable 48h.</p>
+    </div>"""
+    send_email(email, "Confirmez votre email — PixGlow", html)
+    return {"status": "sent"}
 
 @app.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordBody, request: Request):
