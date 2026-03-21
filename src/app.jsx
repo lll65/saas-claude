@@ -1841,6 +1841,7 @@ export default function PixGlow() {
 
   // Télécharge toutes les photos en un seul ZIP — 1 clic, 0 navigation
   const [zipping, setZipping] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
   const handleDownloadAll = async () => {
     const done = results.filter(r => !r.error);
     if (!done.length) return;
@@ -1871,7 +1872,8 @@ export default function PixGlow() {
       const blobUrl = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `pixglow_photos_${done.length}.zip`;
+      const ts = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'');
+      a.download = `pixglow_photos_${done.length}_${ts}.zip`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     } catch {
@@ -2531,6 +2533,12 @@ export default function PixGlow() {
           <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '18px', fontFamily: 'inherit', padding: '0 4px', flexShrink: 0 }}>✕</button>
         </div>
       )}
+      {lightboxUrl && (
+        <div onClick={() => setLightboxUrl(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', padding: '20px' }}>
+          <img src={lightboxUrl} alt="Aperçu" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '12px', objectFit: 'contain', boxShadow: '0 0 60px rgba(0,0,0,.6)' }} onClick={e => e.stopPropagation()} />
+          <button onClick={() => setLightboxUrl(null)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'rgba(255,255,255,.12)', border: 'none', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        </div>
+      )}
       {verifyMsg && (
         <div className="pg-slide-up" style={{ background: verifyMsg.ok ? 'rgba(16,185,129,.08)' : 'rgba(239,68,68,.08)', border: `1px solid ${verifyMsg.ok ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}`, borderRadius: '0', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <p style={{ color: verifyMsg.ok ? '#10b981' : '#f87171', fontWeight: 700, fontSize: '14px', margin: 0 }}>{verifyMsg.text}</p>
@@ -2677,7 +2685,7 @@ export default function PixGlow() {
                         <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
                         {r.error
                           ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                          : <img src={r.url} alt="Après" style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />}
+                          : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover', cursor: 'zoom-in' }} />}
                       </div>
                     </div>
                     {!r.error && (
