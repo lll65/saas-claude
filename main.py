@@ -608,8 +608,14 @@ async def login(body: AuthBody, request: Request):
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(401, "Email ou mot de passe incorrect")
     if not user["email_verified"]:
-        # Renvoyer l'email de vérification et bloquer la connexion
-        verify_url = f"{FRONTEND_URL}?verify={user['verification_token']}"
+        # Générer un token si le compte a été créé avant le système de vérification
+        token_to_use = user["verification_token"]
+        if not token_to_use:
+            token_to_use = secrets.token_urlsafe(32)
+            conn2 = get_db(); cur2 = conn2.cursor()
+            cur2.execute("UPDATE users SET verification_token=%s WHERE email=%s", (token_to_use, email))
+            conn2.commit(); cur2.close(); conn2.close()
+        verify_url = f"{FRONTEND_URL}?verify={token_to_use}"
         html = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#0d0d1a;color:#e2e8f0;border-radius:16px;">
       <h1 style="color:#a78bfa;font-size:28px;margin-bottom:8px;">✨ PixGlow</h1>
