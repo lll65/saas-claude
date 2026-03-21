@@ -10,7 +10,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from io import BytesIO
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import numpy as np
 import stripe
 import psycopg2
@@ -810,6 +810,7 @@ async def enhance_photo(
     filename = None
     try:
         orig = Image.open(BytesIO(contents))
+        orig = ImageOps.exif_transpose(orig)  # corrige la rotation EXIF des photos mobiles
         if orig.mode not in ("RGB", "RGBA"):
             orig = orig.convert("RGBA" if "transparency" in orig.info else "RGB")
 
