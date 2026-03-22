@@ -1775,13 +1775,13 @@ export default function PixGlow() {
           const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.7 });
           return URL.createObjectURL(Array.isArray(blob) ? blob[0] : blob);
         } catch {
-          return null;
+          return 'heic-placeholder';
         }
       }
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (ev) => resolve(ev.target.result);
-        reader.onerror = () => resolve(null);
+        reader.onerror = () => resolve('error-placeholder');
         reader.readAsDataURL(file);
       });
     };
@@ -2624,9 +2624,11 @@ export default function PixGlow() {
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(previews.length, isMobile ? 3 : 5)},1fr)`, gap: '8px' }}>
                     {previews.map((src, i) => (
                       <div key={i} style={{ position: 'relative', width: '100%', height: isMobile ? '100px' : '120px', borderRadius: '10px', border: '2px solid rgba(124,58,237,.2)', background: 'rgba(124,58,237,.08)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {src
-                          ? <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-                          : <div style={{ width: '20px', height: '20px', border: '2px solid rgba(124,58,237,.2)', borderTop: '2px solid #7c3aed', borderRadius: '50%', animation: 'pg-spin 0.8s linear infinite' }} />
+                        {src === null
+                          ? <div style={{ width: '20px', height: '20px', border: '2px solid rgba(124,58,237,.2)', borderTop: '2px solid #7c3aed', borderRadius: '50%', animation: 'pg-spin 0.8s linear infinite' }} />
+                          : (src === 'heic-placeholder' || src === 'error-placeholder')
+                            ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}><span style={{ fontSize: '24px' }}>📷</span><span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>HEIC</span></div>
+                            : <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
                         }
                         {loading && i < progress && <div className="pg-check" style={{ position: 'absolute', inset: 0, background: 'rgba(16,185,129,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10l4.5 4.5L16 6" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
                       </div>
