@@ -863,8 +863,13 @@ async def enhance_photo(
 ):
     # ── 1. Validation fichier (aucune DB, aucun quota consommé) ──────────────
     content_type = (file.content_type or "").lower()
+    # Fallback par extension si le content-type est générique (ex: application/octet-stream envoyé par certains navigateurs/OS pour HEIC)
     if content_type not in ALLOWED_TYPES:
-        raise HTTPException(400, f"Format non supporté ({content_type}). Utilisez JPG, PNG, WEBP ou HEIC.")
+        ext = (file.filename or "").rsplit(".", 1)[-1].lower()
+        ext_to_type = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "heic": "image/heic", "heif": "image/heif"}
+        content_type = ext_to_type.get(ext, content_type)
+    if content_type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"Format non supporté ({file.content_type}). Utilisez JPG, PNG, WEBP ou HEIC.")
 
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
