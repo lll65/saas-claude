@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import heic2any from 'heic2any';
 
 /* ─── PAGES LÉGALES ─── */
 const LS = {
@@ -1766,12 +1767,24 @@ export default function PixGlow() {
 
     // FileReader est plus fiable sur Android (content:// URIs, HEIC, etc.)
     // On lit chaque fichier en base64 pour l'aperçu
-    const readFile = (file) => new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.onerror = () => resolve(null); // aperçu cassé → null géré en affichage
-      reader.readAsDataURL(file);
-    });
+    const readFile = async (file) => {
+      const isHeic = file.type === 'image/heic' || file.type === 'image/heif'
+        || file.name?.toLowerCase().endsWith('.heic') || file.name?.toLowerCase().endsWith('.heif');
+      if (isHeic) {
+        try {
+          const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.7 });
+          return URL.createObjectURL(Array.isArray(blob) ? blob[0] : blob);
+        } catch {
+          return null;
+        }
+      }
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+    };
 
     setFiles(chosen);
     setResults([]);
