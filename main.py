@@ -61,6 +61,7 @@ SMTP_PASS             = os.getenv("SMTP_PASS", "")
 SMTP_FROM             = os.getenv("SMTP_FROM", SMTP_USER)
 RESEND_API_KEY        = os.getenv("RESEND_API_KEY", "")      # Alternative à SMTP (resend.com)
 EMAIL_ENABLED         = bool(SMTP_USER and SMTP_PASS) or bool(RESEND_API_KEY)
+CRON_SECRET           = os.getenv("CRON_SECRET", "")         # Clé secrète pour les endpoints cron
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -215,6 +216,21 @@ async def startup_event():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referrals_month_key TEXT DEFAULT ''")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS parrain_notif INTEGER DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMP")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP")
+        # Table pour les inscriptions en attente de vérification email
+        # L'utilisateur n'est créé dans users qu'après avoir cliqué le lien
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS pending_registrations (
+                email TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                verification_token TEXT NOT NULL,
+                referred_by TEXT,
+                expires_at TIMESTAMP NOT NULL
+            )
+        """)
+        # Nettoyage des inscriptions expirées
+        cur.execute("DELETE FROM pending_registrations WHERE expires_at < NOW()")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -568,10 +584,17 @@ async def register(body: AuthBody, request: Request):
         if not referrer or referrer["email"] == email:
             ref_code = None  # invalid or self-referral
     verification_token = secrets.token_urlsafe(32)
-    new_ref_code = secrets.token_hex(4).upper()
+    expires_at = datetime.utcnow() + timedelta(hours=48)
+    # Stocke dans pending — le compte réel sera créé uniquement à la vérification
     cur.execute(
-        "INSERT INTO users (email, password_hash, credits, email_verified, verification_token, referral_code, referred_by) VALUES (%s, %s, 0, FALSE, %s, %s, %s)",
-        (email, hash_password(body.password), verification_token, new_ref_code, ref_code)
+        """INSERT INTO pending_registrations (email, password_hash, verification_token, referred_by, expires_at)
+           VALUES (%s, %s, %s, %s, %s)
+           ON CONFLICT (email) DO UPDATE
+             SET password_hash = EXCLUDED.password_hash,
+                 verification_token = EXCLUDED.verification_token,
+                 referred_by = EXCLUDED.referred_by,
+                 expires_at = EXCLUDED.expires_at""",
+        (email, hash_password(body.password), verification_token, ref_code, expires_at)
     )
     conn.commit(); cur.close(); conn.close()
     # Send verification email
@@ -604,8 +627,17 @@ async def login(body: AuthBody, request: Request):
     email = body.email.strip().lower()
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cur.fetchone(); cur.close(); conn.close()
-    if not user or not verify_password(body.password, user["password_hash"]):
+    user = cur.fetchone()
+    if not user:
+        # Vérifie si une inscription est en attente de vérification
+        cur.execute("SELECT password_hash FROM pending_registrations WHERE email = %s AND expires_at > NOW()", (email,))
+        pending = cur.fetchone()
+        cur.close(); conn.close()
+        if pending and verify_password(body.password, pending["password_hash"]):
+            raise HTTPException(403, "EMAIL_NOT_VERIFIED")
+        raise HTTPException(401, "Email ou mot de passe incorrect")
+    cur.close(); conn.close()
+    if not verify_password(body.password, user["password_hash"]):
         raise HTTPException(401, "Email ou mot de passe incorrect")
     if not user["email_verified"]:
         # Générer un token si le compte a été créé avant le système de vérification
@@ -661,6 +693,31 @@ async def get_me(current_user: str = Depends(get_current_user)):
 @app.get("/verify-email/{token}")
 async def verify_email(token: str):
     conn = get_db(); cur = conn.cursor()
+
+    # 1. Cherche dans les inscriptions en attente (nouveau flux)
+    cur.execute("SELECT email, password_hash, referred_by, expires_at FROM pending_registrations WHERE verification_token = %s", (token,))
+    pending = cur.fetchone()
+    if pending:
+        if pending["expires_at"] < datetime.utcnow():
+            cur.execute("DELETE FROM pending_registrations WHERE verification_token = %s", (token,))
+            conn.commit(); cur.close(); conn.close()
+            raise HTTPException(400, "Lien de vérification expiré. Veuillez vous réinscrire.")
+        email = pending["email"]
+        ref_code = pending["referred_by"]
+        bonus = 5 if ref_code and _can_refer(cur, ref_code) else 0
+        new_ref_code = secrets.token_hex(4).upper()
+        cur.execute(
+            "INSERT INTO users (email, password_hash, credits, email_verified, verification_token, referral_code, referred_by) VALUES (%s, %s, %s, TRUE, NULL, %s, %s) RETURNING credits",
+            (email, pending["password_hash"], 5 + bonus, new_ref_code, ref_code)
+        )
+        row = cur.fetchone()
+        if ref_code and bonus:
+            _apply_referral_credit(cur, ref_code)
+        cur.execute("DELETE FROM pending_registrations WHERE email = %s", (email,))
+        conn.commit(); cur.close(); conn.close()
+        return {"status": "verified", "token": create_token(email), "credits": row["credits"], "email": email, "bonus": bonus}
+
+    # 2. Compatibilité : anciens comptes non vérifiés déjà dans users
     cur.execute("SELECT email, email_verified, referred_by FROM users WHERE verification_token = %s", (token,))
     user = cur.fetchone()
     if not user:
@@ -676,7 +733,6 @@ async def verify_email(token: str):
         (5 + bonus, token,)
     )
     row = cur.fetchone()
-    # Give referrer +1 credit (max 10/month)
     if ref_code and bonus:
         _apply_referral_credit(cur, ref_code)
     conn.commit(); cur.close(); conn.close()
@@ -699,6 +755,31 @@ async def resend_verification(body: ResendVerifBody, request: Request):
     rate_limit(get_real_ip(request), max_calls=5, window_sec=3600)
     email = body.email.strip().lower()
     conn = get_db(); cur = conn.cursor()
+
+    # Nouveau flux : inscription en attente
+    cur.execute("SELECT password_hash, verification_token, expires_at FROM pending_registrations WHERE email = %s", (email,))
+    pending = cur.fetchone()
+    if pending:
+        if not verify_password(body.password, pending["password_hash"]):
+            cur.close(); conn.close()
+            raise HTTPException(401, "Email ou mot de passe incorrect")
+        token = secrets.token_urlsafe(32)
+        new_expires = datetime.utcnow() + timedelta(hours=48)
+        cur.execute("UPDATE pending_registrations SET verification_token=%s, expires_at=%s WHERE email=%s", (token, new_expires, email))
+        conn.commit(); cur.close(); conn.close()
+        verify_url = f"{FRONTEND_URL}?verify={token}"
+        html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#0d0d1a;color:#e2e8f0;border-radius:16px;">
+      <h1 style="color:#a78bfa;font-size:28px;margin-bottom:8px;">✨ PixGlow</h1>
+      <h2 style="font-size:20px;color:#fff;margin-bottom:16px;">Confirmez votre adresse email</h2>
+      <p style="color:#94a3b8;line-height:1.6;">Voici un nouveau lien pour confirmer votre email et recevoir vos <strong style="color:#34d399;">5 crédits offerts</strong>.</p>
+      <a href="{verify_url}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">Confirmer mon email →</a>
+      <p style="color:#475569;font-size:12px;">Lien valable 48h. Si vous n'avez pas créé de compte PixGlow, ignorez cet email.</p>
+    </div>"""
+        send_email(email, "Confirmez votre email — PixGlow", html)
+        return {"status": "sent"}
+
+    # Compatibilité : anciens comptes non vérifiés déjà dans users
     cur.execute("SELECT email_verified, verification_token, password_hash FROM users WHERE email = %s", (email,))
     user = cur.fetchone(); cur.close(); conn.close()
     if not user or not verify_password(body.password, user["password_hash"]):
@@ -865,7 +946,7 @@ async def enhance_photo(
         _increment_total_photos(conn, cur)
         if current_user:
             cur.execute(
-                "UPDATE users SET credits = credits - 1 WHERE email = %s RETURNING credits",
+                "UPDATE users SET credits = credits - 1, last_used_at = NOW() WHERE email = %s RETURNING credits",
                 (current_user,)
             )
             row = cur.fetchone()
@@ -1304,6 +1385,68 @@ async def receive_suggestion(body: SuggestionRequest):
         html = f"<h2>💡 Suggestion PixGlow</h2><p style='white-space:pre-wrap'>{msg}</p>"
         _send_via_resend("pixglow.support@proton.me", "💡 Nouvelle suggestion PixGlow", html)
     return {"status": "ok"}
+
+# ── Cron : rappel crédits inutilisés ─────────────────────────────────────────
+@app.post("/cron/remind-credits")
+async def cron_remind_credits(request: Request):
+    """
+    Envoie un email de rappel aux utilisateurs vérifés qui ont des crédits
+    inutilisés depuis >= 7 jours et n'ont pas reçu de rappel depuis >= 30 jours.
+    Appelable par un cron externe (ex: cron-job.org) avec le header X-Cron-Secret.
+    """
+    if not CRON_SECRET:
+        raise HTTPException(503, "CRON_SECRET non configuré")
+    if request.headers.get("X-Cron-Secret") != CRON_SECRET:
+        raise HTTPException(403, "Non autorisé")
+    if not EMAIL_ENABLED:
+        raise HTTPException(503, "Email non configuré")
+
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT email, credits FROM users
+            WHERE email_verified = TRUE
+              AND credits > 0
+              AND created_at < NOW() - INTERVAL '7 days'
+              AND (last_used_at IS NULL OR last_used_at < NOW() - INTERVAL '7 days')
+              AND (reminder_sent_at IS NULL OR reminder_sent_at < NOW() - INTERVAL '30 days')
+        """)
+        users_to_remind = cur.fetchall()
+    finally:
+        cur.close(); conn.close()
+
+    sent = 0
+    for u in users_to_remind:
+        email, credits = u["email"], u["credits"]
+        credit_word = "crédit" if credits == 1 else "crédits"
+        html = f"""
+        <div style="background:#0f172a;padding:32px;font-family:sans-serif;max-width:480px;margin:auto;border-radius:16px">
+          <h2 style="font-size:20px;color:#fff;margin-bottom:16px;">Vous avez {credits} {credit_word} qui vous attendent ✨</h2>
+          <p style="color:#94a3b8;line-height:1.6;">
+            Votre compte PixGlow dispose encore de <strong style="color:#34d399;">{credits} {credit_word}</strong> non utilisés.
+            Transformez vos photos en images fond blanc professionnel en quelques secondes.
+          </p>
+          <a href="{FRONTEND_URL}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">
+            Utiliser mes crédits →
+          </a>
+          <p style="color:#475569;font-size:12px;margin-top:24px;">
+            Vous recevez cet email car vous avez un compte PixGlow avec des crédits disponibles.<br>
+            <a href="{FRONTEND_URL}/unsubscribe?email={email}" style="color:#475569;">Se désabonner</a>
+          </p>
+        </div>"""
+        ok = send_email(email, f"Vous avez {credits} {credit_word} PixGlow inutilisés", html)
+        if ok:
+            conn2 = get_db(); cur2 = conn2.cursor()
+            try:
+                cur2.execute("UPDATE users SET reminder_sent_at = NOW() WHERE email = %s", (email,))
+                conn2.commit()
+            finally:
+                cur2.close(); conn2.close()
+            sent += 1
+
+    print(f"[CRON] Rappels crédits : {sent}/{len(users_to_remind)} emails envoyés")
+    return {"sent": sent, "total_eligible": len(users_to_remind)}
+
 
 # ── Serve React SPA (doit être après toutes les routes API) ──────────────────
 _dist = os.path.join(os.path.dirname(__file__), "dist")
