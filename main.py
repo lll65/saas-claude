@@ -1407,6 +1407,7 @@ async def cron_remind_credits(request: Request):
             SELECT email, credits FROM users
             WHERE email_verified = TRUE
               AND credits > 0
+              AND created_at < NOW() - INTERVAL '7 days'
               AND (last_used_at IS NULL OR last_used_at < NOW() - INTERVAL '7 days')
               AND (reminder_sent_at IS NULL OR reminder_sent_at < NOW() - INTERVAL '30 days')
         """)
