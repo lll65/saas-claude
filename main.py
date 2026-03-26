@@ -1126,14 +1126,16 @@ async def generate_description(
     image_data_url = f"data:image/png;base64,{image_b64}"
 
     prompt = """Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"2-3 phrases avec emojis : type exact d'article, couleur précise, matière si visible, état constaté, taille si lisible, marque si visible — décris CE QUE TU VOIS uniquement","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€"}
+{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"2-3 phrases avec emojis : type exact d'article, couleur précise, matière si visible, état constaté, marque si visible — décris CE QUE TU VOIS uniquement","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
 
 RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
 - Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
 - Description : sois spécifique (ex: "jean slim bleu marine taille haute, tissu denim épais" et NON "jean en bon état")
-- Prix estimé : fourchette de revente réaliste sur Vinted selon marque, état et catégorie (ex: "8-12€" pour un t-shirt basique, "25-40€" pour une veste de marque)
-- Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut."""
+- TAILLE : si la taille n'est pas clairement visible/lisible sur la photo, NE MENTIONNE PAS LA TAILLE — n'écris jamais "taille non visible", "taille inconnue" ou similaire
+- Prix estimé : fourchette OBLIGATOIRE — donne toujours une estimation réaliste selon marque, état et catégorie (ex: "8-12€" t-shirt basique, "25-40€" veste de marque, "5-8€" article très abîmé)
+- Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut
+- conseils_photo : si le score est inférieur à 65 (photo floue, fond encombré, mauvais éclairage, article froissé), donne 2-3 conseils courts et bienveillants pour améliorer la photo (ex: "Essaie sur fond blanc ou clair 📸", "Utilise la lumière naturelle près d'une fenêtre ☀️", "Défroisse l'article avant la photo 👕"). Sinon laisse la chaîne vide."""
 
     VISION_MODELS = [
         "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -1179,13 +1181,20 @@ RÈGLES STRICTES :
             text = data["choices"][0]["message"]["content"]
             text = _re.sub(r'```json|```', '', text).strip()
             parsed = json.loads(text)
+            score = max(50, min(98, int(parsed.get("score", 75))))
+            prix = str(parsed.get("prix_estime", "")).strip()[:30]
+            # Fallback prix si l'IA ne l'a pas renvoyé
+            if not prix:
+                cat = str(parsed.get("categorie", "vetement"))
+                prix = {"chaussures": "15-30€", "sacs": "12-25€", "bijoux": "5-12€", "montres": "20-50€", "accessoires": "5-15€", "sport": "10-25€", "maison": "5-20€"}.get(cat, "8-15€")
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
                 "description": str(parsed.get("description", "Bel article 📦"))[:300],
                 "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion"))[:500],
-                "score": max(60, min(98, int(parsed.get("score", 75)))),
+                "score": score,
                 "categorie": str(parsed.get("categorie", "vetement")),
-                "prix_estime": str(parsed.get("prix_estime", ""))[:30],
+                "prix_estime": prix,
+                "conseils_photo": str(parsed.get("conseils_photo", ""))[:300] if score < 65 else "",
             }
     except HTTPException:
         raise
@@ -1202,10 +1211,15 @@ RÈGLES STRICTES :
 _trends_cache: dict = {}
 _trends_lock = threading.Lock()
 
-def _week_key(category: str) -> str:
-    # Cache par jour pour renouveler les suggestions quotidiennement
+def _week_key(category: str, titre: str = "") -> str:
+    # Cache par jour + article pour des tendances spécifiques à chaque article
     today = _date.today()
-    return f"{today.strftime('%Y-%m-%d')}-{category.lower()[:20]}"
+    base = f"{today.strftime('%Y-%m-%d')}-{category.lower()[:20]}"
+    if titre:
+        import hashlib
+        titre_hash = hashlib.md5(titre.encode('utf-8')).hexdigest()[:8]
+        return f"{base}-{titre_hash}"
+    return base
 
 class TrendRequest(BaseModel):
     category: str = "mode"
@@ -1223,7 +1237,7 @@ async def get_trending(
     if not GROQ_API_KEY:
         raise HTTPException(503, "GROQ_API_KEY manquante.")
 
-    cache_key = _week_key(body.category)
+    cache_key = _week_key(body.category, body.titre)
     now = time.time()
 
     import random as _random_mod
@@ -1250,16 +1264,17 @@ async def get_trending(
 
     prompt = f"""Tu es expert tendances Vinted/Instagram/TikTok France.
 Date du jour : {_date.today().strftime('%d/%m/%Y')}.
-Catégorie précise : {body.category}{article_context}
+Catégorie : {body.category}{article_context}
 
-Retourne EXACTEMENT 12 mots-clés/expressions courtes qui sont recherchés EN CE MOMENT sur Vinted France et cohérents avec cet article.
+MISSION : Génère 12 mots-clés SPÉCIFIQUEMENT adaptés à CET article précis — pas des mots génériques de la catégorie.
+Ces mots doivent correspondre à ce que les acheteurs tapent dans la barre de recherche Vinted pour trouver exactement CE TYPE d'article.
 
 Règles STRICTES :
-- Expressions concrètes (1-3 mots), cherchées par de vrais acheteurs aujourd'hui
-- Diversité obligatoire : matières tendance, styles viraux TikTok, esthétiques actuelles, marques/références du moment, couleurs de saison, caractéristiques physiques recherchées
-- Si l'article a des caractéristiques visibles (couleur, matière, marque), inclus des variations pertinentes
-- Pas de mots génériques comme "vintage" ou "mode" seuls — sois spécifique et actuel
-- Les impacts doivent être réalistes et variés (entre +80% et +350%)
+- Chaque mot doit être cohérent avec les caractéristiques visibles de l'article (couleur, matière, style, marque si présente)
+- Privilégie les expressions que des acheteurs Vinted tapent réellement pour CE produit
+- Diversité : matières tendance, coupes virales TikTok, coloris du moment, styles actuels, caractéristiques spécifiques à l'article
+- Évite les généralités — sois précis et pertinent pour CET article
+- Impacts réalistes et variés (entre +80% et +350%)
 
 Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
 {{"trends":[{{"word":"cargo baggy","impact":"+290%","raison":"style streetwear viral TikTok","score_plus":"+8"}},{{"word":"exemple2","impact":"+180%","raison":"tendance saison actuelle","score_plus":"+6"}},...12 items total],"category_used":"{body.category}"}}"""
