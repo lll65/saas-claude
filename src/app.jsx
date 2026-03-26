@@ -2062,7 +2062,7 @@ export default function PixGlow() {
           <button key={p} onClick={() => setPage(p)} className="pg-navlink" style={{ color: '#64748b', fontSize: '12px', padding: 0 }}>{label}</button>
         ))}
       </div>
-      <a href="https://t.me/pixglow" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(38,169,224,.1)', border: '1px solid rgba(38,169,224,.25)', borderRadius: '8px', padding: '7px 12px', textDecoration: 'none', marginBottom: '10px' }}>
+      <a href="https://t.me/vinted_astuce_secret" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(38,169,224,.1)', border: '1px solid rgba(38,169,224,.25)', borderRadius: '8px', padding: '7px 12px', textDecoration: 'none', marginBottom: '10px' }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="#29b6f6"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.285 14.49l-2.95-.924c-.642-.204-.654-.642.136-.953l11.527-4.448c.535-.194 1.002.131.896.056z"/></svg>
         <span style={{ color: '#29b6f6', fontSize: '12px', fontWeight: 700 }}>Rejoindre la communauté Telegram</span>
       </a>
@@ -2085,7 +2085,7 @@ export default function PixGlow() {
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="3" width="11" height="8" rx="1.5" stroke="#7c3aed" strokeWidth="1.2"/><path d="M1 4l5.5 4L12 4" stroke="#7c3aed" strokeWidth="1.2" strokeLinejoin="round"/></svg>
               pixglow.support@proton.me
             </a>
-            <a href="https://t.me/pixglow" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(38,169,224,.1)', border: '1px solid rgba(38,169,224,.25)', borderRadius: '9px', padding: '8px 14px', textDecoration: 'none' }}>
+            <a href="https://t.me/vinted_astuce_secret" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(38,169,224,.1)', border: '1px solid rgba(38,169,224,.25)', borderRadius: '9px', padding: '8px 14px', textDecoration: 'none' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#29b6f6"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.285 14.49l-2.95-.924c-.642-.204-.654-.642.136-.953l11.527-4.448c.535-.194 1.002.131.896.056z"/></svg>
               <span style={{ color: '#29b6f6', fontSize: '13px', fontWeight: 700 }}>Communauté Telegram</span>
             </a>
