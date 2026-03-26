@@ -533,6 +533,17 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 )}
               </div>
 
+              {/* ── CONSEILS PHOTO ── */}
+              {result.conseils_photo && (
+                <div style={{ marginBottom: '10px', background: 'rgba(251,191,36,.06)', border: '1px solid rgba(251,191,36,.2)', borderRadius: '10px', padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                    <span style={{ fontSize: '14px' }}>📸</span>
+                    <p style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Améliore ta photo pour plus de vues</p>
+                  </div>
+                  <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.55, margin: 0 }}>{result.conseils_photo}</p>
+                </div>
+              )}
+
               {/* ── PRIX ESTIMÉ ── */}
               {result.prix_estime && (
                 <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '8px 14px' }}>
