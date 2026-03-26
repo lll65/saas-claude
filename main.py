@@ -1132,7 +1132,9 @@ RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
 - Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
 - Description : sois spécifique (ex: "jean slim bleu marine taille haute, tissu denim épais" et NON "jean en bon état")
+- LANGAGE CERTAIN : n'écris JAMAIS "semble être", "paraît être", "probablement", "peut-être", "il me semble" — si tu n'es pas sûr d'une matière, ne la mentionne pas plutôt que de douter
 - TAILLE : si la taille n'est pas clairement visible/lisible sur la photo, NE MENTIONNE PAS LA TAILLE — n'écris jamais "taille non visible", "taille inconnue" ou similaire
+- HASHTAGS : génère TOUJOURS exactement 10 hashtags pertinents (#marque #type #couleur #matiere #style #occasion etc.)
 - Prix estimé : fourchette OBLIGATOIRE — donne toujours une estimation réaliste selon marque, état et catégorie (ex: "8-12€" t-shirt basique, "25-40€" veste de marque, "5-8€" article très abîmé)
 - Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut
 - conseils_photo : si le score est inférieur à 65 (photo floue, fond encombré, mauvais éclairage, article froissé), donne 2-3 conseils courts et bienveillants pour améliorer la photo (ex: "Essaie sur fond blanc ou clair 📸", "Utilise la lumière naturelle près d'une fenêtre ☀️", "Défroisse l'article avant la photo 👕"). Sinon laisse la chaîne vide."""
@@ -1361,13 +1363,17 @@ async def generate_boosted(
     image_data_url = f"data:image/png;base64,{image_b64}"
 
     mots = ", ".join(body.trend_words[:6])
+    new_score = min(98, body.current_score + 8)
     prompt = f"""Tu es expert vente Vinted France. Score actuel : {body.current_score}/100.
 Mots-tendance à INTÉGRER naturellement : {mots}
 Ces mots sont viraux cette semaine. Intègre-les dans le titre et les hashtags obligatoirement.
-Analyse aussi l'image pour estimer un prix de revente réaliste sur Vinted (marque, état, catégorie).
+Analyse l'image et génère EXACTEMENT ce JSON (sans markdown, sans texte autour) :
+{{"titre":"titre optimisé avec mot-tendance, max 60 caractères","description":"2-3 phrases naturelles avec emojis, mots tendance intégrés","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":{new_score},"amelioration":"+{new_score - body.current_score} pts — mots tendance intégrés","prix_estime":"CALCULE_ICI"}}
 
-Génère UNIQUEMENT ce JSON (sans markdown) :
-{{"titre":"titre avec mot-tendance max 60 caractères","description":"2-3 phrases naturelles avec emojis et mots tendance","hashtags":"#tag1 #tag2 ... (inclure les mots tendance comme hashtags)","score":{min(98, body.current_score + 8)},"amelioration":"+{min(98, body.current_score + 8) - body.current_score} pts — mots tendance intégrés","prix_estime":"10-15€"}}"""
+RÈGLES OBLIGATOIRES :
+- prix_estime : remplace "CALCULE_ICI" par une vraie fourchette de revente Vinted selon la marque, état et catégorie visibles sur la photo (ex: "25-40€" pour une ceinture Coach neuve, "8-15€" pour un accessoire sans marque). JAMAIS de valeur vide.
+- hashtags : TOUJOURS exactement 10 hashtags, les mots tendance inclus dedans
+- Langage certain uniquement : n'écris JAMAIS "semble", "paraît", "probablement", "peut-être" — décris uniquement ce que tu vois avec certitude"""
 
     try:
         last_error = None
@@ -1403,13 +1409,16 @@ Génère UNIQUEMENT ce JSON (sans markdown) :
             text = resp.json()["choices"][0]["message"]["content"]
             text = _re.sub(r"```json|```", "", text).strip()
             parsed = json.loads(text)
+            boost_prix = str(parsed.get("prix_estime", "")).strip()
+            if not boost_prix or boost_prix == "CALCULE_ICI":
+                boost_prix = ""  # frontend will keep existing prix_estime
             return {
                 "titre": str(parsed.get("titre", ""))[:80],
                 "description": str(parsed.get("description", ""))[:300],
                 "hashtags": str(parsed.get("hashtags", ""))[:500],
                 "score": max(body.current_score, min(98, int(parsed.get("score", body.current_score + 8)))),
                 "amelioration": str(parsed.get("amelioration", f"+8 pts")),
-                "prix_estime": str(parsed.get("prix_estime", ""))[:30],
+                "prix_estime": boost_prix[:30],
             }
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")

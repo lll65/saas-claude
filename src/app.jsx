@@ -442,7 +442,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
-      if (mountedRef.current) { setResult({ ...result, ...data }); setBoosted(true); }
+      if (mountedRef.current) { setResult({ ...result, ...data, prix_estime: data.prix_estime || result.prix_estime }); setBoosted(true); }
     } catch(e) { if (mountedRef.current) setTrendError(e.message); }
     finally { if (mountedRef.current) setBoostLoading(false); }
   };
@@ -606,7 +606,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
                     <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Boost Tendance</p>
-                    <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>CETTE SEMAINE</span>
+                    <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>AUJOURD'HUI</span>
                   </div>
                   {!trends && !trendLoading && (
                     <button onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
@@ -1501,6 +1501,16 @@ function FAQSection({ T, isMobile }) {
 const CHANGELOG = [
   {
     date: '26 mars 2026',
+    version: 'v1.6',
+    items: [
+      { type: 'new', label: '📸 Conseils photo intelligents', desc: 'Quand une photo est sous-optimale, l\'IA donne maintenant 2-3 conseils concrets et bienveillants pour l\'améliorer (éclairage, fond, présentation). Plus de mauvaises annonces sans le savoir.' },
+      { type: 'improve', label: '🎯 Mots tendance spécifiques à chaque article', desc: 'Les mots tendance sont désormais générés spécifiquement pour TON article (pas juste ta catégorie). L\'IA analyse le titre et la description pour proposer les mots les plus recherchés pour CE produit précis.' },
+      { type: 'fix', label: '💰 Prix estimé toujours affiché', desc: 'Le prix estimé était parfois absent. Il est maintenant garanti à chaque analyse avec un fallback par catégorie si l\'IA ne peut pas l\'estimer. Le prix est aussi préservé après le boost tendance.' },
+      { type: 'fix', label: '✍️ Descriptions sans incertitudes', desc: 'Suppression des formulations incertaines ("semble être", "paraît être") dans les descriptions. Si l\'IA ne voit pas clairement une information (taille, matière), elle l\'omet plutôt que de douter.' },
+    ],
+  },
+  {
+    date: '26 mars 2026',
     version: 'v1.5',
     items: [
       { type: 'improve', label: '🎯 Descriptions plus précises', desc: 'L\'IA analyse maintenant plus finement chaque article : marque visible, couleur exacte, matière, état constaté. Les descriptions décrivent vraiment ce qui est sur la photo.' },
@@ -2049,6 +2059,10 @@ export default function PixGlow() {
           <button key={p} onClick={() => setPage(p)} className="pg-navlink" style={{ color: '#64748b', fontSize: '12px', padding: 0 }}>{label}</button>
         ))}
       </div>
+      <a href="https://t.me/pixglow" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(38,169,224,.1)', border: '1px solid rgba(38,169,224,.25)', borderRadius: '8px', padding: '7px 12px', textDecoration: 'none', marginBottom: '10px' }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#29b6f6"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.285 14.49l-2.95-.924c-.642-.204-.654-.642.136-.953l11.527-4.448c.535-.194 1.002.131.896.056z"/></svg>
+        <span style={{ color: '#29b6f6', fontSize: '12px', fontWeight: 700 }}>Rejoindre la communauté Telegram</span>
+      </a>
       <p style={{ color: '#475569', fontSize: '11px', margin: 0 }}>© {new Date().getFullYear()} PixGlow · Non affilié à Vinted, Leboncoin, Amazon, Shopify ou Facebook.</p>
     </footer>
   ) : (
@@ -2064,9 +2078,13 @@ export default function PixGlow() {
             <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.65, maxWidth: '260px', marginBottom: '16px' }}>
               Outil IA de traitement photo et rédaction d'annonces pour marketplaces. Développé en France 🇫🇷
             </p>
-            <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '10px' }}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="3" width="11" height="8" rx="1.5" stroke="#7c3aed" strokeWidth="1.2"/><path d="M1 4l5.5 4L12 4" stroke="#7c3aed" strokeWidth="1.2" strokeLinejoin="round"/></svg>
               pixglow.support@proton.me
+            </a>
+            <a href="https://t.me/pixglow" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(38,169,224,.1)', border: '1px solid rgba(38,169,224,.25)', borderRadius: '9px', padding: '8px 14px', textDecoration: 'none' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#29b6f6"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.285 14.49l-2.95-.924c-.642-.204-.654-.642.136-.953l11.527-4.448c.535-.194 1.002.131.896.056z"/></svg>
+              <span style={{ color: '#29b6f6', fontSize: '13px', fontWeight: 700 }}>Communauté Telegram</span>
             </a>
           </div>
           {/* Produit */}
