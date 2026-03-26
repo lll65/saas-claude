@@ -1125,10 +1125,15 @@ async def generate_description(
         image_b64 = base64.b64encode(f.read()).decode("utf-8")
     image_data_url = f"data:image/png;base64,{image_b64}"
 
-    prompt = """Tu es expert vente Vinted France. Analyse CE vêtement/article précis sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{"titre":"titre accrocheur max 60 caractères basé sur ce que tu vois","description":"2-3 phrases avec emojis, ton naturel et vendeur, décris précisément l'article visible","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison"}
+    prompt = """Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
+{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"2-3 phrases avec emojis : type exact d'article, couleur précise, matière si visible, état constaté, taille si lisible, marque si visible — décris CE QUE TU VOIS uniquement","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€"}
 
-IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité visible de l'article (état, marque, style, tendance actuelle). Ne mets JAMAIS 85 par défaut. Un article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95."""
+RÈGLES STRICTES :
+- Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
+- Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
+- Description : sois spécifique (ex: "jean slim bleu marine taille haute, tissu denim épais" et NON "jean en bon état")
+- Prix estimé : fourchette de revente réaliste sur Vinted selon marque, état et catégorie (ex: "8-12€" pour un t-shirt basique, "25-40€" pour une veste de marque)
+- Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut."""
 
     VISION_MODELS = [
         "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -1179,7 +1184,8 @@ IMPORTANT pour le score : évalue HONNÊTEMENT entre 50 et 95 selon la qualité 
                 "description": str(parsed.get("description", "Bel article 📦"))[:300],
                 "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion"))[:500],
                 "score": max(60, min(98, int(parsed.get("score", 75)))),
-                "categorie": str(parsed.get("categorie", "vetement"))
+                "categorie": str(parsed.get("categorie", "vetement")),
+                "prix_estime": str(parsed.get("prix_estime", ""))[:30],
             }
     except HTTPException:
         raise
@@ -1197,8 +1203,9 @@ _trends_cache: dict = {}
 _trends_lock = threading.Lock()
 
 def _week_key(category: str) -> str:
-    week = _date.today().isocalendar()
-    return f"{week[0]}-W{week[1]:02d}-{category.lower()[:20]}"
+    # Cache par jour pour renouveler les suggestions quotidiennement
+    today = _date.today()
+    return f"{today.strftime('%Y-%m-%d')}-{category.lower()[:20]}"
 
 class TrendRequest(BaseModel):
     category: str = "mode"
@@ -1219,9 +1226,20 @@ async def get_trending(
     cache_key = _week_key(body.category)
     now = time.time()
 
+    import random as _random_mod
     with _trends_lock:
         cached = _trends_cache.get(cache_key)
         if cached and not body.force_refresh and now < cached["expires_at"]:
+            # Retourne un échantillon aléatoire différent à chaque appel pour varier les suggestions
+            all_t = cached.get("all_trends", [])
+            if all_t:
+                selected = _random_mod.sample(all_t, min(6, len(all_t)))
+                return {
+                    "trends": selected,
+                    "categorie": cached.get("categorie", body.category),
+                    "maj": str(_date.today()),
+                    "cache_key": cache_key
+                }
             return cached["data"]
 
     article_context = ""
@@ -1231,19 +1249,20 @@ async def get_trending(
         article_context += f"\nDescription : \"{body.description[:120]}\""
 
     prompt = f"""Tu es expert tendances Vinted/Instagram/TikTok France.
-Semaine du {_date.today().strftime('%d/%m/%Y')}.
+Date du jour : {_date.today().strftime('%d/%m/%Y')}.
 Catégorie précise : {body.category}{article_context}
 
-Retourne UNIQUEMENT 6 mots-clés/expressions courtes qui explosent VRAIMENT cette semaine ET qui sont 100% cohérents avec CET article précis.
+Retourne EXACTEMENT 12 mots-clés/expressions courtes qui sont recherchés EN CE MOMENT sur Vinted France et cohérents avec cet article.
 
 Règles STRICTES :
-- Compatibles avec la catégorie ET avec l'article décrit ci-dessus
-- Expressions courtes (1-3 mots max), concrètes, cherchées par des acheteurs réels cette semaine
-- Mélange : matières tendance, styles viraux TikTok, caractéristiques physiques recherchées, termes d'esthétique actuels
-- Si l'article a des caractéristiques visibles (couleur, matière, marque), intègre-les dans les suggestions
+- Expressions concrètes (1-3 mots), cherchées par de vrais acheteurs aujourd'hui
+- Diversité obligatoire : matières tendance, styles viraux TikTok, esthétiques actuelles, marques/références du moment, couleurs de saison, caractéristiques physiques recherchées
+- Si l'article a des caractéristiques visibles (couleur, matière, marque), inclus des variations pertinentes
+- Pas de mots génériques comme "vintage" ou "mode" seuls — sois spécifique et actuel
+- Les impacts doivent être réalistes et variés (entre +80% et +350%)
 
 Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
-{{"trends":[{{"word":"bracelet cuir","impact":"+280%","raison":"retour cuir chaud printemps","score_plus":"+8"}},{{"word":"exemple2","impact":"+180%","raison":"viral TikTok cette semaine","score_plus":"+6"}},...6 items total],"category_used":"{body.category}"}}"""
+{{"trends":[{{"word":"cargo baggy","impact":"+290%","raison":"style streetwear viral TikTok","score_plus":"+8"}},{{"word":"exemple2","impact":"+180%","raison":"tendance saison actuelle","score_plus":"+6"}},...12 items total],"category_used":"{body.category}"}}"""
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -1252,8 +1271,8 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
                 headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
                 json={
                     "model": "llama-3.3-70b-versatile",
-                    "max_tokens": 600,
-                    "temperature": 0.7,
+                    "max_tokens": 900,
+                    "temperature": 1.05,
                     "messages": [{"role": "user", "content": prompt}]
                 }
             )
@@ -1262,11 +1281,11 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
             text = _re.sub(r"```json|```", "", text).strip()
             parsed = json.loads(text)
 
-            raw_trends = parsed.get("trends", [])[:6]
-            normalized = []
+            raw_trends = parsed.get("trends", [])[:12]
+            all_trends = []
             for t in raw_trends:
                 word = t.get("word") or t.get("mot", "tendance")
-                normalized.append({
+                all_trends.append({
                     "mot":       word,
                     "word":      word,
                     "boost":     t.get("impact") or t.get("boost", "+100%"),
@@ -1275,20 +1294,25 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
                     "score_plus": t.get("score_plus", ""),
                 })
 
-            result = {
-                "trends": normalized,
-                "categorie": parsed.get("category_used") or parsed.get("categorie_detectee", body.category),
-                "maj": str(_date.today()),
-                "cache_key": cache_key
-            }
-
+            # Stocker les 12 en cache, retourner 6 aléatoires à chaque appel
             with _trends_lock:
                 _trends_cache[cache_key] = {
-                    "data": result,
-                    "expires_at": now + 7 * 24 * 3600
+                    "all_trends": all_trends,
+                    "categorie": parsed.get("category_used") or body.category,
+                    "expires_at": now + 24 * 3600  # Renouvellement quotidien
                 }
 
-            return result
+        # Sélection aléatoire de 6 parmi les 12
+        import random as _random_mod
+        selected = _random_mod.sample(all_trends, min(6, len(all_trends)))
+
+        result = {
+            "trends": selected,
+            "categorie": parsed.get("category_used") or body.category,
+            "maj": str(_date.today()),
+            "cache_key": cache_key
+        }
+        return result
 
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing tendances — réessaie")
@@ -1325,9 +1349,10 @@ async def generate_boosted(
     prompt = f"""Tu es expert vente Vinted France. Score actuel : {body.current_score}/100.
 Mots-tendance à INTÉGRER naturellement : {mots}
 Ces mots sont viraux cette semaine. Intègre-les dans le titre et les hashtags obligatoirement.
+Analyse aussi l'image pour estimer un prix de revente réaliste sur Vinted (marque, état, catégorie).
 
 Génère UNIQUEMENT ce JSON (sans markdown) :
-{{"titre":"titre avec mot-tendance max 60 caractères","description":"2-3 phrases naturelles avec emojis et mots tendance","hashtags":"#tag1 #tag2 ... (inclure les mots tendance comme hashtags)","score":{min(98, body.current_score + 8)},"amelioration":"+{min(98, body.current_score + 8) - body.current_score} pts — mots tendance intégrés"}}"""
+{{"titre":"titre avec mot-tendance max 60 caractères","description":"2-3 phrases naturelles avec emojis et mots tendance","hashtags":"#tag1 #tag2 ... (inclure les mots tendance comme hashtags)","score":{min(98, body.current_score + 8)},"amelioration":"+{min(98, body.current_score + 8) - body.current_score} pts — mots tendance intégrés","prix_estime":"10-15€"}}"""
 
     try:
         last_error = None
@@ -1368,7 +1393,8 @@ Génère UNIQUEMENT ce JSON (sans markdown) :
                 "description": str(parsed.get("description", ""))[:300],
                 "hashtags": str(parsed.get("hashtags", ""))[:500],
                 "score": max(body.current_score, min(98, int(parsed.get("score", body.current_score + 8)))),
-                "amelioration": str(parsed.get("amelioration", f"+8 pts"))
+                "amelioration": str(parsed.get("amelioration", f"+8 pts")),
+                "prix_estime": str(parsed.get("prix_estime", ""))[:30],
             }
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
