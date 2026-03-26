@@ -533,6 +533,18 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 )}
               </div>
 
+              {/* ── PRIX ESTIMÉ ── */}
+              {result.prix_estime && (
+                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '8px 14px' }}>
+                  <span style={{ fontSize: '15px' }}>💰</span>
+                  <div>
+                    <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
+                    <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{result.prix_estime}</p>
+                  </div>
+                  <p style={{ color: '#334155', fontSize: '11px', margin: '0 0 0 auto', lineHeight: 1.3, maxWidth: '120px', textAlign: 'right' }}>Vinted / Leboncoin</p>
+                </div>
+              )}
+
               {/* ── TITRE ── */}
               <div style={{ marginBottom: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
@@ -1476,6 +1488,15 @@ function FAQSection({ T, isMobile }) {
 // 👇 Pour ajouter une news : copie un bloc { date, version, items:[...] }
 //    et colle-le EN PREMIER dans ce tableau. Types disponibles : 'new' | 'improve' | 'fix'
 const CHANGELOG = [
+  {
+    date: '26 mars 2026',
+    version: 'v1.5',
+    items: [
+      { type: 'improve', label: '🎯 Descriptions plus précises', desc: 'L\'IA analyse maintenant plus finement chaque article : marque visible, couleur exacte, matière, état constaté. Les descriptions décrivent vraiment ce qui est sur la photo.' },
+      { type: 'new', label: '💰 Prix estimé marché', desc: 'L\'IA estime désormais une fourchette de prix réaliste pour chaque article selon la marque, l\'état et la catégorie — basée sur les prix constatés sur Vinted et Leboncoin.' },
+      { type: 'improve', label: '📈 Boost Tendance renouvelé chaque jour', desc: 'Les mots tendance sont maintenant rafraîchis quotidiennement (au lieu de chaque semaine) et varient à chaque analyse pour éviter les répétitions. 12 mots sont générés, 6 sélectionnés aléatoirement.' },
+    ],
+  },
   {
     date: '16 mars 2026',
     version: 'v1.4',
