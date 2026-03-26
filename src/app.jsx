@@ -545,16 +545,19 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               )}
 
               {/* ── PRIX ESTIMÉ ── */}
-              {result.prix_estime && (
-                <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '8px 14px' }}>
-                  <span style={{ fontSize: '15px' }}>💰</span>
-                  <div>
-                    <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
-                    <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{result.prix_estime}</p>
+              {(() => {
+                const prix = result.prix_estime || ({'chaussures':'15-30€','sacs':'12-25€','bijoux':'5-12€','montres':'20-50€','accessoires':'5-15€','sport':'10-25€','maison':'5-20€'}[result.categorie] || '8-15€');
+                return (
+                  <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '8px 14px' }}>
+                    <span style={{ fontSize: '15px' }}>💰</span>
+                    <div>
+                      <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
+                      <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prix}</p>
+                    </div>
+                    <p style={{ color: '#334155', fontSize: '11px', margin: '0 0 0 auto', lineHeight: 1.3, maxWidth: '120px', textAlign: 'right' }}>Vinted / Leboncoin</p>
                   </div>
-                  <p style={{ color: '#334155', fontSize: '11px', margin: '0 0 0 auto', lineHeight: 1.3, maxWidth: '120px', textAlign: 'right' }}>Vinted / Leboncoin</p>
-                </div>
-              )}
+                );
+              })()}
 
               {/* ── TITRE ── */}
               <div style={{ marginBottom: '8px' }}>
