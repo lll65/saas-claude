@@ -1791,12 +1791,12 @@ export default function PixGlow() {
   };
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
   const limitReached = isConnected && credits !== null && credits <= 0;
-  const canSelect = () => isConnected && credits !== null && credits > 0;
+  const canSelect = () => isConnected && (credits === null || credits > 0);
   const goToApp = () => { if (isConnected) setPage('app'); else openAuth('register'); };
 
   const handleSelectClick = (useCamera = false) => {
     if (!isConnected) { openAuth('register'); return; }
-    if (!canSelect()) { setError('Crédits épuisés. Rechargez pour continuer.'); return; }
+    if (credits !== null && credits <= 0) { setError('Crédits épuisés. Rechargez pour continuer.'); return; }
     setError(null);
     if (useCamera) cameraInputRef.current?.click(); else fileInputRef.current?.click();
   };
