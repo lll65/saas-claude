@@ -1126,7 +1126,7 @@ async def generate_description(
     image_data_url = f"data:image/png;base64,{image_b64}"
 
     prompt = """Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"2-3 phrases avec emojis : type exact d'article, couleur précise, matière si visible, état constaté, marque si visible — décris CE QUE TU VOIS uniquement","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
+{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"2-3 phrases avec emojis décrivant l'article visible sur la photo : type exact, couleur précise, matière si visible, état constaté, marque si visible","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
 
 RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
