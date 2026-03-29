@@ -516,26 +516,39 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
           ) : result ? (
             <div>
               {/* ── SCORE + INDICATEUR BOOST POTENTIEL ── */}
-              <div style={{ marginBottom: '14px', background: 'rgba(16,185,129,.05)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '14px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Score potentiel vues</p>
-                  {boosted && result.amelioration && (
-                    <span className="pg-pop" style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '100px' }}>🔥 {result.amelioration}</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 80 ? 'linear-gradient(90deg,#10b981,#34d399)' : result.score >= 65 ? 'linear-gradient(90deg,#60a5fa,#818cf8)' : 'linear-gradient(90deg,#94a3b8,#64748b)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
+              {(() => {
+                const scoreColor = boosted ? '#f59e0b' : result.score >= 85 ? '#10b981' : result.score >= 70 ? '#60a5fa' : result.score >= 50 ? '#f59e0b' : '#f87171';
+                const scoreBg = boosted ? 'rgba(245,158,11,.05)' : result.score >= 85 ? 'rgba(16,185,129,.05)' : result.score >= 70 ? 'rgba(96,165,250,.05)' : result.score >= 50 ? 'rgba(245,158,11,.05)' : 'rgba(239,68,68,.05)';
+                const scoreBorder = boosted ? 'rgba(245,158,11,.2)' : result.score >= 85 ? 'rgba(16,185,129,.2)' : result.score >= 70 ? 'rgba(96,165,250,.2)' : result.score >= 50 ? 'rgba(245,158,11,.2)' : 'rgba(239,68,68,.2)';
+                const scoreLabel = boosted ? 'Description boostée' : result.score >= 85 ? 'Excellente description' : result.score >= 70 ? 'Bonne description' : result.score >= 50 ? 'Description correcte' : 'Description à améliorer';
+                const scoreTip = boosted ? 'Mots tendance intégrés pour maximiser les vues' : result.score >= 85 ? 'Votre annonce est très bien optimisée pour Vinted' : result.score >= 70 ? 'Description de qualité — le boost peut encore l\'améliorer' : result.score >= 50 ? 'Utilisez le boost tendance pour gagner des vues' : 'Activez le boost tendance pour améliorer votre score';
+                return (
+                  <div style={{ marginBottom: '14px', background: scoreBg, border: `1px solid ${scoreBorder}`, borderRadius: '12px', padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div>
+                        <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 2px' }}>Score potentiel vues</p>
+                        <p style={{ color: scoreColor, fontSize: '12px', fontWeight: 700, margin: 0 }}>{scoreLabel}</p>
+                      </div>
+                      {boosted && result.amelioration && (
+                        <span className="pg-pop" style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '100px' }}>🔥 {result.amelioration}</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 85 ? 'linear-gradient(90deg,#10b981,#34d399)' : result.score >= 70 ? 'linear-gradient(90deg,#60a5fa,#818cf8)' : result.score >= 50 ? 'linear-gradient(90deg,#f59e0b,#fb923c)' : 'linear-gradient(90deg,#f87171,#ef4444)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
+                      </div>
+                      <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
+                    </div>
+                    <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
+                    {/* Preview score si on applique toutes les trends sélectionnées */}
+                    {trends && selectedTrends.length > 0 && !boosted && (
+                      <p style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', margin: '6px 0 0' }}>
+                        ⚡ Avec le boost tendance → score estimé <strong style={{ color: '#c4b5fd' }}>{potentialScore}/100</strong>
+                      </p>
+                    )}
                   </div>
-                  <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: boosted ? '#f59e0b' : result.score >= 80 ? '#10b981' : result.score >= 65 ? '#60a5fa' : '#94a3b8', minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
-                </div>
-                {/* Preview score si on applique toutes les trends sélectionnées */}
-                {trends && selectedTrends.length > 0 && !boosted && (
-                  <p style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', margin: '6px 0 0' }}>
-                    ⚡ Avec le boost tendance → score estimé <strong style={{ color: '#c4b5fd' }}>{potentialScore}/100</strong>
-                  </p>
-                )}
-              </div>
+                );
+              })()}
 
               {/* ── CONSEILS PHOTO ── */}
               {result.conseils_photo && (
@@ -1707,6 +1720,262 @@ function Changelog({ onBack, darkMode }) {
   );
 }
 
+/* ══ ADMIN PANEL ══ */
+function AdminPanel({ onBack, userEmail }) {
+  const [tab, setTab] = React.useState('analytics');
+  const [analytics, setAnalytics] = React.useState(null);
+  const [users, setUsers] = React.useState([]);
+  const [total, setTotal] = React.useState(0);
+  const [loading, setLoading] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState('created_at');
+  const [order, setOrder] = React.useState('desc');
+  const [search, setSearch] = React.useState('');
+  const [page, setPage] = React.useState(0);
+  const [editCredits, setEditCredits] = React.useState(null); // { id, value }
+  const [msg, setMsg] = React.useState(null);
+  const LIMIT = 50;
+
+  const authHeaders = () => {
+    const t = localStorage.getItem('pg_token');
+    return t ? { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  };
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/analytics`, { headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Erreur');
+      setAnalytics(await res.json());
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+    finally { setLoading(false); }
+  };
+
+  const loadUsers = async (newPage = page) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ sort_by: sortBy, order, limit: LIMIT, offset: newPage * LIMIT, search });
+      const res = await fetch(`${API_URL}/admin/users?${params}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Erreur');
+      const data = await res.json();
+      setUsers(data.users); setTotal(data.total);
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+    finally { setLoading(false); }
+  };
+
+  React.useEffect(() => { if (tab === 'analytics') loadAnalytics(); else loadUsers(0); setPage(0); }, [tab, sortBy, order]);
+
+  const handleSearch = (e) => { e.preventDefault(); setPage(0); loadUsers(0); };
+
+  const handleSort = (col) => {
+    if (sortBy === col) setOrder(o => o === 'desc' ? 'asc' : 'desc');
+    else { setSortBy(col); setOrder('desc'); }
+  };
+
+  const saveCredits = async (userId, val) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/credits`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ credits: parseInt(val) }) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Erreur');
+      setMsg({ ok: true, text: 'Crédits mis à jour' });
+      setEditCredits(null);
+      loadUsers();
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+  };
+
+  const deleteUser = async (userId, email) => {
+    if (!confirm(`Supprimer ${email} ? Cette action est irréversible.`)) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Erreur');
+      setMsg({ ok: true, text: 'Utilisateur supprimé' });
+      loadUsers();
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+  };
+
+  const SortIcon = ({ col }) => (
+    <span style={{ marginLeft: '4px', opacity: sortBy === col ? 1 : 0.3, fontSize: '10px' }}>
+      {sortBy === col && order === 'asc' ? '▲' : '▼'}
+    </span>
+  );
+
+  return (
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+      <nav style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.07)', background: 'rgba(10,10,15,.97)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '30px', height: '30px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>✨</div>
+          <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800 }}>PixGlow</span>
+          <span style={{ background: 'rgba(124,58,237,.2)', color: '#a78bfa', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginLeft: '4px' }}>ADMIN</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>← App</button>
+      </nav>
+
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 20px' }}>
+        {msg && (
+          <div style={{ background: msg.ok ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${msg.ok ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)'}`, borderRadius: '10px', padding: '10px 16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: msg.ok ? '#10b981' : '#f87171', fontSize: '13px', fontWeight: 600 }}>{msg.text}</span>
+            <button onClick={() => setMsg(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>✕</button>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+          {[['analytics', '📊 Analytics'], ['users', '👥 Utilisateurs']].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{ background: tab === key ? 'rgba(124,58,237,.2)' : 'rgba(255,255,255,.04)', border: `1px solid ${tab === key ? 'rgba(124,58,237,.4)' : 'rgba(255,255,255,.08)'}`, color: tab === key ? '#a78bfa' : '#64748b', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit' }}>{label}</button>
+          ))}
+        </div>
+
+        {/* ── ANALYTICS ── */}
+        {tab === 'analytics' && analytics && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+              {[
+                { label: 'Utilisateurs totaux', value: analytics.total_users, color: '#a78bfa' },
+                { label: 'Vérifiés', value: analytics.verified_users, color: '#34d399' },
+                { label: 'Inscrits aujourd\'hui', value: analytics.signups_today, color: '#60a5fa' },
+                { label: 'Ce mois', value: analytics.signups_this_month, color: '#f59e0b' },
+                { label: 'Actifs 7j', value: analytics.active_7d, color: '#10b981' },
+                { label: 'Actifs 30j', value: analytics.active_30d, color: '#818cf8' },
+                { label: 'Photos traitées', value: analytics.total_photos_processed.toLocaleString('fr'), color: '#f472b6' },
+                { label: 'Crédits en circulation', value: analytics.total_credits_in_system.toLocaleString('fr'), color: '#fb923c' },
+              ].map((stat, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px', padding: '16px 18px' }}>
+                  <p style={{ color: '#475569', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 6px' }}>{stat.label}</p>
+                  <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '28px', fontWeight: 800, color: stat.color, margin: 0 }}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Inscriptions par jour */}
+            <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
+              <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '15px', fontWeight: 800, margin: '0 0 16px', color: '#e2e8f0' }}>Inscriptions 30 derniers jours</h3>
+              {analytics.signups_by_day.length === 0 ? (
+                <p style={{ color: '#475569', fontSize: '13px' }}>Aucune inscription récente.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                        <th style={{ textAlign: 'left', padding: '6px 10px', color: '#475569', fontWeight: 600 }}>Date</th>
+                        <th style={{ textAlign: 'right', padding: '6px 10px', color: '#475569', fontWeight: 600 }}>Inscrits</th>
+                        <th style={{ textAlign: 'left', padding: '6px 10px', color: '#475569', fontWeight: 600 }}>Barre</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.signups_by_day.slice().reverse().map((row, i) => {
+                        const max = Math.max(...analytics.signups_by_day.map(r => r.count), 1);
+                        return (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                            <td style={{ padding: '6px 10px', color: '#94a3b8' }}>{row.day}</td>
+                            <td style={{ padding: '6px 10px', color: '#a78bfa', fontWeight: 700, textAlign: 'right' }}>{row.count}</td>
+                            <td style={{ padding: '6px 10px' }}>
+                              <div style={{ width: `${Math.round((row.count / max) * 200)}px`, maxWidth: '100%', height: '10px', background: 'linear-gradient(90deg,#7c3aed,#4f46e5)', borderRadius: '4px' }} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Top utilisateurs par crédits */}
+            <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '15px', fontWeight: 800, margin: '0 0 14px', color: '#e2e8f0' }}>Top 10 par crédits</h3>
+              {analytics.top_by_credits.map((u, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ color: '#334155', fontWeight: 700, minWidth: '20px' }}>#{i+1}</span>
+                    <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{u.email}</span>
+                  </div>
+                  <span style={{ color: '#a78bfa', fontWeight: 700, fontSize: '13px' }}>{u.credits} crédits</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── USERS ── */}
+        {tab === 'users' && (
+          <div>
+            {/* Recherche */}
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par email..." style={{ flex: 1, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+              <button type="submit" style={{ background: 'rgba(124,58,237,.2)', border: '1px solid rgba(124,58,237,.35)', color: '#a78bfa', borderRadius: '10px', padding: '10px 18px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '13px' }}>Chercher</button>
+            </form>
+
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '10px' }}>{total} utilisateur{total > 1 ? 's' : ''} · Page {page + 1}/{Math.ceil(total / LIMIT) || 1}</p>
+
+            <div style={{ overflowX: 'auto', borderRadius: '14px', border: '1px solid rgba(255,255,255,.07)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,.03)', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                    {[
+                      ['id', 'ID'],
+                      ['email', 'Email'],
+                      ['credits', 'Crédits'],
+                      ['created_at', 'Inscrit le'],
+                      ['last_used_at', 'Dernière activité'],
+                      ['referrals_given', 'Parrainages'],
+                    ].map(([col, label]) => (
+                      <th key={col} onClick={() => handleSort(col)} style={{ textAlign: 'left', padding: '10px 14px', color: '#475569', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                        {label}<SortIcon col={col} />
+                      </th>
+                    ))}
+                    <th style={{ textAlign: 'left', padding: '10px 14px', color: '#475569', fontWeight: 600 }}>Vérifié</th>
+                    <th style={{ padding: '10px 14px', color: '#475569', fontWeight: 600 }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u, i) => (
+                    <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.01)' }}>
+                      <td style={{ padding: '10px 14px', color: '#475569' }}>{u.id}</td>
+                      <td style={{ padding: '10px 14px', color: '#e2e8f0', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {editCredits?.id === u.id ? (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <input type="number" value={editCredits.value} onChange={e => setEditCredits(c => ({ ...c, value: e.target.value }))}
+                              style={{ width: '60px', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(124,58,237,.4)', borderRadius: '6px', padding: '4px 6px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit' }} />
+                            <button onClick={() => saveCredits(u.id, editCredits.value)} style={{ background: 'rgba(16,185,129,.2)', border: '1px solid rgba(16,185,129,.3)', color: '#10b981', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '11px', fontWeight: 700 }}>✓</button>
+                            <button onClick={() => setEditCredits(null)} style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: '#64748b', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '11px' }}>✕</button>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#a78bfa', fontWeight: 700, cursor: 'pointer' }} onClick={() => setEditCredits({ id: u.id, value: u.credits })} title="Cliquer pour modifier">{u.credits}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>{u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'}</td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>{u.last_used_at ? new Date(u.last_used_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—'}</td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', textAlign: 'center' }}>{u.referrals_given || 0}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {u.email_verified
+                          ? <span style={{ background: 'rgba(16,185,129,.15)', color: '#34d399', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px' }}>✓ Oui</span>
+                          : <span style={{ background: 'rgba(239,68,68,.1)', color: '#f87171', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px' }}>✗ Non</span>
+                        }
+                      </td>
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => deleteUser(u.id, u.email)} style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '11px', fontWeight: 600 }}>Suppr.</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {total > LIMIT && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center' }}>
+                <button disabled={page === 0} onClick={() => { const p = page - 1; setPage(p); loadUsers(p); }} style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: page === 0 ? '#334155' : '#94a3b8', borderRadius: '8px', padding: '7px 14px', cursor: page === 0 ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>← Préc.</button>
+                <button disabled={(page + 1) * LIMIT >= total} onClick={() => { const p = page + 1; setPage(p); loadUsers(p); }} style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: (page + 1) * LIMIT >= total ? '#334155' : '#94a3b8', borderRadius: '8px', padding: '7px 14px', cursor: (page + 1) * LIMIT >= total ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Suiv. →</button>
+              </div>
+            )}
+
+            {loading && <p style={{ color: '#475569', textAlign: 'center', marginTop: '20px' }}>Chargement...</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ══ COMPOSANT PRINCIPAL ══ */
 export default function PixGlow() {
   const [page, setPageRaw] = useState('landing');
@@ -1720,6 +1989,7 @@ export default function PixGlow() {
   const [credits, setCredits] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -1751,7 +2021,7 @@ export default function PixGlow() {
     const token = getToken(); const savedEmail = localStorage.getItem('pg_email');
     if (token && savedEmail) {
       setUserEmail(savedEmail); setIsConnected(true);
-      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); }).catch(() => {});
+      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); if (d.is_admin) setIsAdmin(true); }).catch(() => {});
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
@@ -1781,7 +2051,7 @@ export default function PixGlow() {
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   useEffect(() => { if (page === 'app' && !isConnected) { openAuth('register'); setPage('landing'); } }, [page, isConnected]);
-  const handleLogout = () => { ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setPage('landing'); };
+  const handleLogout = () => { ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setIsAdmin(false); setPage('landing'); };
   const openReferral = () => {
     if (!isConnected) { openAuth('register'); return; }
     fetch(`${API_URL}/my-referral`, { headers: authHeaders() })
@@ -1968,6 +2238,7 @@ export default function PixGlow() {
   if (page === 'confidentialite') return <><InjectCSS /><PolitiqueConfidentialite onBack={() => setPage('landing')} /></>;
   if (page === 'cgv') return <><InjectCSS /><CGV onBack={() => setPage('landing')} /></>;
   if (page === 'nouveautes') return <><InjectCSS /><Changelog onBack={() => setPage('landing')} darkMode={darkMode} /></>;
+  if (page === 'admin' && isConnected) return <AdminPanel onBack={() => setPage('app')} userEmail={userEmail} />;
 
   // Tokens de thème — tous les styles conditionnels passent par T
   const T = darkMode ? {
@@ -2018,6 +2289,7 @@ export default function PixGlow() {
                 </span>}
                 {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
+                {!isMobile && isAdmin && <button onClick={() => setPage('admin')} style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
@@ -2622,7 +2894,7 @@ export default function PixGlow() {
         </div>
       )}
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
+      <div style={{ maxWidth: '1300px', margin: '0 auto', padding: isMobile ? '16px' : '28px 40px' }}>
 
 
         {/* Message de bienvenue personnalisé */}
