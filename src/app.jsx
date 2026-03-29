@@ -2894,7 +2894,7 @@ export default function PixGlow() {
         </div>
       )}
 
-      <div style={{ maxWidth: '1300px', margin: '0 auto', padding: isMobile ? '16px' : '28px 40px' }}>
+      <div style={{ maxWidth: hasResults ? '860px' : '1300px', margin: '0 auto', padding: isMobile ? '16px' : '28px 40px' }}>
 
 
         {/* Message de bienvenue personnalisé */}
@@ -3017,7 +3017,7 @@ export default function PixGlow() {
                 gap: '14px', marginBottom: '14px'
               }}>
                 {results.map((r, i) => (
-                  <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px', display: !isMobile && results.length === 1 ? 'grid' : undefined, gridTemplateColumns: !isMobile && results.length === 1 ? '1fr 1.6fr' : undefined, gap: !isMobile && results.length === 1 ? '20px' : undefined, alignItems: 'start' }}>
+                  <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
                     <div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                         <div>
