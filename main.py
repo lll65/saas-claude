@@ -1264,22 +1264,21 @@ async def get_trending(
     if body.description:
         article_context += f"\nDescription : \"{body.description[:120]}\""
 
-    prompt = f"""Tu es expert tendances Vinted/Instagram/TikTok France.
+    prompt = f"""Tu es expert en recherches Vinted France.
 Date du jour : {_date.today().strftime('%d/%m/%Y')}.
 Catégorie : {body.category}{article_context}
 
-MISSION : Génère 12 mots-clés SPÉCIFIQUEMENT adaptés à CET article précis — pas des mots génériques de la catégorie.
-Ces mots doivent correspondre à ce que les acheteurs tapent dans la barre de recherche Vinted pour trouver exactement CE TYPE d'article.
+MISSION : Génère 12 requêtes de recherche courtes que des acheteurs Vinted tapent réellement pour trouver CE type d'article.
 
 Règles STRICTES :
-- Chaque mot doit être cohérent avec les caractéristiques visibles de l'article (couleur, matière, style, marque si présente)
-- Privilégie les expressions que des acheteurs Vinted tapent réellement pour CE produit
-- Diversité : matières tendance, coupes virales TikTok, coloris du moment, styles actuels, caractéristiques spécifiques à l'article
-- Évite les généralités — sois précis et pertinent pour CET article
+- LONGUEUR : 2 à 3 mots maximum par expression (comme une vraie recherche Vinted : "ralph lauren noir", "doudoune matelassée", "cargo baggy Y2K")
+- PAS de phrases descriptives longues — uniquement des mots-clés courts et percutants
+- Chaque expression doit être cohérente avec les caractéristiques de l'article (couleur, marque, style, matière)
+- Diversité : certains orientés marque, certains orientés style/tendance, certains orientés caractéristique visuelle
 - Impacts réalistes et variés (entre +80% et +350%)
 
 Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
-{{"trends":[{{"word":"cargo baggy","impact":"+290%","raison":"style streetwear viral TikTok","score_plus":"+8"}},{{"word":"exemple2","impact":"+180%","raison":"tendance saison actuelle","score_plus":"+6"}},...12 items total],"category_used":"{body.category}"}}"""
+{{"trends":[{{"word":"cargo baggy","impact":"+290%","raison":"style streetwear viral TikTok","score_plus":"+8"}},{{"word":"ralph lauren noir","impact":"+180%","raison":"recherche marque très tapée","score_plus":"+6"}},...12 items total],"category_used":"{body.category}"}}"""
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
