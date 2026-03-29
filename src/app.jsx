@@ -2583,8 +2583,8 @@ export default function PixGlow() {
           </div>
         </div>
       )}
-      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0, width: '1px', height: '1px' }} onChange={handleFilesChange} />
+      <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px' }} onChange={handleFilesChange} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px' }} onChange={handleFilesChange} />
       <Nav showBack={true} />
 
       {paymentSuccess !== null && (
@@ -2656,20 +2656,20 @@ export default function PixGlow() {
                   }
                 </div>
                 <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : T.text, letterSpacing: '-.3px' }}>{limitReached ? 'Limite atteinte' : "Dépose jusqu'à 5 photos ici"}</p>
-                <p style={{ color: '#475569', fontSize: '13px', marginBottom: limitReached ? 0 : '16px' }}>{limitReached ? 'Créez un compte pour continuer' : 'JPG · PNG · WEBP · HEIC (iPhone) · ou clique pour sélectionner'}</p>
-                {!limitReached && isMobile && (
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
-                    <button onClick={e => { e.stopPropagation(); handleSelectClick(false); }} style={{ background: 'rgba(124,58,237,.12)', border: '1px solid rgba(124,58,237,.28)', color: '#a78bfa', borderRadius: '12px', padding: '12px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="2" stroke="#a78bfa" strokeWidth="1.3"/><circle cx="7" cy="7" r="2.5" stroke="#a78bfa" strokeWidth="1.3"/></svg>
-                      Galerie
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); handleSelectClick(true); }} style={{ background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', color: '#34d399', borderRadius: '12px', padding: '12px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="3" stroke="#34d399" strokeWidth="1.3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13" stroke="#34d399" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                      Photo directe
-                    </button>
-                  </div>
-                )}
+                <p style={{ color: '#475569', fontSize: '13px', marginBottom: 0 }}>{limitReached ? 'Créez un compte pour continuer' : 'JPG · PNG · WEBP · HEIC (iPhone) · ou clique pour sélectionner'}</p>
               </div>
+              {!limitReached && isMobile && (
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px', marginBottom: '6px' }}>
+                  <button onClick={() => handleSelectClick(false)} style={{ background: 'rgba(124,58,237,.12)', border: '1px solid rgba(124,58,237,.28)', color: '#a78bfa', borderRadius: '12px', padding: '12px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="2" stroke="#a78bfa" strokeWidth="1.3"/><circle cx="7" cy="7" r="2.5" stroke="#a78bfa" strokeWidth="1.3"/></svg>
+                    Galerie
+                  </button>
+                  <button onClick={() => handleSelectClick(true)} style={{ background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', color: '#34d399', borderRadius: '12px', padding: '12px 20px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="3" stroke="#34d399" strokeWidth="1.3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13" stroke="#34d399" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                    Photo directe
+                  </button>
+                </div>
+              )}
 
               {previews.length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
