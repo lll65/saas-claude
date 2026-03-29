@@ -2618,7 +2618,7 @@ export default function PixGlow() {
         </div>
       )}
 
-      <div style={{ maxWidth: '860px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '32px 20px' }}>
 
 
         {/* Message de bienvenue personnalisé */}
@@ -2737,35 +2737,32 @@ export default function PixGlow() {
               </div>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr' : results.length === 1 ? '1fr' : results.length === 2 ? 'repeat(2,1fr)' : results.length === 3 ? 'repeat(2,1fr)' : 'repeat(2,1fr)',
-                maxWidth: results.length === 1 ? '480px' : '100%',
-                margin: results.length === 1 ? '0 auto' : undefined,
+                gridTemplateColumns: isMobile ? '1fr' : results.length === 1 ? '1fr' : results.length === 2 ? 'repeat(2,1fr)' : 'repeat(2,1fr)',
                 gap: '14px', marginBottom: '14px'
               }}>
                 {results.map((r, i) => (
-                  <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                      <div>
-                        <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
-                        <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
+                  <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px', display: !isMobile && results.length === 1 ? 'grid' : undefined, gridTemplateColumns: !isMobile && results.length === 1 ? '1fr 1.6fr' : undefined, gap: !isMobile && results.length === 1 ? '20px' : undefined, alignItems: 'start' }}>
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                        <div>
+                          <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
+                          <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
+                        </div>
+                        <div>
+                          <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
+                          {r.error
+                            ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
+                            : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover', cursor: 'zoom-in' }} />}
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
-                        {r.error
-                          ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                          : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover', cursor: 'zoom-in' }} />}
-                      </div>
+                      {!r.error && !isMobile && (
+                        <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                      )}
+                      {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                     </div>
                     {!r.error && (
-                      <>
-                        {/* Bouton télécharger individuel — desktop uniquement */}
-                        {!isMobile && (
-                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', marginBottom: '8px' }}>📥 Télécharger</button>
-                        )}
-                        <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
-                      </>
+                      <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
                     )}
-                    {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                   </div>
                 ))}
               </div>
