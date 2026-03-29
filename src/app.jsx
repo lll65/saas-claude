@@ -576,8 +576,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Description</p>
                   <MiniCopyBtn text={result.description} field="desc" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '8px 12px', maxHeight: '72px', overflowY: 'auto' }}>
-                  <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>{result.description}</p>
+                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '8px 12px' }}>
+                  <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.6, margin: 0 }}>{result.description}</p>
                 </div>
               </div>
 
@@ -661,7 +661,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                                 <span style={{ color: sel ? '#fbbf24' : '#e2e8f0', fontWeight: 700, fontSize: '13px' }}>{word}</span>
                                 {impact && <span style={{ background: 'rgba(239,68,68,.15)', color: '#f87171', fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '100px' }}>{impact}</span>}
                               </div>
-                              <p style={{ color: '#334155', fontSize: '11px', margin: '1px 0 0' }}>{t.raison}</p>
+                              <p style={{ color: '#64748b', fontSize: '11px', margin: '1px 0 0' }}>{t.raison}</p>
                             </div>
                             {/* Score impact */}
                             {scorePlus && (

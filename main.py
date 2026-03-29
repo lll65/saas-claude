@@ -1126,12 +1126,12 @@ async def generate_description(
     image_data_url = f"data:image/png;base64,{image_b64}"
 
     prompt = """Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"2-3 phrases avec emojis décrivant l'article visible sur la photo : type exact, couleur précise, matière si visible, état constaté, marque si visible","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
+{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 3 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
 
 RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
 - Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
-- Description : sois spécifique (ex: "jean slim bleu marine taille haute, tissu denim épais" et NON "jean en bon état")
+- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Pas de phrases creuses comme "bel article" ou "en bon état" seul.
 - LANGAGE CERTAIN : n'écris JAMAIS "semble être", "paraît être", "probablement", "peut-être", "il me semble" — si tu n'es pas sûr d'une matière, ne la mentionne pas plutôt que de douter
 - TAILLE : si la taille n'est pas clairement visible/lisible sur la photo, NE MENTIONNE PAS LA TAILLE — n'écris jamais "taille non visible", "taille inconnue" ou similaire
 - HASHTAGS : génère TOUJOURS exactement 10 hashtags pertinents (#marque #type #couleur #matiere #style #occasion etc.)
@@ -1159,7 +1159,7 @@ RÈGLES STRICTES :
                         },
                         json={
                             "model": model,
-                            "max_tokens": 500,
+                            "max_tokens": 800,
                             "messages": [{
                                 "role": "user",
                                 "content": [
@@ -1191,7 +1191,7 @@ RÈGLES STRICTES :
                 prix = {"chaussures": "15-30€", "sacs": "12-25€", "bijoux": "5-12€", "montres": "20-50€", "accessoires": "5-15€", "sport": "10-25€", "maison": "5-20€"}.get(cat, "8-15€")
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
-                "description": str(parsed.get("description", "Bel article 📦"))[:300],
+                "description": str(parsed.get("description", "Bel article 📦"))[:600],
                 "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion"))[:500],
                 "score": score,
                 "categorie": str(parsed.get("categorie", "vetement")),
@@ -1264,21 +1264,21 @@ async def get_trending(
     if body.description:
         article_context += f"\nDescription : \"{body.description[:120]}\""
 
-    prompt = f"""Tu es expert en recherches Vinted France.
-Date du jour : {_date.today().strftime('%d/%m/%Y')}.
+    prompt = f"""Tu es expert SEO Vinted France. Tu analyses les tendances de recherche réelles sur Vinted.
+Date : {_date.today().strftime('%d/%m/%Y')}.
 Catégorie : {body.category}{article_context}
 
-MISSION : Génère 12 requêtes de recherche courtes que des acheteurs Vinted tapent réellement pour trouver CE type d'article.
+MISSION : Génère 12 expressions de recherche que des acheteurs Vinted tapent cette semaine pour trouver CET article précis.
 
 Règles STRICTES :
-- LONGUEUR : 2 à 3 mots maximum par expression (comme une vraie recherche Vinted : "ralph lauren noir", "doudoune matelassée", "cargo baggy Y2K")
-- PAS de phrases descriptives longues — uniquement des mots-clés courts et percutants
-- Chaque expression doit être cohérente avec les caractéristiques de l'article (couleur, marque, style, matière)
-- Diversité : certains orientés marque, certains orientés style/tendance, certains orientés caractéristique visuelle
-- Impacts réalistes et variés (entre +80% et +350%)
+- LONGUEUR : 2 à 4 mots maximum (ex: "ralph lauren noir", "doudoune brillante oversize", "puffer jacket Y2K")
+- Chaque expression doit matcher les caractéristiques VISIBLES de cet article (couleur, marque, style, matière, coupe)
+- Mix obligatoire : 3-4 orientés marque, 3-4 orientés style/tendance actuelle, 2-3 orientés caractéristique visuelle, 1-2 orientés occasion/usage
+- Impacts réalistes et variés entre +80% et +380%
+- RAISON : explique en 5-8 mots POURQUOI cette expression booste spécifiquement CET article (ex: "correspond exactement à la coupe visible", "hashtag viral TikTok hiver 2025", "marque + couleur = combo très cherché", "style que les acheteurs recherchent en ce moment"). PAS de raison générique.
 
 Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
-{{"trends":[{{"word":"cargo baggy","impact":"+290%","raison":"style streetwear viral TikTok","score_plus":"+8"}},{{"word":"ralph lauren noir","impact":"+180%","raison":"recherche marque très tapée","score_plus":"+6"}},...12 items total],"category_used":"{body.category}"}}"""
+{{"trends":[{{"word":"doudoune brillante","impact":"+280%","raison":"matière laquée très tendance cet hiver","score_plus":"+8"}},{{"word":"ralph lauren noir","impact":"+320%","raison":"combo marque+couleur ultra cherché sur Vinted","score_plus":"+10"}},...12 items total],"category_used":"{body.category}"}}"""
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -1364,15 +1364,17 @@ async def generate_boosted(
     mots = ", ".join(body.trend_words[:6])
     new_score = min(98, body.current_score + 8)
     prompt = f"""Tu es expert vente Vinted France. Score actuel : {body.current_score}/100.
-Mots-tendance à INTÉGRER naturellement : {mots}
-Ces mots sont viraux cette semaine. Intègre-les dans le titre et les hashtags obligatoirement.
+Mots-tendance viraux cette semaine à intégrer : {mots}
+
 Analyse l'image et génère EXACTEMENT ce JSON (sans markdown, sans texte autour) :
-{{"titre":"titre optimisé avec mot-tendance, max 60 caractères","description":"2-3 phrases naturelles avec emojis, mots tendance intégrés","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":{new_score},"amelioration":"+{new_score - body.current_score} pts — mots tendance intégrés","prix_estime":"CALCULE_ICI"}}
+{{"titre":"titre percutant avec 1-2 mots tendance, max 60 caractères","description":"description vendeuse optimisée SEO Vinted en 3 parties : 1) caractéristiques précises de l'article (type, couleur, matière, coupe) avec les mots tendance intégrés naturellement 2) points forts qui donnent envie d'acheter (détails visibles, logo, finitions) 3) état visible. Utilise 2-3 emojis. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":{new_score},"amelioration":"+{new_score - body.current_score} pts — mots tendance intégrés","prix_estime":"CALCULE_ICI"}}
 
 RÈGLES OBLIGATOIRES :
-- prix_estime : remplace "CALCULE_ICI" par une vraie fourchette de revente Vinted selon la marque, état et catégorie visibles sur la photo (ex: "25-40€" pour une ceinture Coach neuve, "8-15€" pour un accessoire sans marque). JAMAIS de valeur vide.
-- hashtags : TOUJOURS exactement 10 hashtags, les mots tendance inclus dedans
-- Langage certain uniquement : n'écris JAMAIS "semble", "paraît", "probablement", "peut-être" — décris uniquement ce que tu vois avec certitude"""
+- Titre : intègre 1 ou 2 des mots tendance de façon naturelle et percutante (ex si mot tendance = "puffer noir oversize" → titre = "Ralph Lauren puffer noir oversize")
+- Description : les mots tendance doivent apparaître dans le texte de façon fluide, pas forcée. La description doit donner ENVIE d'acheter, pas juste décrire.
+- prix_estime : remplace "CALCULE_ICI" par une vraie fourchette Vinted selon marque + état visibles (ex: "80-120€" doudoune Ralph Lauren). JAMAIS vide.
+- hashtags : TOUJOURS exactement 10 hashtags, les mots tendance inclus en premier
+- Langage certain : n'écris JAMAIS "semble", "paraît", "probablement", "peut-être" — uniquement ce que tu vois avec certitude"""
 
     try:
         last_error = None
@@ -1385,7 +1387,7 @@ RÈGLES OBLIGATOIRES :
                         headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
                         json={
                             "model": model,
-                            "max_tokens": 500,
+                            "max_tokens": 800,
                             "messages": [{
                                 "role": "user",
                                 "content": [
@@ -1413,7 +1415,7 @@ RÈGLES OBLIGATOIRES :
                 boost_prix = ""  # frontend will keep existing prix_estime
             return {
                 "titre": str(parsed.get("titre", ""))[:80],
-                "description": str(parsed.get("description", ""))[:300],
+                "description": str(parsed.get("description", ""))[:600],
                 "hashtags": str(parsed.get("hashtags", ""))[:500],
                 "score": max(body.current_score, min(98, int(parsed.get("score", body.current_score + 8)))),
                 "amelioration": str(parsed.get("amelioration", f"+8 pts")),
