@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
 import os, uuid, json, time, base64, secrets
+from typing import Optional
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -62,6 +63,7 @@ SMTP_FROM             = os.getenv("SMTP_FROM", SMTP_USER)
 RESEND_API_KEY        = os.getenv("RESEND_API_KEY", "")      # Alternative à SMTP (resend.com)
 EMAIL_ENABLED         = bool(SMTP_USER and SMTP_PASS) or bool(RESEND_API_KEY)
 CRON_SECRET           = os.getenv("CRON_SECRET", "")         # Clé secrète pour les endpoints cron
+ADMIN_EMAIL           = os.getenv("ADMIN_EMAIL", "")          # Email admin pour le panneau d'administration
 
 _raw_db_url  = os.getenv("DATABASE_URL", "")
 DATABASE_URL = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
@@ -688,7 +690,7 @@ async def get_me(current_user: str = Depends(get_current_user)):
         cur.execute("UPDATE users SET parrain_notif = 0 WHERE email = %s", (current_user,))
         conn.commit()
     cur.close(); conn.close()
-    return {"email": current_user, "credits": user["credits"], "parrain_notif": notif}
+    return {"email": current_user, "credits": user["credits"], "parrain_notif": notif, "is_admin": bool(ADMIN_EMAIL and current_user == ADMIN_EMAIL)}
 
 @app.get("/verify-email/{token}")
 async def verify_email(token: str):
@@ -1503,6 +1505,138 @@ async def cron_remind_credits(request: Request):
     print(f"[CRON] Rappels crédits : {sent}/{len(users_to_remind)} emails envoyés")
     return {"sent": sent, "total_eligible": len(users_to_remind)}
 
+
+# ── Admin Panel ──────────────────────────────────────────────────────────────
+def require_admin(email: Optional[str] = Depends(get_current_user)):
+    if not ADMIN_EMAIL:
+        raise HTTPException(503, "Panel admin non configuré (ADMIN_EMAIL manquant)")
+    if email != ADMIN_EMAIL:
+        raise HTTPException(403, "Accès réservé à l'administrateur")
+    return email
+
+@app.get("/admin/users")
+async def admin_get_users(
+    sort_by: str = "created_at",
+    order: str = "desc",
+    limit: int = 100,
+    offset: int = 0,
+    search: str = "",
+    admin: str = Depends(require_admin)
+):
+    valid_sorts = {"created_at", "email", "credits", "last_used_at", "referrals_given"}
+    if sort_by not in valid_sorts:
+        sort_by = "created_at"
+    order_sql = "DESC" if order == "desc" else "ASC"
+    conn = get_db(); cur = conn.cursor()
+    try:
+        where = ""
+        params = []
+        if search:
+            where = "WHERE email ILIKE %s"
+            params.append(f"%{search}%")
+        cur.execute(f"""
+            SELECT id, email, credits, created_at, last_used_at,
+                   email_verified, referral_code, referrals_given, referred_by
+            FROM users
+            {where}
+            ORDER BY {sort_by} {order_sql}
+            LIMIT %s OFFSET %s
+        """, params + [limit, offset])
+        users = cur.fetchall()
+        cur.execute(f"SELECT COUNT(*) as n FROM users {where}", params)
+        total = cur.fetchone()["n"]
+    finally:
+        cur.close(); conn.close()
+    return {
+        "users": [dict(u) for u in users],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+@app.get("/admin/analytics")
+async def admin_analytics(admin: str = Depends(require_admin)):
+    conn = get_db(); cur = conn.cursor()
+    try:
+        # Totaux globaux
+        cur.execute("SELECT COUNT(*) as n FROM users")
+        total_users = cur.fetchone()["n"]
+        cur.execute("SELECT COUNT(*) as n FROM users WHERE email_verified = TRUE")
+        verified_users = cur.fetchone()["n"]
+        cur.execute("SELECT COALESCE(SUM(credits),0) as n FROM users")
+        total_credits = cur.fetchone()["n"]
+        cur.execute("SELECT value FROM stats WHERE key = 'total_photos'")
+        row = cur.fetchone()
+        total_photos = row["value"] if row else 0
+        # Inscriptions par jour (30 derniers jours)
+        cur.execute("""
+            SELECT DATE(created_at) as day, COUNT(*) as count
+            FROM users
+            WHERE created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY DATE(created_at)
+            ORDER BY day ASC
+        """)
+        signups_by_day = [{"day": str(r["day"]), "count": r["count"]} for r in cur.fetchall()]
+        # Utilisateurs actifs (last_used_at dans les 7 derniers jours)
+        cur.execute("SELECT COUNT(*) as n FROM users WHERE last_used_at >= NOW() - INTERVAL '7 days'")
+        active_7d = cur.fetchone()["n"]
+        cur.execute("SELECT COUNT(*) as n FROM users WHERE last_used_at >= NOW() - INTERVAL '30 days'")
+        active_30d = cur.fetchone()["n"]
+        # Top utilisateurs par crédits
+        cur.execute("SELECT email, credits FROM users ORDER BY credits DESC LIMIT 10")
+        top_by_credits = [dict(r) for r in cur.fetchall()]
+        # Inscriptions ce mois
+        cur.execute("SELECT COUNT(*) as n FROM users WHERE created_at >= DATE_TRUNC('month', NOW())")
+        signups_this_month = cur.fetchone()["n"]
+        # Inscriptions aujourd'hui
+        cur.execute("SELECT COUNT(*) as n FROM users WHERE DATE(created_at) = CURRENT_DATE")
+        signups_today = cur.fetchone()["n"]
+    finally:
+        cur.close(); conn.close()
+    return {
+        "total_users": total_users,
+        "verified_users": verified_users,
+        "total_credits_in_system": int(total_credits),
+        "total_photos_processed": total_photos,
+        "active_7d": active_7d,
+        "active_30d": active_30d,
+        "signups_today": signups_today,
+        "signups_this_month": signups_this_month,
+        "signups_by_day": signups_by_day,
+        "top_by_credits": top_by_credits,
+    }
+
+@app.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: int, admin: str = Depends(require_admin)):
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            raise HTTPException(404, "Utilisateur introuvable")
+        if user["email"] == ADMIN_EMAIL:
+            raise HTTPException(400, "Impossible de supprimer le compte admin")
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+    finally:
+        cur.close(); conn.close()
+    return {"status": "deleted"}
+
+@app.patch("/admin/users/{user_id}/credits")
+async def admin_update_credits(user_id: int, body: dict, admin: str = Depends(require_admin)):
+    credits = body.get("credits")
+    if credits is None or not isinstance(credits, int) or credits < 0:
+        raise HTTPException(400, "Valeur de crédits invalide")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("UPDATE users SET credits = %s WHERE id = %s RETURNING email", (credits, user_id))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(404, "Utilisateur introuvable")
+        conn.commit()
+    finally:
+        cur.close(); conn.close()
+    return {"status": "updated", "credits": credits}
 
 # ── Serve React SPA (doit être après toutes les routes API) ──────────────────
 _dist = os.path.join(os.path.dirname(__file__), "dist")
