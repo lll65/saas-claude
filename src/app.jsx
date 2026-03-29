@@ -460,9 +460,13 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
     navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(false), 1500); });
   };
 
-  // Calcul du score potentiel selon les trends sélectionnées
+  // Calcul du score potentiel selon les score_plus réels de chaque trend sélectionnée
   const potentialScore = result
-    ? Math.min(98, result.score + selectedTrends.length * 3)
+    ? Math.min(98, result.score + selectedTrends.reduce((sum, mot) => {
+        const t = trends?.trends.find(tr => (tr.mot || tr.word) === mot);
+        const pts = t?.score_plus ? parseInt(String(t.score_plus).replace(/[^0-9]/g, '')) : 3;
+        return sum + (isNaN(pts) || pts === 0 ? 3 : pts);
+      }, 0))
     : 0;
 
   return (
@@ -482,7 +486,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       </button>
 
       {open && (
-        <div className="pg-slide-up" style={{ padding: '16px', background: 'rgba(10,8,20,.75)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
+        <div className="pg-slide-up" style={{ padding: '18px 16px', background: 'rgba(10,8,20,.75)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
 
           {/* ── ÉTAT INITIAL ── */}
           {!result && !loading && !error ? (
@@ -512,7 +516,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
           ) : result ? (
             <div>
               {/* ── SCORE + INDICATEUR BOOST POTENTIEL ── */}
-              <div style={{ marginBottom: '14px', background: 'rgba(16,185,129,.05)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '12px 14px' }}>
+              <div style={{ marginBottom: '14px', background: 'rgba(16,185,129,.05)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '14px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Score potentiel vues</p>
                   {boosted && result.amelioration && (
@@ -535,8 +539,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
               {/* ── CONSEILS PHOTO ── */}
               {result.conseils_photo && (
-                <div style={{ marginBottom: '10px', background: 'rgba(251,191,36,.06)', border: '1px solid rgba(251,191,36,.2)', borderRadius: '10px', padding: '10px 14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                <div style={{ marginBottom: '12px', background: 'rgba(251,191,36,.06)', border: '1px solid rgba(251,191,36,.2)', borderRadius: '10px', padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                     <span style={{ fontSize: '14px' }}>📸</span>
                     <p style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Améliore ta photo pour plus de vues</p>
                   </div>
@@ -548,7 +552,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               {(() => {
                 const prix = result.prix_estime || ({'chaussures':'15-30€','sacs':'12-25€','bijoux':'5-12€','montres':'20-50€','accessoires':'5-15€','sport':'10-25€','maison':'5-20€'}[result.categorie] || '8-15€');
                 return (
-                  <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '8px 14px' }}>
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
                     <span style={{ fontSize: '15px' }}>💰</span>
                     <div>
                       <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
@@ -560,42 +564,42 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               })()}
 
               {/* ── TITRE ── */}
-              <div style={{ marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Titre (Vinted)</p>
                   <MiniCopyBtn text={result.titre} field="titre" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '8px 12px' }}>
+                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 14px' }}>
                   <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, margin: 0 }}>{result.titre}</p>
                 </div>
               </div>
 
               {/* ── DESCRIPTION ── */}
-              <div style={{ marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Description</p>
                   <MiniCopyBtn text={result.description} field="desc" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '8px 12px' }}>
-                  <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.6, margin: 0 }}>{result.description}</p>
+                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 14px', maxHeight: '130px', overflowY: 'auto' }}>
+                  <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{result.description}</p>
                 </div>
               </div>
 
               {/* ── HASHTAGS ── */}
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags</p>
                   <MiniCopyBtn text={result.hashtags} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {result.hashtags.split(' ').filter(Boolean).map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '11px', padding: '2px 9px', borderRadius: '100px', fontWeight: 500 }}>{tag}</span>
+                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '11px', padding: '3px 10px', borderRadius: '100px', fontWeight: 500 }}>{tag}</span>
                   ))}
                 </div>
               </div>
 
               {/* ══ BOOST TENDANCE ══ */}
-              <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '12px', marginBottom: '12px' }}>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px', marginBottom: '14px' }}>
                 {boosted ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '10px', padding: '10px 14px' }}>
                     <span style={{ fontSize: '16px' }}>🔥</span>
@@ -643,7 +647,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     <p style={{ color: '#475569', fontSize: '12px', marginBottom: '10px' }}>
                       Coche les mots à intégrer dans ta description (max 4) :
                     </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
                       {trends.trends.map((t, i) => {
                         const word = t.mot || t.word || '';
                         const impact = t.boost || t.impact || '';
@@ -681,7 +685,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                       className={selectedTrends.length ? 'pg-btn' : ''}
                       style={{ width: '100%', background: selectedTrends.length ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,.03)', color: selectedTrends.length ? '#000' : '#334155', border: 'none', borderRadius: '11px', padding: '13px', fontWeight: 800, cursor: selectedTrends.length ? 'pointer' : 'not-allowed', fontSize: '14px', fontFamily: 'inherit', transition: 'all .2s' }}>
                       {selectedTrends.length
-                        ? `Booster avec ${selectedTrends.length} mot${selectedTrends.length > 1 ? 's' : ''} tendance — +${potentialScore - result.score} pts estimés`
+                        ? `Booster avec ${selectedTrends.length} mot${selectedTrends.length > 1 ? 's' : ''} tendance → +${potentialScore - result.score} pts estimés`
                         : 'Sélectionne au moins un mot tendance'
                       }
                     </button>
@@ -691,7 +695,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               </div>
 
               {/* ── BOUTONS FINAUX ── */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                 <button onClick={handleCopy} className="pg-btn" style={{ flex: 1, background: copied === true ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', minWidth: '140px' }}>
                   {copied === true ? 'Tout copié' : 'Tout copier pour Vinted'}
                 </button>
