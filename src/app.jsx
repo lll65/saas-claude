@@ -2079,9 +2079,12 @@ export default function PixGlow() {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
     const available = credits ?? 0;
-    const maxAllowed = Math.min(selected.length, MAX_SIMULTANEOUS, Math.max(available, 1));
-    const chosen = selected.slice(0, maxAllowed);
-    if (selected.length > maxAllowed) setError(`Maximum ${maxAllowed} photo(s) selon vos crédits disponibles.`); else setError(null);
+    const totalMax = Math.min(MAX_SIMULTANEOUS, Math.max(available, 1));
+
+    // Append new files to existing ones, capped at totalMax
+    const combined = [...files, ...selected];
+    const chosenAll = combined.slice(0, totalMax);
+    if (combined.length > totalMax) setError(`Maximum ${totalMax} photo(s) selon vos crédits disponibles.`); else setError(null);
     if (e.target.value !== undefined) { try { e.target.value = ''; } catch(_) {} }
 
     // FileReader est plus fiable sur Android (content:// URIs, HEIC, etc.)
@@ -2105,14 +2108,23 @@ export default function PixGlow() {
       });
     };
 
-    setFiles(chosen);
+    // Only process files newly added (not already in state)
+    const existingCount = files.length;
+    const newlyAdded = chosenAll.slice(existingCount);
+    if (!newlyAdded.length) return;
+
+    setFiles(chosenAll);
     setResults([]);
     setProgress(0);
-    // Afficher des placeholders gris pendant le chargement
-    setPreviews(chosen.map(() => null));
+    // Append null placeholders for new files only
+    setPreviews(prev => [...prev, ...newlyAdded.map(() => null)]);
 
-    Promise.all(chosen.map(readFile)).then((urls) => {
-      setPreviews(urls);
+    Promise.all(newlyAdded.map(readFile)).then((urls) => {
+      setPreviews(prev => {
+        const updated = [...prev];
+        urls.forEach((url, i) => { updated[existingCount + i] = url; });
+        return updated;
+      });
     });
   };
 
