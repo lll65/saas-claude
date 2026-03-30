@@ -2289,7 +2289,7 @@ export default function PixGlow() {
                 </span>}
                 {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
-                {!isMobile && isAdmin && <button onClick={() => setPage('admin')} style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                {isAdmin && <button onClick={() => setPage('admin')} style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
@@ -2894,7 +2894,7 @@ export default function PixGlow() {
         </div>
       )}
 
-      <div style={{ maxWidth: hasResults ? '860px' : '1300px', margin: '0 auto', padding: isMobile ? '16px' : '28px 40px' }}>
+      <div style={{ maxWidth: hasResults ? (isMobile ? '100%' : '1200px') : '1300px', margin: '0 auto', padding: isMobile ? '16px' : '28px 40px' }}>
 
 
         {/* Message de bienvenue personnalisé */}
@@ -3013,32 +3013,37 @@ export default function PixGlow() {
               </div>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr' : results.length === 1 ? '1fr' : results.length === 2 ? 'repeat(2,1fr)' : 'repeat(2,1fr)',
+                gridTemplateColumns: isMobile ? '1fr' : results.length === 1 ? '1fr' : results.length >= 3 ? 'repeat(3,1fr)' : 'repeat(2,1fr)',
                 gap: '14px', marginBottom: '14px'
               }}>
                 {results.map((r, i) => (
                   <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                        <div>
-                          <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
-                          <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
+                    {/* Layout horizontal sur desktop si 1 seul résultat */}
+                    <div style={{ display: !isMobile && results.length === 1 ? 'flex' : 'block', gap: '20px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: !isMobile && results.length === 1 ? '0 0 340px' : undefined }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                          <div>
+                            <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
+                            <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
+                          </div>
+                          <div>
+                            <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
+                            {r.error
+                              ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
+                              : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover', cursor: 'zoom-in' }} />}
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
-                          {r.error
-                            ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                            : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover', cursor: 'zoom-in' }} />}
-                        </div>
+                        {!r.error && !isMobile && (
+                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                        )}
+                        {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                       </div>
-                      {!r.error && !isMobile && (
-                        <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                      {!r.error && (
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
+                        </div>
                       )}
-                      {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                     </div>
-                    {!r.error && (
-                      <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
-                    )}
                   </div>
                 ))}
               </div>
