@@ -924,11 +924,8 @@ async def enhance_photo(
         if (proc_w, proc_h) != (w, h):
             no_bg = no_bg.resize((w, h), Image.Resampling.LANCZOS)
 
-        pad = max(40, int(min(w, h) * 0.05))
-        canvas = Image.new("RGBA", (w + pad*2, h + pad*2), (255, 255, 255, 255))
-        canvas.paste(no_bg, (pad, pad), no_bg if no_bg.mode == "RGBA" else None)
-        bg_img = Image.new("RGB", canvas.size, (255, 255, 255))
-        bg_img.paste(canvas, (0, 0), canvas)
+        bg_img = Image.new("RGB", (w, h), (255, 255, 255))
+        bg_img.paste(no_bg, (0, 0), no_bg if no_bg.mode == "RGBA" else None)
 
         bg_img = ImageEnhance.Brightness(bg_img).enhance(1.04)
         bg_img = ImageEnhance.Contrast(bg_img).enhance(1.04)
