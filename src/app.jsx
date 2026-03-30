@@ -3030,7 +3030,7 @@ export default function PixGlow() {
                             <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
                             {r.error
                               ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                              : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'cover', cursor: 'zoom-in' }} />}
+                              : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'contain', cursor: 'zoom-in' }} />}
                           </div>
                         </div>
                         {!r.error && !isMobile && (
