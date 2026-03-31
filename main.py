@@ -1125,12 +1125,12 @@ async def generate_description(
     image_data_url = f"data:image/png;base64,{image_b64}"
 
     prompt = """Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 3 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
+{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 4 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article 4) une phrase finale percutante style 'Idéal pour...' adaptée à l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
 
 RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
 - Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
-- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Pas de phrases creuses comme "bel article" ou "en bon état" seul.
+- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Termine TOUJOURS par une phrase courte et accrocheuse du style "Idéal pour..." ou "Parfait pour..." adaptée à l'article (ex: "Idéal pour compléter un look casual élégant 🖤", "Parfait pour les passionnés de mode streetwear", "Idéal pour accessoiriser une tenue de bureau avec style"). Pas de phrases creuses comme "bel article" ou "en bon état" seul.
 - LANGAGE CERTAIN : n'écris JAMAIS "semble être", "paraît être", "probablement", "peut-être", "il me semble" — si tu n'es pas sûr d'une matière, ne la mentionne pas plutôt que de douter
 - TAILLE : si la taille n'est pas clairement visible/lisible sur la photo, NE MENTIONNE PAS LA TAILLE — n'écris jamais "taille non visible", "taille inconnue" ou similaire
 - HASHTAGS : génère TOUJOURS exactement 10 hashtags pertinents (#marque #type #couleur #matiere #style #occasion etc.)
@@ -1271,10 +1271,11 @@ MISSION : Génère 12 expressions de recherche que des acheteurs Vinted tapent c
 
 Règles STRICTES :
 - LONGUEUR : 2 à 4 mots maximum (ex: "ralph lauren noir", "doudoune brillante oversize", "puffer jacket Y2K")
-- Chaque expression doit matcher les caractéristiques VISIBLES de cet article (couleur, marque, style, matière, coupe)
-- Mix obligatoire : 3-4 orientés marque, 3-4 orientés style/tendance actuelle, 2-3 orientés caractéristique visuelle, 1-2 orientés occasion/usage
+- Chaque expression doit combiner des attributs RÉELS de cet article (marque exacte, couleur exacte, matière, type précis) — pas des termes génériques
+- INTERDIT : expressions vagues comme "mode vintage", "style tendance", "bonne affaire" — chaque mot doit refléter un attribut visible de l'article
+- Mix obligatoire : 3-4 combos marque + attribut visible (ex: "Coach cuir noir", "Coach ceinture homme"), 3-4 orientés style/tendance actuelle combinant 2+ caractéristiques de l'article, 2-3 orientés matière/couleur/coupe exacte de l'article, 1-2 orientés occasion/usage cohérents avec l'article
 - Impacts réalistes et variés entre +80% et +380%
-- RAISON : explique en 5-8 mots POURQUOI cette expression booste spécifiquement CET article (ex: "correspond exactement à la coupe visible", "hashtag viral TikTok hiver 2025", "marque + couleur = combo très cherché", "style que les acheteurs recherchent en ce moment"). PAS de raison générique.
+- RAISON : explique en 5-8 mots POURQUOI cette expression booste spécifiquement CET article (ex: "combo marque+couleur ultra cherché sur Vinted", "matière laquée très tendance cet hiver", "type d'article + marque = recherche fréquente"). PAS de raison générique.
 
 Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou après) :
 {{"trends":[{{"word":"doudoune brillante","impact":"+280%","raison":"matière laquée très tendance cet hiver","score_plus":"+8"}},{{"word":"ralph lauren noir","impact":"+320%","raison":"combo marque+couleur ultra cherché sur Vinted","score_plus":"+10"}},...12 items total],"category_used":"{body.category}"}}"""
