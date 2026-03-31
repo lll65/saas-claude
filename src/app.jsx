@@ -1991,6 +1991,7 @@ export default function PixGlow() {
   const [isConnected, setIsConnected] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -2301,7 +2302,20 @@ export default function PixGlow() {
                 </span>}
                 {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
-                {isAdmin && <button onClick={() => setPage('admin')} style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                {!isMobile && isAdmin && <button onClick={() => setPage('admin')} style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                {isMobile && <div style={{ position: 'relative' }}>
+                  <button onClick={() => setNavMenuOpen(o => !o)} style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '10px', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>⋯</button>
+                  {navMenuOpen && (
+                    <>
+                      <div onClick={() => setNavMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
+                      <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: darkMode ? '#1a1730' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '12px', padding: '6px', minWidth: '160px', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,.25)' }}>
+                        <button onClick={() => { setShowTracker(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#10b981', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>
+                        <button onClick={() => { openReferral(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>
+                        {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                      </div>
+                    </>
+                  )}
+                </div>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
                 <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
               </>
