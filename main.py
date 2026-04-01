@@ -1188,13 +1188,26 @@ RÈGLES STRICTES :
             if not prix:
                 cat = str(parsed.get("categorie", "vetement"))
                 prix = {"chaussures": "15-30€", "sacs": "12-25€", "bijoux": "5-12€", "montres": "20-50€", "accessoires": "5-15€", "sport": "10-25€", "maison": "5-20€"}.get(cat, "8-15€")
+            cat = str(parsed.get("categorie", "vetement"))
+            # Compute prix_vente_rapide: lower bound of prix_estime for quick sale
+            prix_vente_rapide = prix
+            import re as _re2
+            m = _re2.search(r'(\d+)', prix)
+            if m:
+                lower = int(m.group(1))
+                prix_vente_rapide = f"{lower}€"
+            # Compute probabilite_vente from score + category
+            cat_bonus = {"vetement": 8, "chaussures": 6, "sacs": 10, "bijoux": 5, "montres": 3, "accessoires": 5, "sport": 7, "maison": 4}
+            prob = min(95, max(45, round(score * 0.75 + 15) + cat_bonus.get(cat, 5)))
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
                 "description": str(parsed.get("description", "Bel article 📦"))[:600],
                 "hashtags": str(parsed.get("hashtags", "#vinted #modeoccasion"))[:500],
                 "score": score,
-                "categorie": str(parsed.get("categorie", "vetement")),
+                "categorie": cat,
                 "prix_estime": prix,
+                "prix_vente_rapide": prix_vente_rapide,
+                "probabilite_vente": prob,
                 "conseils_photo": str(parsed.get("conseils_photo", ""))[:300] if score < 65 else "",
             }
     except HTTPException:
