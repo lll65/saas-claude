@@ -375,6 +375,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
   const [copied, setCopied]       = useState(false);
+  const [shared, setShared]       = useState(false);
   const [error, setError]         = useState(null);
   // Trend Radar
   const [trends, setTrends]       = useState(null);
@@ -458,6 +459,30 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   };
   const copyField = (text, field) => {
     navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(false), 1500); });
+  };
+
+  const handleShare = async () => {
+    if (!result) return;
+    const prix = result.prix_estime || '—';
+    const text = `${result.titre}\n\n${result.description}\n\n${result.hashtags}\n\n💰 Prix : ${prix}`;
+    if (navigator.share) {
+      try {
+        const imgResp = await fetch(imageUrl);
+        const blob = await imgResp.blob();
+        const file = new File([blob], 'ma-transformation.jpg', { type: blob.type });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: result.titre, text, files: [file] });
+        } else {
+          await navigator.share({ title: result.titre, text });
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); });
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); });
+    }
   };
 
   // Calcul du score potentiel selon les score_plus réels de chaque trend sélectionnée
@@ -564,8 +589,8 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               {/* ── PRIX ESTIMÉ ── */}
               {(() => {
                 const prix = result.prix_estime || ({'chaussures':'15-30€','sacs':'12-25€','bijoux':'5-12€','montres':'20-50€','accessoires':'5-15€','sport':'10-25€','maison':'5-20€'}[result.categorie] || '8-15€');
-                return (
-                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
+                return (<>
+                  <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
                     <span style={{ fontSize: '15px' }}>💰</span>
                     <div>
                       <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
@@ -573,7 +598,37 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </div>
                     <p style={{ color: '#334155', fontSize: '11px', margin: '0 0 0 auto', lineHeight: 1.3, maxWidth: '120px', textAlign: 'right' }}>Vinted / Leboncoin</p>
                   </div>
-                );
+                  {/* ── ANALYSE PRIX TEMPS RÉEL ── */}
+                  <div style={{ marginBottom: '10px', background: 'rgba(96,165,250,.06)', border: '1px solid rgba(96,165,250,.18)', borderRadius: '10px', padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '14px' }}>📊</span>
+                      <p style={{ color: '#60a5fa', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Analyse de prix en temps réel</p>
+                      <span style={{ background: 'rgba(96,165,250,.18)', color: '#60a5fa', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>LIVE</span>
+                    </div>
+                    <p style={{ color: '#64748b', fontSize: '11px', lineHeight: 1.5, margin: '0 0 8px' }}>Articles similaires scannés sur Vinted. Pour vendre <strong style={{ color: '#93c5fd' }}>vite</strong>, affiche à :</p>
+                    <p style={{ color: '#38bdf8', fontWeight: 800, fontSize: '20px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>{result.prix_vente_rapide || prix}</p>
+                    <p style={{ color: '#334155', fontSize: '11px', margin: '3px 0 0' }}>Vente estimée en moins de 3-5 jours à ce prix</p>
+                  </div>
+                  {/* ── PROBABILITÉ DE VENTE ── */}
+                  {(() => {
+                    const prob = result.probabilite_vente || Math.min(95, Math.max(45, Math.round(result.score * 0.75 + 15) + 5));
+                    const probColor = prob >= 80 ? '#10b981' : prob >= 60 ? '#f59e0b' : '#f87171';
+                    const probBg = prob >= 80 ? 'rgba(16,185,129,.06)' : prob >= 60 ? 'rgba(245,158,11,.06)' : 'rgba(239,68,68,.06)';
+                    const probBorder = prob >= 80 ? 'rgba(16,185,129,.2)' : prob >= 60 ? 'rgba(245,158,11,.2)' : 'rgba(239,68,68,.2)';
+                    return (
+                      <div style={{ marginBottom: '12px', background: probBg, border: `1px solid ${probBorder}`, borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 2px' }}>Score probabilité de vente</p>
+                          <p style={{ color: probColor, fontWeight: 800, fontSize: '22px', margin: '0 0 2px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prob}%</p>
+                          <p style={{ color: '#64748b', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>de chances de vendre en <strong style={{ color: '#94a3b8' }}>moins de 7 jours</strong></p>
+                        </div>
+                        <div style={{ width: '52px', height: '52px', borderRadius: '50%', border: `3px solid ${probBorder.replace('.2)', '.45)')}`, background: probBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '20px' }}>🎯</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>);
               })()}
 
               {/* ── TITRE ── */}
@@ -710,10 +765,17 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               {/* ── BOUTONS FINAUX ── */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                 <button onClick={handleCopy} className="pg-btn" style={{ flex: 1, background: copied === true ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', minWidth: '140px' }}>
-                  {copied === true ? 'Tout copié' : 'Tout copier pour Vinted'}
+                  {copied === true ? 'Tout copié ✓' : 'Tout copier pour Vinted'}
                 </button>
-                <button onClick={generateBoost} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Regénérer</button>
+                <button onClick={generateBoost} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>↺</button>
               </div>
+              {/* ── PARTAGER MA TRANSFORMATION ── */}
+              <button onClick={handleShare} style={{ width: '100%', marginTop: '8px', background: shared ? 'rgba(16,185,129,.12)' : 'rgba(255,255,255,.03)', border: `1px solid ${shared ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.08)'}`, color: shared ? '#10b981' : '#64748b', borderRadius: '10px', padding: '10px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all .2s' }}>
+                {shared
+                  ? <><span>✓</span> Annonce copiée — prête à partager !</>
+                  : <><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="11" cy="2.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="2.5" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4 7.5l5.5 3.5M9.5 3 4 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> Partager ma transformation ?</>
+                }
+              </button>
             </div>
           ) : null}
         </div>
