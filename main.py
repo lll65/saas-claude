@@ -507,6 +507,7 @@ def _increment_total_photos(conn, cur):
 
 class DescriptionRequest(BaseModel):
     image_url: str = ""
+    tone: str = "casual"  # casual | streetwear | luxe | pro
 
 # ─────────────────────────────────────────────
 #  ROUTES
@@ -1124,18 +1125,29 @@ async def generate_description(
         image_b64 = base64.b64encode(f.read()).decode("utf-8")
     image_data_url = f"data:image/png;base64,{image_b64}"
 
-    prompt = """Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 4 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article 4) une phrase finale percutante style 'Idéal pour...' adaptée à l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":""}
+    TONE_INSTRUCTIONS = {
+        "casual":     "Ton décontracté et accessible, vocabulaire simple et quotidien. Cible l'acheteur lambda qui cherche un bon plan.",
+        "streetwear": "Ton urbain et branché. Utilise le vocabulaire streetwear actuel (fit, drip, collab, drop, hype, fire, slay...). Cible les fans de mode urbaine et les acheteurs tendance.",
+        "luxe":       "Ton élégant et premium, vocabulaire raffiné. Mets en valeur la qualité des matières, le prestige et les détails haut de gamme. Cible une clientèle exigeante.",
+        "pro":        "Ton professionnel et factuel, description structurée et nette. Cible les acheteurs cherchant une tenue professionnelle, smart casual ou de bureau.",
+    }
+    tone_key = body.tone if body.tone in TONE_INSTRUCTIONS else "casual"
+    tone_instruction = TONE_INSTRUCTIONS[tone_key]
+
+    prompt = f"""Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
+{{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 4 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article 4) une phrase finale percutante style 'Idéal pour...' adaptée à l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":"","score_details":{{"photo":15,"titre":18,"description":16,"tendance":0}}}}
 
 RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
+- TON DE LA DESCRIPTION : {tone_instruction}
 - Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
-- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Termine TOUJOURS par une phrase courte et accrocheuse du style "Idéal pour..." ou "Parfait pour..." adaptée à l'article (ex: "Idéal pour compléter un look casual élégant 🖤", "Parfait pour les passionnés de mode streetwear", "Idéal pour accessoiriser une tenue de bureau avec style"). Pas de phrases creuses comme "bel article" ou "en bon état" seul.
+- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Termine TOUJOURS par une phrase courte et accrocheuse du style "Idéal pour..." ou "Parfait pour..." adaptée à l'article. Adapte le ton et le vocabulaire selon le TON ci-dessus.
 - LANGAGE CERTAIN : n'écris JAMAIS "semble être", "paraît être", "probablement", "peut-être", "il me semble" — si tu n'es pas sûr d'une matière, ne la mentionne pas plutôt que de douter
 - TAILLE : si la taille n'est pas clairement visible/lisible sur la photo, NE MENTIONNE PAS LA TAILLE — n'écris jamais "taille non visible", "taille inconnue" ou similaire
 - HASHTAGS : génère TOUJOURS exactement 10 hashtags pertinents (#marque #type #couleur #matiere #style #occasion etc.)
 - Prix estimé : fourchette OBLIGATOIRE — donne toujours une estimation réaliste selon marque, état et catégorie (ex: "8-12€" t-shirt basique, "25-40€" veste de marque, "5-8€" article très abîmé)
 - Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut
+- score_details : décompose le score en 4 critères chacun sur 25 points — photo (qualité photo, éclairage, fond), titre (précision, marque, longueur), description (richesse, structure, accroche), tendance (met 0 ici, sera boosté séparément). La somme photo+titre+description+tendance doit approximer le score total.
 - conseils_photo : si le score est inférieur à 65 (photo floue, fond encombré, mauvais éclairage, article froissé), donne 2-3 conseils courts et bienveillants pour améliorer la photo (ex: "Essaie sur fond blanc ou clair 📸", "Utilise la lumière naturelle près d'une fenêtre ☀️", "Défroisse l'article avant la photo 👕"). Sinon laisse la chaîne vide."""
 
     VISION_MODELS = [
@@ -1199,6 +1211,17 @@ RÈGLES STRICTES :
             # Compute probabilite_vente from score + category
             cat_bonus = {"vetement": 8, "chaussures": 6, "sacs": 10, "bijoux": 5, "montres": 3, "accessoires": 5, "sport": 7, "maison": 4}
             prob = min(95, max(45, round(score * 0.75 + 15) + cat_bonus.get(cat, 5)))
+            # Parse score_details (4 criteria each /25)
+            raw_sd = parsed.get("score_details", {})
+            sd_photo = max(0, min(25, int(raw_sd.get("photo", 0)) if str(raw_sd.get("photo", "")).lstrip("-").isdigit() else 0))
+            sd_titre = max(0, min(25, int(raw_sd.get("titre", 0)) if str(raw_sd.get("titre", "")).lstrip("-").isdigit() else 0))
+            sd_desc  = max(0, min(25, int(raw_sd.get("description", 0)) if str(raw_sd.get("description", "")).lstrip("-").isdigit() else 0))
+            # If AI didn't return details, distribute score evenly across 3 criteria
+            if sd_photo + sd_titre + sd_desc == 0:
+                third = score // 3
+                sd_photo = min(25, third + (score % 3))
+                sd_titre = min(25, third)
+                sd_desc  = min(25, score - sd_photo - sd_titre)
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
                 "description": str(parsed.get("description", "Bel article 📦"))[:600],
@@ -1209,6 +1232,8 @@ RÈGLES STRICTES :
                 "prix_vente_rapide": prix_vente_rapide,
                 "probabilite_vente": prob,
                 "conseils_photo": str(parsed.get("conseils_photo", ""))[:300] if score < 65 else "",
+                "score_details": {"photo": sd_photo, "titre": sd_titre, "description": sd_desc, "tendance": 0},
+                "tone": tone_key,
             }
     except HTTPException:
         raise

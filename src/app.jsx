@@ -377,6 +377,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [copied, setCopied]       = useState(false);
   const [shared, setShared]       = useState(false);
   const [error, setError]         = useState(null);
+  const [tone, setTone]           = useState('casual');
   // Trend Radar
   const [trends, setTrends]       = useState(null);
   const [trendLoading, setTrendLoading] = useState(false);
@@ -398,7 +399,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
     try {
       const res = await fetch(`${API_URL}/generate-description`, {
         method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ image_url: imageUrl })
+        body: JSON.stringify({ image_url: imageUrl, tone })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
@@ -516,14 +517,28 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
           {/* ── ÉTAT INITIAL ── */}
           {!result && !loading && !error ? (
             /* ── ÉTAT INITIAL ── */
-            <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5 }}>
+            <div style={{ padding: '4px 0 4px' }}>
+              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '14px', lineHeight: 1.5, textAlign: 'center' }}>
                 Génère un titre accrocheur, une description optimisée<br/>et les hashtags parfaits pour ton annonce Vinted.
               </p>
-              <button onClick={generateBoost} className="pg-btn pg-glow" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '11px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>
+              {/* Sélecteur de ton */}
+              <div style={{ marginBottom: '14px' }}>
+                <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 8px' }}>Ton de la description</p>
+                <select
+                  value={tone}
+                  onChange={e => setTone(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(124,58,237,.3)', color: '#e2e8f0', borderRadius: '10px', padding: '10px 12px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                >
+                  <option value="casual">😊 Casual — Décontracté, quotidien</option>
+                  <option value="streetwear">🔥 Streetwear — Urbain, drip, hype</option>
+                  <option value="luxe">💎 Luxe — Élégant, premium, prestige</option>
+                  <option value="pro">💼 Pro — Professionnel, bureau, net</option>
+                </select>
+              </div>
+              <button onClick={generateBoost} className="pg-btn pg-glow" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '11px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>
                 Générer la description
               </button>
-              <p style={{ color: '#334155', fontSize: '11px', marginTop: '10px' }}>~15 secondes · Inclus dans les 5 photos gratuites</p>
+              <p style={{ color: '#334155', fontSize: '11px', marginTop: '10px', textAlign: 'center' }}>~15 secondes · Inclus dans les 5 photos gratuites</p>
             </div>
 
           ) : loading || boostLoading ? (
@@ -565,6 +580,40 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                       <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
                     </div>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
+                    {/* ── DÉTAIL DES CRITÈRES ── */}
+                    {!boosted && result.score_details && (() => {
+                      const sd = result.score_details;
+                      const criteria = [
+                        { key: 'photo',       label: 'Photo',       icon: '📸', val: sd.photo,       max: 25, tip: sd.photo < 20 ? 'Améliore l\'éclairage et le fond' : null },
+                        { key: 'titre',       label: 'Titre',       icon: '✏️', val: sd.titre,       max: 25, tip: sd.titre < 20 ? 'Ajoute la marque et la couleur' : null },
+                        { key: 'description', label: 'Description', icon: '📝', val: sd.description, max: 25, tip: sd.description < 20 ? 'Enrichis les détails et l\'état' : null },
+                        { key: 'tendance',    label: 'Tendance',    icon: '🔥', val: boosted ? 20 : (sd.tendance || 0), max: 25, tip: !boosted ? 'Active le Boost Tendance ci-dessous' : null },
+                      ];
+                      return (
+                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                          <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 8px' }}>Ce qui manque pour atteindre 100</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            {criteria.map(c => {
+                              const pct = Math.round((c.val / c.max) * 100);
+                              const barColor = pct >= 80 ? '#10b981' : pct >= 60 ? '#60a5fa' : '#f59e0b';
+                              return (
+                                <div key={c.key}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                                    <span style={{ fontSize: '11px', width: '16px', textAlign: 'center' }}>{c.icon}</span>
+                                    <span style={{ color: '#64748b', fontSize: '11px', flex: 1 }}>{c.label}</span>
+                                    <span style={{ color: barColor, fontWeight: 700, fontSize: '11px' }}>{c.val}/{c.max}</span>
+                                  </div>
+                                  <div style={{ height: '4px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden', marginLeft: '22px' }}>
+                                    <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '100px', transition: 'width 1s ease' }} />
+                                  </div>
+                                  {c.tip && <p style={{ color: '#334155', fontSize: '10px', margin: '2px 0 0', marginLeft: '22px' }}>↳ {c.tip}</p>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/* Preview score si on applique toutes les trends sélectionnées */}
                     {trends && selectedTrends.length > 0 && !boosted && (
                       <p style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', margin: '6px 0 0' }}>
@@ -677,26 +726,31 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </div>
                   </div>
                 ) : (<>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
-                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Boost Tendance</p>
-                    <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>AUJOURD'HUI</span>
-                  </div>
-                  {!trends && !trendLoading && (
-                    <button onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }} style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      {isConnected ? 'Analyser →' : '🔒 Acheter →'}
-                    </button>
-                  )}
+                {/* Header Boost Tendance */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
+                  <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Boost Tendance</p>
+                  <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>AUJOURD'HUI</span>
                   {trends && (
-                    <span style={{ color: '#334155', fontSize: '11px' }}>Maj. {trends.maj}</span>
+                    <span style={{ color: '#334155', fontSize: '11px', marginLeft: 'auto' }}>Maj. {trends.maj}</span>
                   )}
                 </div>
                 {/* Mini phrase explicative */}
                 {!trends && !trendLoading && (
-                  <p style={{ color: '#475569', fontSize: '11px', margin: '0 0 8px', lineHeight: 1.4 }}>
+                  <p style={{ color: '#475569', fontSize: '11px', margin: '0 0 10px', lineHeight: 1.4 }}>
                     Mots viraux de la semaine pour <strong style={{ color: '#94a3b8' }}>{result.categorie || 'cet article'}</strong> — intégrés dans ta description pour apparaître en tête des recherches Vinted.
                   </p>
+                )}
+                {/* Bouton Analyser — bien visible, pleine largeur */}
+                {!trends && !trendLoading && (
+                  <button
+                    onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }}
+                    className="pg-btn"
+                    style={{ width: '100%', background: 'linear-gradient(135deg,#d97706,#f59e0b)', color: '#000', border: 'none', borderRadius: '11px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                    {isConnected ? 'Analyser les tendances →' : '🔒 Débloquer le boost →'}
+                  </button>
                 )}
 
                 {trendLoading && (
@@ -1581,6 +1635,15 @@ function FAQSection({ T, isMobile }) {
 // 👇 Pour ajouter une news : copie un bloc { date, version, items:[...] }
 //    et colle-le EN PREMIER dans ce tableau. Types disponibles : 'new' | 'improve' | 'fix'
 const CHANGELOG = [
+  {
+    date: '2 avril 2026',
+    version: 'v1.7',
+    items: [
+      { type: 'new', label: '🎨 Ton de description personnalisable', desc: 'Choisis le style de ta description avant de générer : Casual (quotidien), Streetwear (urbain, drip, hype), Luxe (élégant, premium) ou Pro (professionnel, bureau). L\'IA adapte le vocabulaire et le ton en conséquence.' },
+      { type: 'new', label: '📊 Détail des critères du score', desc: 'Le score n\'est plus un mystère : tu vois maintenant exactement ce qui manque pour atteindre 100. Chaque critère (Photo, Titre, Description, Tendance) est affiché avec sa note sur 25 et un conseil d\'amélioration.' },
+      { type: 'improve', label: '🔥 Bouton Boost Tendance plus visible', desc: 'Le bouton "Analyser les tendances" est maintenant bien visible en pleine largeur sous la section Boost Tendance — impossible de le rater.' },
+    ],
+  },
   {
     date: '26 mars 2026',
     version: 'v1.6',
