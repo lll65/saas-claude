@@ -392,6 +392,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [showScoreDetails, setShowScoreDetails] = useState(false);
   const [showBoostPanel, setShowBoostPanel]     = useState(false);
   const [showMoreTrends, setShowMoreTrends]     = useState(false);
+  const [boostExpanded, setBoostExpanded]       = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -432,6 +433,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
         setShowScoreDetails(false);
         setShowBoostPanel(false);
         setShowMoreTrends(false);
+        setBoostExpanded(false);
       }
     } catch(e) { if (mountedRef.current) setError(e.message); }
     finally { if (mountedRef.current) setLoading(false); }
@@ -604,36 +606,23 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                       <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
                     </div>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
-                    {/* ── DÉTAIL DES CRITÈRES ── */}
-                    {showScoreDetails && !boosted && result.score_details && (() => {
-                      const sd = result.score_details;
-                      const criteria = [
-                        { key: 'photo',       label: 'Photo',       icon: '📸', val: sd.photo,       max: 25, tip: sd.photo < 20 ? 'Améliore l\'éclairage et le fond' : null },
-                        { key: 'titre',       label: 'Titre',       icon: '✏️', val: sd.titre,       max: 25, tip: sd.titre < 20 ? 'Ajoute la marque et la couleur' : null },
-                        { key: 'description', label: 'Description', icon: '📝', val: sd.description, max: 25, tip: sd.description < 20 ? 'Enrichis les détails et l\'état' : null },
-                        { key: 'tendance',    label: 'Tendance',    icon: '🔥', val: boosted ? 20 : (sd.tendance || 0), max: 25, tip: !boosted ? 'Active le Boost Tendance ci-dessous' : null },
-                      ];
+                    {/* ── CONSEIL ACTIONNABLE ── */}
+                    {showScoreDetails && !boosted && (() => {
+                      const actions = [];
+                      if (result.score < 85) actions.push({ icon: '🔥', tip: 'Active le Boost Tendance pour gagner +5 à +15 pts instantanément' });
+                      if (result.conseils_photo) actions.push({ icon: '📸', tip: result.conseils_photo.split('.')[0] });
+                      if (actions.length === 0 && result.score < 98) actions.push({ icon: '✨', tip: 'Régénère pour obtenir une description encore plus percutante' });
+                      if (actions.length === 0) return null;
                       return (
                         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                          <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 8px' }}>Ce qui manque pour atteindre 100</p>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            {criteria.map(c => {
-                              const pct = Math.round((c.val / c.max) * 100);
-                              const barColor = pct >= 80 ? '#10b981' : pct >= 60 ? '#60a5fa' : '#f59e0b';
-                              return (
-                                <div key={c.key}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                                    <span style={{ fontSize: '11px', width: '16px', textAlign: 'center' }}>{c.icon}</span>
-                                    <span style={{ color: '#64748b', fontSize: '11px', flex: 1 }}>{c.label}</span>
-                                    <span style={{ color: barColor, fontWeight: 700, fontSize: '11px' }}>{c.val}/{c.max}</span>
-                                  </div>
-                                  <div style={{ height: '4px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden', marginLeft: '22px' }}>
-                                    <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '100px', transition: 'width 1s ease' }} />
-                                  </div>
-                                  {c.tip && <p style={{ color: '#334155', fontSize: '10px', margin: '2px 0 0', marginLeft: '22px' }}>↳ {c.tip}</p>}
-                                </div>
-                              );
-                            })}
+                          <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 6px' }}>Pour atteindre {Math.min(98, result.score + 15)}/100</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {actions.slice(0, 2).map((a, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                <span style={{ fontSize: '12px', flexShrink: 0 }}>{a.icon}</span>
+                                <p style={{ color: '#64748b', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{a.tip}</p>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       );
@@ -664,44 +653,19 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               {(() => {
                 const prix = result.prix_estime || ({'chaussures':'15-30€','sacs':'12-25€','bijoux':'5-12€','montres':'20-50€','accessoires':'5-15€','sport':'10-25€','maison':'5-20€'}[result.categorie] || '8-15€');
                 return (<>
-                  <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
                     <span style={{ fontSize: '15px' }}>💰</span>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
                       <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prix}</p>
                     </div>
-                    <p style={{ color: '#334155', fontSize: '11px', margin: '0 0 0 auto', lineHeight: 1.3, maxWidth: '120px', textAlign: 'right' }}>Vinted / Leboncoin</p>
-                  </div>
-                  {/* ── ANALYSE PRIX TEMPS RÉEL ── */}
-                  <div style={{ marginBottom: '10px', background: 'rgba(96,165,250,.06)', border: '1px solid rgba(96,165,250,.18)', borderRadius: '10px', padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '14px' }}>📊</span>
-                      <p style={{ color: '#60a5fa', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Analyse de prix en temps réel</p>
-                      <span style={{ background: 'rgba(96,165,250,.18)', color: '#60a5fa', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>LIVE</span>
-                    </div>
-                    <p style={{ color: '#64748b', fontSize: '11px', lineHeight: 1.5, margin: '0 0 8px' }}>Articles similaires scannés sur Vinted. Pour vendre <strong style={{ color: '#93c5fd' }}>vite</strong>, affiche à :</p>
-                    <p style={{ color: '#38bdf8', fontWeight: 800, fontSize: '20px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>{result.prix_vente_rapide || prix}</p>
-                    <p style={{ color: '#334155', fontSize: '11px', margin: '3px 0 0' }}>Vente estimée en moins de 3-5 jours à ce prix</p>
-                  </div>
-                  {/* ── PROBABILITÉ DE VENTE ── */}
-                  {(() => {
-                    const prob = result.probabilite_vente || Math.min(95, Math.max(45, Math.round(result.score * 0.75 + 15) + 5));
-                    const probColor = prob >= 80 ? '#10b981' : prob >= 60 ? '#f59e0b' : '#f87171';
-                    const probBg = prob >= 80 ? 'rgba(16,185,129,.06)' : prob >= 60 ? 'rgba(245,158,11,.06)' : 'rgba(239,68,68,.06)';
-                    const probBorder = prob >= 80 ? 'rgba(16,185,129,.2)' : prob >= 60 ? 'rgba(245,158,11,.2)' : 'rgba(239,68,68,.2)';
-                    return (
-                      <div style={{ marginBottom: '12px', background: probBg, border: `1px solid ${probBorder}`, borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 2px' }}>Score probabilité de vente</p>
-                          <p style={{ color: probColor, fontWeight: 800, fontSize: '22px', margin: '0 0 2px', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prob}%</p>
-                          <p style={{ color: '#64748b', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>de chances de vendre en <strong style={{ color: '#94a3b8' }}>moins de 7 jours</strong></p>
-                        </div>
-                        <div style={{ width: '52px', height: '52px', borderRadius: '50%', border: `3px solid ${probBorder.replace('.2)', '.45)')}`, background: probBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ fontSize: '20px' }}>🎯</span>
-                        </div>
+                    {result.prix_vente_rapide && result.prix_vente_rapide !== prix && (
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ color: '#475569', fontSize: '10px', margin: 0 }}>Vente rapide</p>
+                        <p style={{ color: '#38bdf8', fontWeight: 700, fontSize: '13px', margin: '1px 0 0' }}>{result.prix_vente_rapide}</p>
                       </div>
-                    );
-                  })()}
+                    )}
+                  </div>
                 </>);
               })()}
               </div>{/* end pg-reveal showText */}
@@ -757,22 +721,30 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </div>
                   </div>
                 ) : (<>
-                {/* Header Boost Tendance */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
-                  <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px', margin: 0 }}>Boost Tendance</p>
-                  <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>AUJOURD'HUI</span>
-                  {trends && (
-                    <span style={{ color: '#334155', fontSize: '11px', marginLeft: 'auto' }}>Maj. {trends.maj}</span>
-                  )}
-                </div>
+                {/* Header Boost Tendance — toggle collapsible */}
+                <button
+                  onClick={() => setBoostExpanded(e => !e)}
+                  style={{ width: '100%', background: boostExpanded ? 'rgba(245,158,11,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${boostExpanded ? 'rgba(245,158,11,.25)' : 'rgba(255,255,255,.08)'}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: boostExpanded ? '12px' : 0, transition: 'all .2s' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
+                    <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '13px' }}>Boost Tendance</span>
+                    <span style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: '9px', padding: '1px 6px', borderRadius: '100px', fontWeight: 800 }}>OPTION</span>
+                  </div>
+                  <span style={{ color: '#475569', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>+5 à +15 pts</span>
+                    <span style={{ fontSize: '16px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: boostExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span>
+                  </span>
+                </button>
+
+                {boostExpanded && (<>
                 {/* Mini phrase explicative */}
                 {!trends && !trendLoading && (
                   <p style={{ color: '#475569', fontSize: '11px', margin: '0 0 10px', lineHeight: 1.4 }}>
                     Mots viraux de la semaine pour <strong style={{ color: '#94a3b8' }}>{result.categorie || 'cet article'}</strong> — intégrés dans ta description pour apparaître en tête des recherches Vinted.
                   </p>
                 )}
-                {/* Bouton Analyser — bien visible, pleine largeur */}
+                {/* Bouton Analyser */}
                 {!trends && !trendLoading && (
                   <button
                     onClick={() => { if (!isConnected) { onUpgrade(); return; } loadTrends(); }}
@@ -844,6 +816,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </button>
                   </>
                 )}
+                </>)}
                 </>)}
               </div>
               </div>{/* end pg-reveal showBoostPanel */}
@@ -3204,19 +3177,13 @@ export default function PixGlow() {
                     {/* Layout horizontal sur desktop si 1 seul résultat */}
                     <div style={{ display: !isMobile && results.length === 1 ? 'flex' : 'block', gap: '20px', alignItems: 'flex-start' }}>
                       <div style={{ flex: !isMobile && results.length === 1 ? '0 0 340px' : undefined }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                          <div>
-                            <p style={{ color: T.textSub, fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Avant</p>
-                            <img src={r.original} alt="Avant" style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '1', objectFit: 'cover' }} />
-                          </div>
-                          <div>
-                            <p style={{ color: r.error ? '#f87171' : '#10b981', fontSize: '10px', margin: '0 0 6px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>{r.error ? 'Erreur' : 'Après ✅'}</p>
-                            {r.error
-                              ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                              : <img src={r.url} alt="Après" onClick={() => setLightboxUrl(r.url)} style={{ width: '100%', borderRadius: '8px', background: '#fff', display: 'block', aspectRatio: '1', objectFit: 'contain', cursor: 'zoom-in' }} />}
-                          </div>
+                        <div style={{ marginBottom: '12px' }}>
+                          {r.error
+                            ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
+                            : <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 240 : 300} />
+                          }
                         </div>
-                        {!r.error && !isMobile && (
+                        {!r.error && (
                           <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
                         )}
                         {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
