@@ -415,7 +415,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     if (!result) return;
     // Init hashtags cliquables (max 7, tous actifs par défaut)
     if (result.hashtags) {
-      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 5));
+      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 12));
     }
     const t1 = setTimeout(() => { if (mountedRef.current) setShowScoreDetails(true); }, 600);
     const t2 = setTimeout(() => { if (mountedRef.current) setShowText(true); }, 1000);
@@ -786,36 +786,6 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
                     </div>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
-                    {/* ── SCORE BREAKDOWN INLINE ── */}
-                    {showScoreDetails && !boosted && (() => {
-                      const sd = result.score_details || {};
-                      const items = [
-                        { label: 'Photo', score: sd.photo ?? Math.round(result.score * 0.22), max: 25 },
-                        { label: 'Titre', score: sd.titre ?? Math.round(result.score * 0.28), max: 25 },
-                        { label: 'Description', score: sd.description ?? Math.round(result.score * 0.38), max: 25 },
-                        { label: 'Tendance', score: sd.tendance ?? 0, max: 25 },
-                      ];
-                      return (
-                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 4px' }}>Détail du score</p>
-                          {items.map((item, idx) => {
-                            const pct = Math.round((item.score / item.max) * 100);
-                            const col = pct >= 80 ? '#10b981' : pct >= 60 ? '#60a5fa' : '#f59e0b';
-                            return (
-                              <div key={idx}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                  <span style={{ color: '#94a3b8', fontSize: '10px', fontWeight: 600 }}>{item.label}</span>
-                                  <span style={{ color: col, fontSize: '10px', fontWeight: 700 }}>{item.score}/{item.max}</span>
-                                </div>
-                                <div style={{ height: '4px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: '100px', transition: 'width .8s' }} />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
                     {/* ── CONSEIL ACTIONNABLE ── */}
                     {showScoreDetails && !boosted && (() => {
                       const actions = [];
@@ -863,7 +833,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
               {(() => {
                 const prix = result.prix_estime || ({'chaussures':'15-30€','sacs':'12-25€','bijoux':'5-12€','montres':'20-50€','accessoires':'5-15€','sport':'10-25€','maison':'5-20€'}[result.categorie] || '8-15€');
                 const vestiaireMult = ({'chaussures':1.6,'sacs':1.8,'bijoux':1.5,'montres':2.2,'accessoires':1.4}[result.categorie] || 1.5);
-                const prixBase = result.prix_estime ? parseInt(String(result.prix_estime).replace(/[^0-9]/g,'')) : null;
+                const prixBaseMatch = result.prix_estime ? String(result.prix_estime).match(/(\d+)/) : null;
+                const prixBase = prixBaseMatch ? parseInt(prixBaseMatch[1]) : null;
                 const prixVestiaire = prixBase ? `${Math.round(prixBase * vestiaireMult * 0.9)}–${Math.round(prixBase * vestiaireMult * 1.2)}€` : null;
                 return (<>
                   <div style={{ marginBottom: '12px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
@@ -930,7 +901,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                   <MiniCopyBtn text={selectedMainHashtags.join(' ')} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {result.hashtags.split(' ').filter(Boolean).slice(0, 5).map((tag, i) => {
+                  {result.hashtags.split(' ').filter(Boolean).slice(0, 12).map((tag, i) => {
                     const isActive = selectedMainHashtags.includes(tag);
                     return (
                       <button key={i} onClick={() => setSelectedMainHashtags(prev => isActive ? prev.filter(h => h !== tag) : [...prev, tag])}
@@ -957,70 +928,85 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                   <span style={{ fontSize: '16px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: showAnalyse ? 'rotate(180deg)' : 'rotate(0deg)', color: '#475569' }}>⌄</span>
                 </button>
                 {showAnalyse && (() => {
-                  const scoreColor = result.score >= 85 ? '#10b981' : result.score >= 70 ? '#60a5fa' : result.score >= 50 ? '#f59e0b' : '#f87171';
-                  const titreScore = Math.round(result.score * 0.28);
-                  const descScore  = Math.round(result.score * 0.38);
-                  const photoScore = Math.round(result.score * 0.22);
-                  const hashScore  = Math.round(result.score * 0.12);
-                  const estVues    = result.score >= 85 ? '400–700' : result.score >= 70 ? '200–400' : result.score >= 50 ? '80–200' : '20–80';
-                  const gainVente  = result.score >= 85 ? '+35%' : result.score >= 70 ? '+20%' : result.score >= 50 ? '+10%' : '+5%';
-                  const reco = [];
-                  if (titreScore < 23) reco.push({ done: false, tip: 'Ajoute la taille, la marque exacte et l\'état dans le titre' });
-                  if (descScore < 30) reco.push({ done: false, tip: 'Raccourcis la description — 3 à 5 lignes suffisent sur Vinted' });
-                  if (photoScore < 18) reco.push({ done: false, tip: 'Ajoute 2–3 photos supplémentaires (face, dos, détail)' });
-                  if (result.score < 85) reco.push({ done: false, tip: 'Active le Boost Tendance pour +5 à +15 pts de score' });
-                  if (result.conseils_photo) reco.push({ done: false, tip: result.conseils_photo.split('.')[0] });
+                  const sd = result.score_details || {};
+                  const photoSc = sd.photo ?? Math.round(result.score * 0.22);
+                  const titreSc = sd.titre ?? Math.round(result.score * 0.28);
+                  const descSc  = sd.description ?? Math.round(result.score * 0.38);
+                  const tendSc  = sd.tendance ?? 0;
+                  // Build per-criterion actionable tips
+                  const criteres = [
+                    {
+                      label: 'Titre',
+                      score: titreSc,
+                      max: 25,
+                      icon: '✏️',
+                      ok: titreSc >= 20,
+                      conseil: titreSc >= 20
+                        ? 'Titre bien structuré — marque, couleur et type d\'article sont présents.'
+                        : titreSc >= 15
+                        ? 'Ajoute la taille (ex : Taille M) et l\'état (Neuf / TBE) dans le titre pour gagner +5 pts.'
+                        : 'Place la marque en premier, puis couleur + type d\'article. Exemple : "Ralph Lauren doudoune noire Taille M".',
+                    },
+                    {
+                      label: 'Description',
+                      score: descSc,
+                      max: 25,
+                      icon: '📝',
+                      ok: descSc >= 20,
+                      conseil: descSc >= 20
+                        ? 'Description complète et vendeuse — structure, accroche et détails visuels sont au rendez-vous.'
+                        : descSc >= 15
+                        ? 'Mentionne les matières et 1–2 détails uniques (broderie, fermeture, poches) pour renforcer l\'attrait.'
+                        : 'Structure en 3 parties : caractéristiques précises → points forts → état de l\'article. Termine par "Idéal pour...".',
+                    },
+                    {
+                      label: 'Photo',
+                      score: photoSc,
+                      max: 25,
+                      icon: '📸',
+                      ok: photoSc >= 20,
+                      conseil: photoSc >= 20
+                        ? 'Bonne qualité photo — éclairage et cadrage sont adaptés.'
+                        : photoSc >= 15
+                        ? 'Ajoute un plan rapproché sur le logo, l\'étiquette ou les poches pour rassurer l\'acheteur.'
+                        : result.conseils_photo || 'Photographie sur fond blanc ou clair avec la lumière naturelle. Ajoute 2–3 angles (face, dos, détail).',
+                    },
+                    {
+                      label: 'Tendance',
+                      score: tendSc,
+                      max: 25,
+                      icon: '🔥',
+                      ok: false,
+                      conseil: 'La tendance est à 0/25 — active le Boost Tendance pour intégrer des mots-clés viraux (ex : "matelassé", "brillant", "hiver 2026") et gagner jusqu\'à +15 pts.',
+                    },
+                  ];
+                  // Prix advice
+                  const prixParts = result.prix_estime ? String(result.prix_estime).match(/(\d+).*?(\d+)/) : null;
+                  const prixLow = prixParts ? parseInt(prixParts[1]) : null;
+                  const prixHigh = prixParts ? parseInt(prixParts[2]) : null;
+                  const prixConeil = prixLow && prixHigh
+                    ? `Fourchette estimée ${result.prix_estime}. Pour vendre vite : affiche ${prixLow}€. Pour maximiser : ${prixHigh}€ avec photos qualitatives et description complète.`
+                    : `Précise l'état de l'article (Neuf, TBE, Bon état) pour affiner le prix et rassurer l'acheteur.`;
                   return (
                     <div style={{ background: 'rgba(96,165,250,.04)', border: '1px solid rgba(96,165,250,.15)', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
-                      {/* Score breakdown */}
-                      <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 10px' }}>Détail du score {result.score}/100</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '14px' }}>
-                        {[
-                          { label: 'Titre', score: titreScore, max: 28, tip: titreScore < 23 ? 'Manque taille / marque exacte' : 'Bon' },
-                          { label: 'Description', score: descScore, max: 38, tip: descScore < 30 ? 'Peut être plus concise' : 'Bonne' },
-                          { label: 'Photo', score: photoScore, max: 22, tip: photoScore < 18 ? 'Angle de face manquant' : 'Bonne' },
-                          { label: 'Hashtags', score: hashScore, max: 12, tip: 'Inclus' },
-                        ].map((item, idx) => {
-                          const pct = Math.round((item.score / item.max) * 100);
-                          const col = pct >= 85 ? '#10b981' : pct >= 65 ? '#60a5fa' : '#f59e0b';
-                          return (
-                            <div key={idx}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                                <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>{item.label}</span>
-                                <span style={{ color: col, fontSize: '11px', fontWeight: 700 }}>{item.score}/{item.max} — {item.tip}</span>
-                              </div>
-                              <div style={{ height: '5px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: '100px', transition: 'width .8s' }} />
-                              </div>
+                      {/* Per-criterion advice */}
+                      <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 10px' }}>Ce qui peut être amélioré</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                        {criteres.map((c, idx) => (
+                          <div key={idx} style={{ background: c.ok ? 'rgba(16,185,129,.05)' : 'rgba(255,255,255,.03)', border: `1px solid ${c.ok ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.07)'}`, borderRadius: '8px', padding: '9px 11px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <span style={{ color: c.ok ? '#10b981' : '#94a3b8', fontSize: '11px', fontWeight: 700 }}>{c.icon} {c.label}</span>
+                              <span style={{ color: c.ok ? '#10b981' : c.score >= 15 ? '#60a5fa' : '#f59e0b', fontSize: '11px', fontWeight: 800 }}>{c.score}/25</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                      {/* Estimations */}
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                        <div style={{ flex: 1, background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '8px', padding: '8px 10px', textAlign: 'center' }}>
-                          <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 2px' }}>Vues estimées</p>
-                          <p style={{ color: '#10b981', fontWeight: 800, fontSize: '14px', margin: 0 }}>{estVues}</p>
-                        </div>
-                        <div style={{ flex: 1, background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '8px', padding: '8px 10px', textAlign: 'center' }}>
-                          <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 2px' }}>Gain vente</p>
-                          <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px', margin: 0 }}>{gainVente}</p>
-                        </div>
-                      </div>
-                      {/* Recommandations */}
-                      {reco.length > 0 && (
-                        <>
-                          <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 8px' }}>Recommandations prioritaires</p>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {reco.slice(0, 4).map((r, idx) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px' }}>
-                                <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1.5px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.06)', flexShrink: 0, marginTop: '1px' }} />
-                                <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0, lineHeight: 1.45 }}>{r.tip}</p>
-                              </div>
-                            ))}
+                            <p style={{ color: c.ok ? '#6ee7b7' : '#64748b', fontSize: '11px', margin: 0, lineHeight: 1.5 }}>{c.conseil}</p>
                           </div>
-                        </>
-                      )}
+                        ))}
+                      </div>
+                      {/* Prix conseil */}
+                      <div style={{ background: 'rgba(16,185,129,.05)', border: '1px solid rgba(16,185,129,.15)', borderRadius: '8px', padding: '9px 11px' }}>
+                        <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, margin: '0 0 3px' }}>💰 Prix &amp; stratégie de vente</p>
+                        <p style={{ color: '#64748b', fontSize: '11px', margin: 0, lineHeight: 1.5 }}>{prixConeil}</p>
+                      </div>
                     </div>
                   );
                 })()}
