@@ -260,7 +260,7 @@ function AvatarInitials({ name, size = 30, style: extraStyle = {} }) {
 
 /* ══ BEFORE/AFTER SLIDER ══ */
 function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false }) {
-  const [pos, setPos] = useState(50);
+  const [pos, setPos] = useState(75);
   const [dragging, setDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [autoAnimDone, setAutoAnimDone] = useState(false);
@@ -306,7 +306,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !autoAnimDone) {
         let start = null;
-        const from = 72, to = 28, duration = 1600;
+        const from = 75, to = 28, duration = 1600;
         const step = (ts) => {
           if (!start) start = ts;
           const p = Math.min((ts - start) / duration, 1);
@@ -344,12 +344,12 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
       <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${pos}%`, width: '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none' }} />
       {/* Handle */}
       <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setPos(getPos(e.touches[0].clientX)); }}
-        style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: '44px', height: '44px', borderRadius: '50%', background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(124,58,237,.4)' }}>
-        <span style={{ fontSize: '16px', userSelect: 'none' }}>⇔</span>
+        style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 16px rgba(124,58,237,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.8)' }}>
+        <span style={{ color: '#fff', fontSize: '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
       </div>
       {/* Bottom hint */}
-      <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.72)', backdropFilter: 'blur(6px)', color: '#fff', fontSize: '14px', fontWeight: 700, padding: '6px 18px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none', letterSpacing: '0.3px', boxShadow: '0 2px 12px rgba(0,0,0,.4)' }}>
-        ⬅ Glisse pour comparer ➡
+      <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: '16px', fontWeight: 800, padding: '8px 22px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none', letterSpacing: '0.4px', boxShadow: '0 4px 18px rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.15)' }}>
+        ◀ Glisse pour comparer ▶
       </div>
     </div>
   );
@@ -398,12 +398,20 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [shareText, setShareText]           = useState('');
   const [activeHashtags, setActiveHashtags] = useState([]);
   const [shareCopied, setShareCopied]       = useState(false);
+  // Hashtags panel principal (cliquables)
+  const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
+  // Analyse approfondie
+  const [showAnalyse, setShowAnalyse] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
   // Progressive wizard reveal when result arrives
   useEffect(() => {
     if (!result) return;
+    // Init hashtags cliquables (max 7, tous actifs par défaut)
+    if (result.hashtags) {
+      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 7));
+    }
     const t1 = setTimeout(() => { if (mountedRef.current) setShowScoreDetails(true); }, 600);
     const t2 = setTimeout(() => { if (mountedRef.current) setShowText(true); }, 1000);
     const t3 = setTimeout(() => { if (mountedRef.current) setShowFullDesc(true); }, 1400);
@@ -486,7 +494,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
 
   const handleCopy = () => {
     if (!result) return;
-    const text = `${result.titre}\n\n${result.description}\n\n${result.hashtags}`;
+    const tags = selectedMainHashtags.length ? selectedMainHashtags.join(' ') : result.hashtags;
+    const text = `${result.titre}\n\n${result.description}\n\n${tags}`;
     navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   };
   const copyField = (text, field) => {
@@ -568,6 +577,24 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
             link.click();
           });
       };
+      const tryShareFile = async (blob, filename) => {
+        // Sur mobile, on tente Web Share API avec fichier (ouvre la feuille de partage native iOS/Android)
+        if (navigator.canShare && navigator.share) {
+          const file = new File([blob], filename, { type: 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], text: fullText });
+              return true;
+            } catch (e) {
+              if (e.name === 'AbortError') return true; // user cancelled = ok
+            }
+          }
+        }
+        // Fallback : téléchargement + texte copié
+        downloadBlob(blob, filename);
+        navigator.clipboard.writeText(fullText).catch(() => {});
+        return false;
+      };
       // Build a side-by-side before/after canvas if originalUrl is available
       if (originalUrl) {
         const loadImg = (src) => new Promise((resolve, reject) => {
@@ -602,15 +629,14 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
             ctx.fillStyle = '#10b981';
             ctx.fillText('APRÈS ✅', bW + 14, 27);
             canvas.toBlob(blob => {
-              if (blob) downloadBlob(blob, 'pixglow-avant-apres.jpg');
+              if (blob) tryShareFile(blob, 'pixglow-avant-apres.jpg');
               else fallbackDownload();
             }, 'image/jpeg', 0.92);
           })
           .catch(fallbackDownload);
       } else {
-        fallbackDownload();
+        fetch(imageUrl).then(r => r.blob()).then(blob => tryShareFile(blob, 'pixglow-transformation.jpg')).catch(fallbackDownload);
       }
-      navigator.clipboard.writeText(fullText).catch(() => {});
     }
   };
 
@@ -755,19 +781,36 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
               {/* ── PRIX ESTIMÉ ── */}
               {(() => {
                 const prix = result.prix_estime || ({'chaussures':'15-30€','sacs':'12-25€','bijoux':'5-12€','montres':'20-50€','accessoires':'5-15€','sport':'10-25€','maison':'5-20€'}[result.categorie] || '8-15€');
+                const vestiaireMult = ({'chaussures':1.6,'sacs':1.8,'bijoux':1.5,'montres':2.2,'accessoires':1.4}[result.categorie] || 1.5);
+                const prixBase = result.prix_estime ? parseInt(String(result.prix_estime).replace(/[^0-9]/g,'')) : null;
+                const prixVestiaire = prixBase ? `${Math.round(prixBase * vestiaireMult * 0.9)}–${Math.round(prixBase * vestiaireMult * 1.2)}€` : null;
                 return (<>
-                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
-                    <span style={{ fontSize: '15px' }}>💰</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
-                      <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prix}</p>
-                    </div>
-                    {result.prix_vente_rapide && result.prix_vente_rapide !== prix && (
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ color: '#475569', fontSize: '10px', margin: 0 }}>Vente rapide</p>
-                        <p style={{ color: '#38bdf8', fontWeight: 700, fontSize: '13px', margin: '1px 0 0' }}>{result.prix_vente_rapide}</p>
+                  <div style={{ marginBottom: '12px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '15px' }}>💰</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
+                        <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prix}</p>
                       </div>
-                    )}
+                      {result.prix_vente_rapide && result.prix_vente_rapide !== prix && (
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ color: '#475569', fontSize: '10px', margin: 0 }}>Vente rapide</p>
+                          <p style={{ color: '#38bdf8', fontWeight: 700, fontSize: '13px', margin: '1px 0 0' }}>{result.prix_vente_rapide}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                      <div style={{ flex: 1, textAlign: 'center' }}>
+                        <p style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Vinted</p>
+                        <p style={{ color: '#34d399', fontWeight: 700, fontSize: '12px', margin: 0 }}>{prix}</p>
+                      </div>
+                      {prixVestiaire && (
+                        <div style={{ flex: 1, textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,.06)' }}>
+                          <p style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Vestiaire</p>
+                          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '12px', margin: 0 }}>{prixVestiaire}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>);
               })()}
@@ -801,16 +844,106 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
               <div className={`pg-reveal ${showHashtags ? 'visible' : ''}`}>
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags</p>
-                  <MiniCopyBtn text={result.hashtags} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
+                  <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags (clique pour activer/désactiver)</p>
+                  <MiniCopyBtn text={selectedMainHashtags.join(' ')} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {result.hashtags.split(' ').filter(Boolean).map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(124,58,237,.1)', border: '1px solid rgba(124,58,237,.2)', color: '#c4b5fd', fontSize: '11px', padding: '3px 10px', borderRadius: '100px', fontWeight: 500 }}>{tag}</span>
-                  ))}
+                  {result.hashtags.split(' ').filter(Boolean).slice(0, 7).map((tag, i) => {
+                    const isActive = selectedMainHashtags.includes(tag);
+                    return (
+                      <button key={i} onClick={() => setSelectedMainHashtags(prev => isActive ? prev.filter(h => h !== tag) : [...prev, tag])}
+                        style={{ background: isActive ? 'rgba(124,58,237,.18)' : 'rgba(255,255,255,.03)', border: `1px solid ${isActive ? 'rgba(124,58,237,.45)' : 'rgba(255,255,255,.08)'}`, color: isActive ? '#c4b5fd' : '#475569', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s', textDecoration: isActive ? 'none' : 'line-through' }}>
+                        {tag}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               </div>{/* end pg-reveal showHashtags */}
+
+              {/* ══ ANALYSE APPROFONDIE ══ */}
+              <div className={`pg-reveal ${showBoostPanel ? 'visible' : ''}`}>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px', marginBottom: '8px' }}>
+                <button
+                  onClick={() => setShowAnalyse(e => !e)}
+                  style={{ width: '100%', background: showAnalyse ? 'rgba(96,165,250,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${showAnalyse ? 'rgba(96,165,250,.25)' : 'rgba(255,255,255,.08)'}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: showAnalyse ? '12px' : '10px', transition: 'all .2s' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10h9M2 7h7M2 4h5" stroke="#60a5fa" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                    <span style={{ color: '#60a5fa', fontWeight: 700, fontSize: '13px' }}>Analyse approfondie de l'annonce</span>
+                  </div>
+                  <span style={{ fontSize: '16px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: showAnalyse ? 'rotate(180deg)' : 'rotate(0deg)', color: '#475569' }}>⌄</span>
+                </button>
+                {showAnalyse && (() => {
+                  const scoreColor = result.score >= 85 ? '#10b981' : result.score >= 70 ? '#60a5fa' : result.score >= 50 ? '#f59e0b' : '#f87171';
+                  const titreScore = Math.round(result.score * 0.28);
+                  const descScore  = Math.round(result.score * 0.38);
+                  const photoScore = Math.round(result.score * 0.22);
+                  const hashScore  = Math.round(result.score * 0.12);
+                  const estVues    = result.score >= 85 ? '400–700' : result.score >= 70 ? '200–400' : result.score >= 50 ? '80–200' : '20–80';
+                  const gainVente  = result.score >= 85 ? '+35%' : result.score >= 70 ? '+20%' : result.score >= 50 ? '+10%' : '+5%';
+                  const reco = [];
+                  if (titreScore < 23) reco.push({ done: false, tip: 'Ajoute la taille, la marque exacte et l\'état dans le titre' });
+                  if (descScore < 30) reco.push({ done: false, tip: 'Raccourcis la description — 3 à 5 lignes suffisent sur Vinted' });
+                  if (photoScore < 18) reco.push({ done: false, tip: 'Ajoute 2–3 photos supplémentaires (face, dos, détail)' });
+                  if (result.score < 85) reco.push({ done: false, tip: 'Active le Boost Tendance pour +5 à +15 pts de score' });
+                  if (result.conseils_photo) reco.push({ done: false, tip: result.conseils_photo.split('.')[0] });
+                  return (
+                    <div style={{ background: 'rgba(96,165,250,.04)', border: '1px solid rgba(96,165,250,.15)', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
+                      {/* Score breakdown */}
+                      <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 10px' }}>Détail du score {result.score}/100</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '14px' }}>
+                        {[
+                          { label: 'Titre', score: titreScore, max: 28, tip: titreScore < 23 ? 'Manque taille / marque exacte' : 'Bon' },
+                          { label: 'Description', score: descScore, max: 38, tip: descScore < 30 ? 'Peut être plus concise' : 'Bonne' },
+                          { label: 'Photo', score: photoScore, max: 22, tip: photoScore < 18 ? 'Angle de face manquant' : 'Bonne' },
+                          { label: 'Hashtags', score: hashScore, max: 12, tip: 'Inclus' },
+                        ].map((item, idx) => {
+                          const pct = Math.round((item.score / item.max) * 100);
+                          const col = pct >= 85 ? '#10b981' : pct >= 65 ? '#60a5fa' : '#f59e0b';
+                          return (
+                            <div key={idx}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                                <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>{item.label}</span>
+                                <span style={{ color: col, fontSize: '11px', fontWeight: 700 }}>{item.score}/{item.max} — {item.tip}</span>
+                              </div>
+                              <div style={{ height: '5px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: '100px', transition: 'width .8s' }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Estimations */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                        <div style={{ flex: 1, background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '8px', padding: '8px 10px', textAlign: 'center' }}>
+                          <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 2px' }}>Vues estimées</p>
+                          <p style={{ color: '#10b981', fontWeight: 800, fontSize: '14px', margin: 0 }}>{estVues}</p>
+                        </div>
+                        <div style={{ flex: 1, background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '8px', padding: '8px 10px', textAlign: 'center' }}>
+                          <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 2px' }}>Gain vente</p>
+                          <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px', margin: 0 }}>{gainVente}</p>
+                        </div>
+                      </div>
+                      {/* Recommandations */}
+                      {reco.length > 0 && (
+                        <>
+                          <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 8px' }}>Recommandations prioritaires</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {reco.slice(0, 4).map((r, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1.5px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.06)', flexShrink: 0, marginTop: '1px' }} />
+                                <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0, lineHeight: 1.45 }}>{r.tip}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              </div>{/* end pg-reveal analyse */}
 
               {/* ══ BOOST TENDANCE ══ */}
               <div className={`pg-reveal ${showBoostPanel ? 'visible' : ''}`}>
@@ -1084,7 +1217,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
 
               {/* Note Instagram/TikTok */}
               <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', marginTop: '8px', lineHeight: 1.5 }}>
-                📲 Instagram &amp; TikTok : l'image avant/après sera téléchargée dans ta galerie + le texte copié. Ouvre l'app et colle !
+                📲 Sur mobile : la feuille de partage s'ouvre directement pour choisir l'app. Sur desktop : l'image est téléchargée + texte copié.
               </p>
             </div>
 
