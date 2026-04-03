@@ -487,10 +487,10 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const handleCopy = () => {
     if (!result) return;
     const text = `${result.titre}\n\n${result.description}\n\n${result.hashtags}`;
-    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   };
   const copyField = (text, field) => {
-    navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(false), 1500); });
+    navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(false), 1500); }).catch(() => {});
   };
 
   const handleShare = async () => {
@@ -509,11 +509,11 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
         }
       } catch (e) {
         if (e.name !== 'AbortError') {
-          navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); });
+          navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); }).catch(() => {});
         }
       }
     } else {
-      navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); });
+      navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); }).catch(() => {});
     }
   };
 
@@ -545,14 +545,28 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
       navigator.clipboard.writeText(`${fullText}\n\n${window.location.href}`).then(() => {
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
-      });
+      }).catch(() => {});
     } else if (platform === 'instagram' || platform === 'tiktok') {
-      // Download image + copy text for manual share
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = 'pixglow-transformation.jpg';
-      link.click();
-      navigator.clipboard.writeText(fullText);
+      // Download image via blob to handle remote URLs reliably, then copy text
+      fetch(imageUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = 'pixglow-transformation.jpg';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+        })
+        .catch(() => {
+          const link = document.createElement('a');
+          link.href = imageUrl;
+          link.download = 'pixglow-transformation.jpg';
+          link.click();
+        });
+      navigator.clipboard.writeText(fullText).catch(() => {});
     }
   };
 
@@ -566,6 +580,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     : 0;
 
   return (
+    <>
     <div style={{ marginTop: '12px', borderRadius: '14px', border: `1px solid ${open ? 'rgba(124,58,237,.45)' : 'rgba(124,58,237,.2)'}`, overflow: 'hidden', transition: 'border-color .2s' }}>
 
       {/* ── HEADER ── */}
@@ -1008,6 +1023,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
         </div>
       </div>
     )}
+    </>
   );
 }
 
