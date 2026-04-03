@@ -16,6 +16,7 @@ import numpy as np
 import stripe
 import psycopg2
 import psycopg2.extras
+import psycopg2.sql
 import httpx
 from dotenv import load_dotenv
 from rembg import remove
@@ -1565,21 +1566,27 @@ async def admin_get_users(
     order_sql = "DESC" if order == "desc" else "ASC"
     conn = get_db(); cur = conn.cursor()
     try:
-        where = ""
+        where_clause = psycopg2.sql.SQL("")
         params = []
         if search:
-            where = "WHERE email ILIKE %s"
+            where_clause = psycopg2.sql.SQL("WHERE email ILIKE %s")
             params.append(f"%{search}%")
-        cur.execute(f"""
+        query = psycopg2.sql.SQL("""
             SELECT id, email, credits, created_at, last_used_at,
                    email_verified, referral_code, referrals_given, referred_by
             FROM users
             {where}
-            ORDER BY {sort_by} {order_sql}
+            ORDER BY {sort_col} {order_dir}
             LIMIT %s OFFSET %s
-        """, params + [limit, offset])
+        """).format(
+            where=where_clause,
+            sort_col=psycopg2.sql.Identifier(sort_by),
+            order_dir=psycopg2.sql.SQL(order_sql),
+        )
+        cur.execute(query, params + [limit, offset])
         users = cur.fetchall()
-        cur.execute(f"SELECT COUNT(*) as n FROM users {where}", params)
+        count_query = psycopg2.sql.SQL("SELECT COUNT(*) as n FROM users {where}").format(where=where_clause)
+        cur.execute(count_query, params)
         total = cur.fetchone()["n"]
     finally:
         cur.close(); conn.close()
