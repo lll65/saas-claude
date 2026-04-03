@@ -306,7 +306,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !autoAnimDone) {
         let start = null;
-        const from = 75, to = 28, duration = 1600;
+        const from = 75, to = 45, duration = 1600;
         const step = (ts) => {
           if (!start) start = ts;
           const p = Math.min((ts - start) / duration, 1);
@@ -344,7 +344,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
       <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${pos}%`, width: '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none' }} />
       {/* Handle */}
       <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setPos(getPos(e.touches[0].clientX)); }}
-        style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 16px rgba(124,58,237,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.8)' }}>
+        style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 16px rgba(124,58,237,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.25)' }}>
         <span style={{ color: '#fff', fontSize: '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
       </div>
       {/* Bottom hint */}
@@ -378,6 +378,11 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [shared, setShared]       = useState(false);
   const [error, setError]         = useState(null);
   const [tone, setTone]           = useState('casual');
+  // User article info
+  const [userSize, setUserSize]   = useState('');
+  const [userEtat, setUserEtat]   = useState('');
+  const [userMatiere, setUserMatiere] = useState('');
+  const [userDefauts, setUserDefauts] = useState('');
   // Trend Radar
   const [trends, setTrends]       = useState(null);
   const [trendLoading, setTrendLoading] = useState(false);
@@ -401,7 +406,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   // Hashtags panel principal (cliquables)
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Analyse approfondie
-  const [showAnalyse, setShowAnalyse] = useState(false);
+  const [showAnalyse, setShowAnalyse] = useState(true);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -410,7 +415,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     if (!result) return;
     // Init hashtags cliquables (max 7, tous actifs par défaut)
     if (result.hashtags) {
-      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 7));
+      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 5));
     }
     const t1 = setTimeout(() => { if (mountedRef.current) setShowScoreDetails(true); }, 600);
     const t2 = setTimeout(() => { if (mountedRef.current) setShowText(true); }, 1000);
@@ -431,7 +436,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     try {
       const res = await fetch(`${API_URL}/generate-description`, {
         method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ image_url: imageUrl, tone })
+        body: JSON.stringify({ image_url: imageUrl, tone, taille: userSize || undefined, etat: userEtat || undefined, matiere: userMatiere || undefined, defauts: userDefauts || undefined })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
@@ -690,6 +695,52 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                   <option value="pro">💼 Pro — Professionnel, bureau, net</option>
                 </select>
               </div>
+              {/* ── INFOS ARTICLE (optionnel) ── */}
+              <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '10px', padding: '12px 14px' }}>
+                <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 10px' }}>Infos article <span style={{ color: '#475569', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(optionnel — améliore la précision)</span></p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <p style={{ color: '#475569', fontSize: '10px', fontWeight: 600, margin: '0 0 4px' }}>Taille</p>
+                    <input
+                      value={userSize} onChange={e => setUserSize(e.target.value)}
+                      placeholder="ex: M, 42, L..."
+                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <p style={{ color: '#475569', fontSize: '10px', fontWeight: 600, margin: '0 0 4px' }}>État</p>
+                    <select
+                      value={userEtat} onChange={e => setUserEtat(e.target.value)}
+                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: userEtat ? '#e2e8f0' : '#475569', fontSize: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', boxSizing: 'border-box' }}
+                    >
+                      <option value="">Sélectionner...</option>
+                      <option value="Neuf avec étiquette">Neuf avec étiquette</option>
+                      <option value="Neuf sans étiquette">Neuf sans étiquette</option>
+                      <option value="Très bon état">Très bon état</option>
+                      <option value="Bon état">Bon état</option>
+                      <option value="Satisfaisant">Satisfaisant</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <p style={{ color: '#475569', fontSize: '10px', fontWeight: 600, margin: '0 0 4px' }}>Matière</p>
+                    <input
+                      value={userMatiere} onChange={e => setUserMatiere(e.target.value)}
+                      placeholder="ex: coton, cuir..."
+                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <p style={{ color: '#475569', fontSize: '10px', fontWeight: 600, margin: '0 0 4px' }}>Défauts</p>
+                    <input
+                      value={userDefauts} onChange={e => setUserDefauts(e.target.value)}
+                      placeholder="ex: tache, accroc..."
+                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
               <button onClick={generateBoost} className="pg-btn pg-glow" style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '11px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>
                 Générer la description
               </button>
@@ -735,6 +786,36 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
                     </div>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
+                    {/* ── SCORE BREAKDOWN INLINE ── */}
+                    {showScoreDetails && !boosted && (() => {
+                      const sd = result.score_details || {};
+                      const items = [
+                        { label: 'Photo', score: sd.photo ?? Math.round(result.score * 0.22), max: 25 },
+                        { label: 'Titre', score: sd.titre ?? Math.round(result.score * 0.28), max: 25 },
+                        { label: 'Description', score: sd.description ?? Math.round(result.score * 0.38), max: 25 },
+                        { label: 'Tendance', score: sd.tendance ?? 0, max: 25 },
+                      ];
+                      return (
+                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 4px' }}>Détail du score</p>
+                          {items.map((item, idx) => {
+                            const pct = Math.round((item.score / item.max) * 100);
+                            const col = pct >= 80 ? '#10b981' : pct >= 60 ? '#60a5fa' : '#f59e0b';
+                            return (
+                              <div key={idx}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                  <span style={{ color: '#94a3b8', fontSize: '10px', fontWeight: 600 }}>{item.label}</span>
+                                  <span style={{ color: col, fontSize: '10px', fontWeight: 700 }}>{item.score}/{item.max}</span>
+                                </div>
+                                <div style={{ height: '4px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: '100px', transition: 'width .8s' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                     {/* ── CONSEIL ACTIONNABLE ── */}
                     {showScoreDetails && !boosted && (() => {
                       const actions = [];
@@ -791,6 +872,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       <div style={{ flex: 1 }}>
                         <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
                         <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prix}</p>
+                        <p style={{ color: '#334155', fontSize: '9px', margin: '2px 0 0' }}>Basé sur la photo · Précise l'état pour affiner</p>
                       </div>
                       {result.prix_vente_rapide && result.prix_vente_rapide !== prix && (
                         <div style={{ textAlign: 'right' }}>
@@ -848,7 +930,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                   <MiniCopyBtn text={selectedMainHashtags.join(' ')} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {result.hashtags.split(' ').filter(Boolean).slice(0, 7).map((tag, i) => {
+                  {result.hashtags.split(' ').filter(Boolean).slice(0, 5).map((tag, i) => {
                     const isActive = selectedMainHashtags.includes(tag);
                     return (
                       <button key={i} onClick={() => setSelectedMainHashtags(prev => isActive ? prev.filter(h => h !== tag) : [...prev, tag])}
