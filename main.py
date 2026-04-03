@@ -509,6 +509,10 @@ def _increment_total_photos(conn, cur):
 class DescriptionRequest(BaseModel):
     image_url: str = ""
     tone: str = "casual"  # casual | streetwear | luxe | pro
+    taille: str = ""
+    etat: str = ""
+    matiere: str = ""
+    defauts: str = ""
 
 # ─────────────────────────────────────────────
 #  ROUTES
@@ -1135,18 +1139,32 @@ async def generate_description(
     tone_key = body.tone if body.tone in TONE_INSTRUCTIONS else "casual"
     tone_instruction = TONE_INSTRUCTIONS[tone_key]
 
-    prompt = f"""Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 4 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article 4) une phrase finale percutante style 'Idéal pour...' adaptée à l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":"","score_details":{{"photo":15,"titre":18,"description":16,"tendance":0}}}}
+    # Build user-provided context section
+    user_info_parts = []
+    if body.taille:
+        user_info_parts.append(f"Taille : {body.taille}")
+    if body.etat:
+        user_info_parts.append(f"État : {body.etat}")
+    if body.matiere:
+        user_info_parts.append(f"Matière : {body.matiere}")
+    if body.defauts:
+        user_info_parts.append(f"Défauts signalés par le vendeur : {body.defauts}")
+    user_info_section = ""
+    if user_info_parts:
+        user_info_section = "\nINFOS FOURNIES PAR LE VENDEUR (à intégrer OBLIGATOIREMENT dans la description) :\n" + "\n".join(f"- {p}" for p in user_info_parts) + "\n"
 
+    prompt = f"""Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
+{{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 4 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article 4) une phrase finale percutante style 'Idéal pour...' adaptée à l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":"","score_details":{{"photo":15,"titre":18,"description":16,"tendance":0}}}}
+{user_info_section}
 RÈGLES STRICTES :
 - Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
 - TON DE LA DESCRIPTION : {tone_instruction}
 - Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
-- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Termine TOUJOURS par une phrase courte et accrocheuse du style "Idéal pour..." ou "Parfait pour..." adaptée à l'article. Adapte le ton et le vocabulaire selon le TON ci-dessus.
+- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Intègre les infos vendeur si fournies (taille, état, matière, défauts). Termine TOUJOURS par une phrase courte et accrocheuse du style "Idéal pour..." ou "Parfait pour..." adaptée à l'article. Adapte le ton et le vocabulaire selon le TON ci-dessus.
 - LANGAGE CERTAIN : n'écris JAMAIS "semble être", "paraît être", "probablement", "peut-être", "il me semble" — si tu n'es pas sûr d'une matière, ne la mentionne pas plutôt que de douter
-- TAILLE : si la taille n'est pas clairement visible/lisible sur la photo, NE MENTIONNE PAS LA TAILLE — n'écris jamais "taille non visible", "taille inconnue" ou similaire
-- HASHTAGS : génère TOUJOURS exactement 10 hashtags pertinents (#marque #type #couleur #matiere #style #occasion etc.)
-- Prix estimé : fourchette OBLIGATOIRE — donne toujours une estimation réaliste selon marque, état et catégorie (ex: "8-12€" t-shirt basique, "25-40€" veste de marque, "5-8€" article très abîmé)
+- TAILLE : si la taille est fournie par le vendeur, utilise-la. Sinon, si elle n'est pas clairement visible sur la photo, NE MENTIONNE PAS LA TAILLE
+- HASHTAGS : génère TOUJOURS exactement 5 hashtags pertinents (#marque #type #couleur #style #occasion). Maximum 5, pas plus.
+- Prix estimé : fourchette OBLIGATOIRE et COHÉRENTE — donne toujours une estimation réaliste selon marque, état et catégorie. Si l'état est fourni par le vendeur, ajuste le prix en conséquence. Reste cohérent et ne change pas d'une régénération à l'autre pour le même article.
 - Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut
 - score_details : décompose le score en 4 critères chacun sur 25 points — photo (qualité photo, éclairage, fond), titre (précision, marque, longueur), description (richesse, structure, accroche), tendance (met 0 ici, sera boosté séparément). La somme photo+titre+description+tendance doit approximer le score total.
 - conseils_photo : si le score est inférieur à 65 (photo floue, fond encombré, mauvais éclairage, article froissé), donne 2-3 conseils courts et bienveillants pour améliorer la photo (ex: "Essaie sur fond blanc ou clair 📸", "Utilise la lumière naturelle près d'une fenêtre ☀️", "Défroisse l'article avant la photo 👕"). Sinon laisse la chaîne vide."""
