@@ -370,7 +370,7 @@ function MiniCopyBtn({ text, field, copied, onCopy, children }) {
 }
 
 /* ══ AI BOOST VINTED PANEL — avec Trend Radar ══ */
-function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
+function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
@@ -393,6 +393,11 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [showBoostPanel, setShowBoostPanel]     = useState(false);
   const [showMoreTrends, setShowMoreTrends]     = useState(false);
   const [boostExpanded, setBoostExpanded]       = useState(false);
+  // Share modal
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareText, setShareText]           = useState('');
+  const [activeHashtags, setActiveHashtags] = useState([]);
+  const [shareCopied, setShareCopied]       = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -509,6 +514,45 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
       }
     } else {
       navigator.clipboard.writeText(text).then(() => { setShared(true); setTimeout(() => setShared(false), 2000); });
+    }
+  };
+
+  const openShareModal = () => {
+    if (!result) return;
+    const score = result.score || 0;
+    const titre = result.titre || 'mon article';
+    const defaultText = `J'ai boosté ${titre} avec PixGlow ! 📸✨ Avant/après incroyable + description optimisée. Ventes en vue ! 🔥 Qui veut tester ?`;
+    setShareText(defaultText);
+    setActiveHashtags(['#PixGlow', '#Vinted', '#VintedFrance', '#AvantApres', '#PhotoBoost', '#Reselling', '#VintedTips', '#SecondMain', '#ModeCirculaire']);
+    setShowShareModal(true);
+  };
+
+  const handleSharePlatform = (platform) => {
+    const score = result?.score || 0;
+    const prix = result?.prix_estime || '';
+    const fullText = `${shareText}\n\n${activeHashtags.join(' ')}`;
+    const encodedText = encodeURIComponent(fullText);
+    const pageUrl = encodeURIComponent(window.location.href);
+    const urls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${pageUrl}&quote=${encodedText}`,
+      whatsapp: `https://api.whatsapp.com/send?text=${encodedText}`,
+      telegram: `https://t.me/share/url?url=${pageUrl}&text=${encodedText}`,
+    };
+    if (urls[platform]) {
+      window.open(urls[platform], '_blank', 'noopener,noreferrer');
+    } else if (platform === 'copy') {
+      navigator.clipboard.writeText(`${fullText}\n\n${window.location.href}`).then(() => {
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      });
+    } else if (platform === 'instagram' || platform === 'tiktok') {
+      // Download image + copy text for manual share
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = 'pixglow-transformation.jpg';
+      link.click();
+      navigator.clipboard.writeText(fullText);
     }
   };
 
@@ -829,17 +873,141 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 <button onClick={generateBoost} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>↺</button>
               </div>
               {/* ── PARTAGER MA TRANSFORMATION ── */}
-              <button onClick={handleShare} style={{ width: '100%', marginTop: '8px', background: shared ? 'rgba(16,185,129,.12)' : 'rgba(255,255,255,.03)', border: `1px solid ${shared ? 'rgba(16,185,129,.3)' : 'rgba(255,255,255,.08)'}`, color: shared ? '#10b981' : '#64748b', borderRadius: '10px', padding: '10px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all .2s' }}>
-                {shared
-                  ? <><span>✓</span> Annonce copiée — prête à partager !</>
-                  : <><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="11" cy="2.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="2.5" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4 7.5l5.5 3.5M9.5 3 4 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> Partager ma transformation ?</>
-                }
+              <button onClick={openShareModal} style={{ width: '100%', marginTop: '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.15),rgba(16,185,129,.1))', border: '1px solid rgba(124,58,237,.35)', color: '#a78bfa', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', transition: 'all .2s' }}>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="12" cy="2.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><circle cx="12" cy="12.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><circle cx="3" cy="7.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><path d="M4.7 8.2l5.6 3.6M10.3 3.2 4.7 6.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                Partager ma transformation 🚀
               </button>
             </div>
           ) : null}
         </div>
       )}
     </div>
+
+    {/* ══ SHARE MODAL ══ */}
+    {showShareModal && result && (
+      <div onClick={() => setShowShareModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.82)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: '#0f0d1f', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+
+          {/* Header */}
+          <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '17px', color: '#e2e8f0' }}>🚀 Partager ma transformation</span>
+            <button onClick={() => setShowShareModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '20px', lineHeight: 1, fontFamily: 'inherit', padding: '0 4px' }}>✕</button>
+          </div>
+
+          <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Avant / Après large */}
+            {originalUrl ? (
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Avant / Après</p>
+                <div style={{ borderRadius: '14px', overflow: 'hidden' }}>
+                  <BeforeAfterSlider beforeSrc={originalUrl} afterSrc={imageUrl} height={280} beforeLabel="Avant" afterLabel="Après PixGlow ✅" />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Photo améliorée</p>
+                <img src={imageUrl} alt="Après PixGlow" style={{ width: '100%', borderRadius: '14px', display: 'block' }} />
+              </div>
+            )}
+
+            {/* Score + Prix */}
+            <div style={{ background: 'linear-gradient(135deg,rgba(124,58,237,.12),rgba(16,185,129,.08))', border: '1px solid rgba(124,58,237,.25)', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 900, fontSize: '26px', color: '#a78bfa', marginBottom: '4px' }}>
+                Transformation PixGlow : {result.score}/100
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                {result.probabilite_vente ? `Probabilité de vente : ${result.probabilite_vente}` : ''}
+                {result.probabilite_vente && result.prix_estime ? ' · ' : ''}
+                {result.prix_estime ? `Prix marché estimé : ${result.prix_estime}` : ''}
+              </div>
+            </div>
+
+            {/* Texte éditable */}
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>Texte (modifiable)</p>
+              <textarea
+                value={shareText}
+                onChange={e => setShareText(e.target.value)}
+                rows={4}
+                style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', color: '#e2e8f0', fontSize: '13px', padding: '10px 12px', fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: 1.5 }}
+              />
+            </div>
+
+            {/* Hashtags */}
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Hashtags (cliquez pour activer/désactiver)</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {['#PixGlow','#Vinted','#VintedFrance','#AvantApres','#PhotoBoost','#Reselling','#VintedTips','#SecondMain','#ModeCirculaire','#Friperie','#Thrifting'].map(tag => (
+                  <button key={tag} onClick={() => setActiveHashtags(prev => prev.includes(tag) ? prev.filter(h => h !== tag) : [...prev, tag])}
+                    style={{ background: activeHashtags.includes(tag) ? 'rgba(124,58,237,.2)' : 'rgba(255,255,255,.04)', border: `1px solid ${activeHashtags.includes(tag) ? 'rgba(124,58,237,.5)' : 'rgba(255,255,255,.1)'}`, color: activeHashtags.includes(tag) ? '#a78bfa' : '#64748b', borderRadius: '100px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Boutons de partage */}
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Partager sur</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {/* Instagram */}
+                <button onClick={() => handleSharePlatform('instagram')}
+                  style={{ background: 'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', border: 'none', borderRadius: '10px', padding: '10px 6px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  Instagram
+                </button>
+                {/* TikTok */}
+                <button onClick={() => handleSharePlatform('tiktok')}
+                  style={{ background: '#010101', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '10px 6px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.91a8.18 8.18 0 004.78 1.52V6.98a4.85 4.85 0 01-1.01-.29z"/></svg>
+                  TikTok
+                </button>
+                {/* Facebook */}
+                <button onClick={() => handleSharePlatform('facebook')}
+                  style={{ background: '#1877f2', border: 'none', borderRadius: '10px', padding: '10px 6px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  Facebook
+                </button>
+                {/* Twitter/X */}
+                <button onClick={() => handleSharePlatform('twitter')}
+                  style={{ background: '#000', border: '1px solid rgba(255,255,255,.15)', borderRadius: '10px', padding: '10px 6px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  Twitter / X
+                </button>
+                {/* WhatsApp */}
+                <button onClick={() => handleSharePlatform('whatsapp')}
+                  style={{ background: '#25d366', border: 'none', borderRadius: '10px', padding: '10px 6px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  WhatsApp
+                </button>
+                {/* Telegram */}
+                <button onClick={() => handleSharePlatform('telegram')}
+                  style={{ background: '#0088cc', border: 'none', borderRadius: '10px', padding: '10px 6px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                  Telegram
+                </button>
+              </div>
+
+              {/* Lien copiable */}
+              <button onClick={() => handleSharePlatform('copy')}
+                style={{ width: '100%', marginTop: '8px', background: shareCopied ? 'rgba(16,185,129,.12)' : 'rgba(255,255,255,.04)', border: `1px solid ${shareCopied ? 'rgba(16,185,129,.35)' : 'rgba(255,255,255,.1)'}`, color: shareCopied ? '#10b981' : '#94a3b8', borderRadius: '10px', padding: '10px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all .2s' }}>
+                {shareCopied
+                  ? <><span>✓</span> Lien + texte copié !</>
+                  : <><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="9" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4 3V2.5A1.5 1.5 0 015.5 1h6A1.5 1.5 0 0113 2.5v8A1.5 1.5 0 0111.5 12H11" stroke="currentColor" strokeWidth="1.2"/></svg> Copier le lien + texte</>
+                }
+              </button>
+
+              {/* Note Instagram/TikTok */}
+              <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', marginTop: '8px', lineHeight: 1.5 }}>
+                Instagram &amp; TikTok : l'image sera téléchargée, le texte copié automatiquement.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
 
@@ -3190,7 +3358,7 @@ export default function PixGlow() {
                       </div>
                       {!r.error && (
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <VintedBoostPanel imageUrl={r.url} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
+                          <VintedBoostPanel imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
                         </div>
                       )}
                     </div>
