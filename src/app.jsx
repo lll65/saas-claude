@@ -406,7 +406,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   // Hashtags panel principal (cliquables)
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Analyse approfondie
-  const [showAnalyse, setShowAnalyse] = useState(true);
+  const [showAnalyse, setShowAnalyse] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -1077,7 +1077,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       Coche les mots à intégrer dans ta description (max 4) :
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                      {trends.trends.map((t, i) => {
+                      {trends.trends.slice(0, 5).map((t, i) => {
                         const word = t.mot || t.word || '';
                         const impact = t.boost || t.impact || '';
                         const scorePlus = t.score_plus || (t.score_apres && t.score_avant ? `+${t.score_apres - t.score_avant}` : '');
@@ -2893,8 +2893,10 @@ export default function PixGlow() {
                     <>
                       <div onClick={() => setNavMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
                       <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: darkMode ? '#1a1730' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '12px', padding: '6px', minWidth: '160px', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,.25)' }}>
+                        <button onClick={() => { setPage('nouveautes'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#60a5fa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📰 Nouveautés</button>
                         <button onClick={() => { setShowTracker(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#10b981', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>
                         <button onClick={() => { openReferral(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>
+                        <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
                         {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
                       </div>
                     </>
@@ -3399,15 +3401,6 @@ export default function PixGlow() {
       </section>
 
       <Footer />
-      <MobileNavBar
-        isMobile={isMobile}
-        show={true}
-        onNews={() => setPage('nouveautes')}
-        onGains={() => setShowTracker(true)}
-        onShare={openReferral}
-        onHelp={() => setPage('help')}
-        darkMode={darkMode}
-      />
     </div>
   );
 
@@ -3707,15 +3700,6 @@ export default function PixGlow() {
         onBuyCredits={isConnected ? () => setShowPlanModal(true) : () => openAuth('register')}
         isMobile={isMobile}
         zipping={zipping}
-      />
-      <MobileNavBar
-        isMobile={isMobile}
-        show={!hasResults}
-        onNews={() => setPage('nouveautes')}
-        onGains={() => setShowTracker(true)}
-        onShare={openReferral}
-        onHelp={() => setPage('help')}
-        darkMode={darkMode}
       />
     </div>
   );
