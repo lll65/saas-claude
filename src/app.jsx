@@ -385,8 +385,26 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
   const [boostLoading, setBoostLoading] = useState(false);
   const [selectedTrends, setSelectedTrends] = useState([]);
   const [boosted, setBoosted]     = useState(false);
+  // Wizard progressive reveal
+  const [showText, setShowText]           = useState(false);
+  const [showFullDesc, setShowFullDesc]   = useState(false);
+  const [showHashtags, setShowHashtags]   = useState(false);
+  const [showScoreDetails, setShowScoreDetails] = useState(false);
+  const [showBoostPanel, setShowBoostPanel]     = useState(false);
+  const [showMoreTrends, setShowMoreTrends]     = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+
+  // Progressive wizard reveal when result arrives
+  useEffect(() => {
+    if (!result) return;
+    const t1 = setTimeout(() => { if (mountedRef.current) setShowScoreDetails(true); }, 600);
+    const t2 = setTimeout(() => { if (mountedRef.current) setShowText(true); }, 1000);
+    const t3 = setTimeout(() => { if (mountedRef.current) setShowFullDesc(true); }, 1400);
+    const t4 = setTimeout(() => { if (mountedRef.current) setShowHashtags(true); }, 1800);
+    const t5 = setTimeout(() => { if (mountedRef.current) setShowBoostPanel(true); }, 2200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+  }, [result]);
 
   const authHeaders = () => {
     const t = localStorage.getItem('pg_token');
@@ -408,6 +426,12 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
         setBoosted(false);
         setTrends(null);
         setSelectedTrends([]);
+        setShowText(false);
+        setShowFullDesc(false);
+        setShowHashtags(false);
+        setShowScoreDetails(false);
+        setShowBoostPanel(false);
+        setShowMoreTrends(false);
       }
     } catch(e) { if (mountedRef.current) setError(e.message); }
     finally { if (mountedRef.current) setLoading(false); }
@@ -555,12 +579,12 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
 
           ) : result ? (
             <div>
-              {/* ── SCORE + INDICATEUR BOOST POTENTIEL ── */}
+              {/* ── ÉTAPE 1 : SCORE + PRIX + PROBABILITÉ (mis en avant) ── */}
               {(() => {
                 const scoreColor = boosted ? '#f59e0b' : result.score >= 85 ? '#10b981' : result.score >= 70 ? '#60a5fa' : result.score >= 50 ? '#f59e0b' : '#f87171';
                 const scoreBg = boosted ? 'rgba(245,158,11,.05)' : result.score >= 85 ? 'rgba(16,185,129,.05)' : result.score >= 70 ? 'rgba(96,165,250,.05)' : result.score >= 50 ? 'rgba(245,158,11,.05)' : 'rgba(239,68,68,.05)';
                 const scoreBorder = boosted ? 'rgba(245,158,11,.2)' : result.score >= 85 ? 'rgba(16,185,129,.2)' : result.score >= 70 ? 'rgba(96,165,250,.2)' : result.score >= 50 ? 'rgba(245,158,11,.2)' : 'rgba(239,68,68,.2)';
-                const scoreLabel = boosted ? 'Description boostée' : result.score >= 85 ? 'Excellente description' : result.score >= 70 ? 'Bonne description' : result.score >= 50 ? 'Description correcte' : 'Description à améliorer';
+                const scoreLabel = boosted ? 'Description boostée' : result.score >= 85 ? 'Excellente' : result.score >= 70 ? 'Bonne' : result.score >= 50 ? 'Correcte' : 'À améliorer';
                 const scoreTip = boosted ? 'Mots tendance intégrés pour maximiser les vues' : result.score >= 85 ? 'Votre annonce est très bien optimisée pour Vinted' : result.score >= 70 ? 'Description de qualité — le boost peut encore l\'améliorer' : result.score >= 50 ? 'Utilisez le boost tendance pour gagner des vues' : 'Activez le boost tendance pour améliorer votre score';
                 return (
                   <div style={{ marginBottom: '14px', background: scoreBg, border: `1px solid ${scoreBorder}`, borderRadius: '12px', padding: '14px 16px' }}>
@@ -581,7 +605,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                     </div>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
                     {/* ── DÉTAIL DES CRITÈRES ── */}
-                    {!boosted && result.score_details && (() => {
+                    {showScoreDetails && !boosted && result.score_details && (() => {
                       const sd = result.score_details;
                       const criteria = [
                         { key: 'photo',       label: 'Photo',       icon: '📸', val: sd.photo,       max: 25, tip: sd.photo < 20 ? 'Améliore l\'éclairage et le fond' : null },
@@ -625,6 +649,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
               })()}
 
               {/* ── CONSEILS PHOTO ── */}
+              <div className={`pg-reveal ${showText ? 'visible' : ''}`}>
               {result.conseils_photo && (
                 <div style={{ marginBottom: '12px', background: 'rgba(251,191,36,.06)', border: '1px solid rgba(251,191,36,.2)', borderRadius: '10px', padding: '12px 14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
@@ -679,8 +704,10 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   })()}
                 </>);
               })()}
+              </div>{/* end pg-reveal showText */}
 
               {/* ── TITRE ── */}
+              <div className={`pg-reveal ${showFullDesc ? 'visible' : ''}`}>
               <div style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Titre (Vinted)</p>
@@ -701,8 +728,10 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{result.description}</p>
                 </div>
               </div>
+              </div>{/* end pg-reveal showFullDesc */}
 
               {/* ── HASHTAGS ── */}
+              <div className={`pg-reveal ${showHashtags ? 'visible' : ''}`}>
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Hashtags</p>
@@ -714,8 +743,10 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                   ))}
                 </div>
               </div>
+              </div>{/* end pg-reveal showHashtags */}
 
               {/* ══ BOOST TENDANCE ══ */}
+              <div className={`pg-reveal ${showBoostPanel ? 'visible' : ''}`}>
               <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px', marginBottom: '14px' }}>
                 {boosted ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '10px', padding: '10px 14px' }}>
@@ -815,6 +846,7 @@ function VintedBoostPanel({ imageUrl, isConnected, onUpgrade }) {
                 )}
                 </>)}
               </div>
+              </div>{/* end pg-reveal showBoostPanel */}
 
               {/* ── BOUTONS FINAUX ── */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
