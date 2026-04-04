@@ -347,10 +347,6 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
         style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 16px rgba(124,58,237,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.25)' }}>
         <span style={{ color: '#fff', fontSize: '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
       </div>
-      {/* Bottom hint */}
-      <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: '16px', fontWeight: 800, padding: '8px 22px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none', letterSpacing: '0.4px', boxShadow: '0 4px 18px rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.15)' }}>
-        ◀ Glisse pour comparer ▶
-      </div>
     </div>
   );
 }
@@ -537,7 +533,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     const titre = result.titre || 'mon article';
     const defaultText = `J'ai boosté ${titre} avec PixGlow ! 📸✨ Avant/après incroyable + description optimisée. Ventes en vue ! 🔥 Qui veut tester ?`;
     setShareText(defaultText);
-    setActiveHashtags(['#AvantApres', '#Vinted', '#PixGlow', '#VintedFrance', '#PhotoBoost', '#Reselling', '#SecondMain', '#Friperie']);
+    setActiveHashtags(['#AvantApres', '#Vinted', '#PixGlow', '#VintedFrance', '#PhotoBoost']);
     setShowShareModal(true);
   };
 
@@ -600,7 +596,157 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
         navigator.clipboard.writeText(fullText).catch(() => {});
         return false;
       };
-      // Build a side-by-side before/after canvas if originalUrl is available
+      // Build a rich share-card canvas that mirrors the popup
+      const buildShareCard = (bImg, aImg) => {
+        const CW = 1080, CH = 1350;
+        const canvas = document.createElement('canvas');
+        canvas.width = CW; canvas.height = CH;
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#0f0d1f';
+        ctx.fillRect(0, 0, CW, CH);
+        const bgGrad = ctx.createLinearGradient(0, 0, CW, CH);
+        bgGrad.addColorStop(0, 'rgba(124,58,237,0.09)');
+        bgGrad.addColorStop(1, 'rgba(16,185,129,0.05)');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, CW, CH);
+
+        // Header
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 52px sans-serif';
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillText('✨ PixGlow', CW / 2, 80);
+        ctx.font = '28px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('Ma transformation', CW / 2, 126);
+
+        // Before / After images side by side
+        const imgY = 162, imgH = 580, pad = 20, gap = 16;
+        const halfW = (CW - pad * 2 - gap) / 2;
+
+        const drawImg = (img, x, bg) => {
+          const scale = Math.min(halfW / img.naturalWidth, imgH / img.naturalHeight);
+          const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+          ctx.fillStyle = bg;
+          ctx.fillRect(x, imgY, halfW, imgH);
+          ctx.drawImage(img, x + (halfW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
+        };
+        drawImg(bImg, pad, '#e8e8e8');
+        drawImg(aImg, pad + halfW + gap, '#ffffff');
+
+        // Purple divider
+        ctx.strokeStyle = '#7c3aed';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(pad + halfW + gap / 2, imgY);
+        ctx.lineTo(pad + halfW + gap / 2, imgY + imgH);
+        ctx.stroke();
+
+        // Labels helper
+        const pill = (x, y, w, h, r, fill) => {
+          ctx.fillStyle = fill;
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          ctx.lineTo(x + r, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+          ctx.fill();
+        };
+
+        // AVANT label
+        pill(pad + 12, imgY + 12, 118, 38, 19, 'rgba(0,0,0,0.62)');
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillStyle = '#f87171';
+        ctx.textAlign = 'left';
+        ctx.fillText('AVANT', pad + 26, imgY + 37);
+
+        // APRÈS label
+        const aLabelX = pad + halfW + gap + 12;
+        pill(aLabelX, imgY + 12, 216, 38, 19, 'rgba(16,185,129,0.78)');
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('APRÈS PIXGLOW ✅', aLabelX + 14, imgY + 37);
+
+        // Score box
+        const sbY = imgY + imgH + 36, sbH = 170, sbX = 40, sbW = CW - 80;
+        pill(sbX, sbY, sbW, sbH, 22, 'rgba(124,58,237,0.13)');
+        ctx.strokeStyle = 'rgba(124,58,237,0.38)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sbX + 22, sbY);
+        ctx.lineTo(sbX + sbW - 22, sbY);
+        ctx.quadraticCurveTo(sbX + sbW, sbY, sbX + sbW, sbY + 22);
+        ctx.lineTo(sbX + sbW, sbY + sbH - 22);
+        ctx.quadraticCurveTo(sbX + sbW, sbY + sbH, sbX + sbW - 22, sbY + sbH);
+        ctx.lineTo(sbX + 22, sbY + sbH);
+        ctx.quadraticCurveTo(sbX, sbY + sbH, sbX, sbY + sbH - 22);
+        ctx.lineTo(sbX, sbY + 22);
+        ctx.quadraticCurveTo(sbX, sbY, sbX + 22, sbY);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 42px sans-serif';
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillText(`Ma transformation PixGlow 🔥`, CW / 2, sbY + 58);
+        ctx.font = 'bold 82px sans-serif';
+        ctx.fillStyle = '#c4b5fd';
+        ctx.fillText(`${result.score}/100`, CW / 2, sbY + 152);
+
+        // Badges
+        const badgeY = sbY + sbH + 30;
+        const badges = [];
+        if (result.probabilite_vente) badges.push({ text: `📈 Vente : ${result.probabilite_vente}`, bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)', color: '#10b981' });
+        if (result.prix_estime) badges.push({ text: `💰 ${result.prix_estime}`, bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.4)', color: '#f59e0b' });
+        if (badges.length > 0) {
+          const bw = (CW - 100 - (badges.length - 1) * 16) / badges.length;
+          badges.forEach((b, i) => {
+            const bx = 50 + i * (bw + 16);
+            pill(bx, badgeY, bw, 58, 29, b.bg);
+            ctx.strokeStyle = b.border;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(bx + 29, badgeY);
+            ctx.lineTo(bx + bw - 29, badgeY);
+            ctx.quadraticCurveTo(bx + bw, badgeY, bx + bw, badgeY + 29);
+            ctx.lineTo(bx + bw, badgeY + 29);
+            ctx.quadraticCurveTo(bx + bw, badgeY + 58, bx + bw - 29, badgeY + 58);
+            ctx.lineTo(bx + 29, badgeY + 58);
+            ctx.quadraticCurveTo(bx, badgeY + 58, bx, badgeY + 29);
+            ctx.lineTo(bx, badgeY + 29);
+            ctx.quadraticCurveTo(bx, badgeY, bx + 29, badgeY);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.font = 'bold 28px sans-serif';
+            ctx.fillStyle = b.color;
+            ctx.textAlign = 'center';
+            ctx.fillText(b.text, bx + bw / 2, badgeY + 38);
+          });
+        }
+
+        // Hashtags
+        const hashY = badgeY + (badges.length > 0 ? 90 : 20);
+        ctx.font = '26px sans-serif';
+        ctx.fillStyle = '#7c3aed';
+        ctx.textAlign = 'center';
+        ctx.fillText(activeHashtags.slice(0, 5).join(' '), CW / 2, hashY);
+
+        // Bottom branding
+        ctx.font = 'bold 26px sans-serif';
+        ctx.fillStyle = 'rgba(167,139,250,0.45)';
+        ctx.textAlign = 'center';
+        ctx.fillText('pixglow.app', CW / 2, CH - 38);
+
+        return canvas;
+      };
+
       if (originalUrl) {
         const loadImg = (src) => new Promise((resolve, reject) => {
           const img = new Image();
@@ -611,30 +757,9 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
         });
         Promise.all([loadImg(originalUrl), loadImg(imageUrl)])
           .then(([bImg, aImg]) => {
-            const H = Math.min(Math.max(bImg.naturalHeight, aImg.naturalHeight), 1200);
-            const bW = Math.round(bImg.naturalWidth * H / bImg.naturalHeight);
-            const aW = Math.round(aImg.naturalWidth * H / aImg.naturalHeight);
-            const canvas = document.createElement('canvas');
-            canvas.width = bW + aW;
-            canvas.height = H;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(bImg, 0, 0, bW, H);
-            ctx.drawImage(aImg, bW, 0, aW, H);
-            // Divider
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(bW, 0); ctx.lineTo(bW, H); ctx.stroke();
-            // Labels
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(0, 0, bW, 38);
-            ctx.fillRect(bW, 0, aW, 38);
-            ctx.font = 'bold 20px sans-serif';
-            ctx.fillStyle = '#f87171';
-            ctx.fillText('AVANT', 14, 27);
-            ctx.fillStyle = '#10b981';
-            ctx.fillText('APRÈS ✅', bW + 14, 27);
+            const canvas = buildShareCard(bImg, aImg);
             canvas.toBlob(blob => {
-              if (blob) tryShareFile(blob, 'pixglow-avant-apres.jpg');
+              if (blob) tryShareFile(blob, 'pixglow-transformation.jpg');
               else fallbackDownload();
             }, 'image/jpeg', 0.92);
           })
@@ -1217,7 +1342,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
             <div>
               <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Hashtags (cliquez pour activer/désactiver)</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {['#AvantApres','#Vinted','#PixGlow','#VintedFrance','#PhotoBoost','#Reselling','#SecondMain','#Friperie'].map(tag => (
+                {['#AvantApres','#Vinted','#PixGlow','#VintedFrance','#PhotoBoost'].map(tag => (
                   <button key={tag} onClick={() => setActiveHashtags(prev => prev.includes(tag) ? prev.filter(h => h !== tag) : [...prev, tag])}
                     style={{ background: activeHashtags.includes(tag) ? 'rgba(124,58,237,.2)' : 'rgba(255,255,255,.04)', border: `1px solid ${activeHashtags.includes(tag) ? 'rgba(124,58,237,.5)' : 'rgba(255,255,255,.1)'}`, color: activeHashtags.includes(tag) ? '#a78bfa' : '#64748b', borderRadius: '100px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}>
                     {tag}
