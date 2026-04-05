@@ -927,10 +927,7 @@ async def enhance_photo(
 
         no_bg = remove(tmp_smooth)
 
-        if (proc_w, proc_h) != (w, h):
-            no_bg = no_bg.resize((w, h), Image.Resampling.LANCZOS)
-
-        bg_img = Image.new("RGB", (w, h), (255, 255, 255))
+        bg_img = Image.new("RGB", (proc_w, proc_h), (255, 255, 255))
         bg_img.paste(no_bg, (0, 0), no_bg if no_bg.mode == "RGBA" else None)
 
         bg_img = ImageEnhance.Brightness(bg_img).enhance(1.04)
