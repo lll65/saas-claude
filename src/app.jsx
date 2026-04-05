@@ -434,8 +434,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
     const t3 = setTimeout(() => { if (mountedRef.current) setShowFullDesc(true); }, 1400);
     const t4 = setTimeout(() => { if (mountedRef.current) setShowHashtags(true); }, 1800);
     const t5 = setTimeout(() => { if (mountedRef.current) setShowBoostPanel(true); }, 2200);
-    const t6 = setTimeout(() => { if (mountedRef.current) setShowAnalyse(true); }, 2800);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); };
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [result]);
 
   const authHeaders = () => {
@@ -1006,42 +1005,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 const prixBaseMatch = result.prix_estime ? String(result.prix_estime).match(/(\d+)/) : null;
                 const prixBase = prixBaseMatch ? parseInt(prixBaseMatch[1]) : null;
                 const prixVestiaire = prixBase ? `${Math.round(prixBase * vestiaireMult * 0.9)}–${Math.round(prixBase * vestiaireMult * 1.2)}€` : null;
-                return (<>
-                  <div style={{ marginBottom: '12px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '15px' }}>💰</span>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
-                        {editPrix
-                          ? <input autoFocus type="text" defaultValue={prix}
-                              onBlur={e => { const v = e.target.value.trim(); if (v) setResult(r => ({ ...r, prix_estime: v })); setEditPrix(false); }}
-                              onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditPrix(false); }}
-                              style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif", background: 'rgba(52,211,153,.08)', border: '1px solid rgba(52,211,153,.4)', borderRadius: '6px', padding: '2px 6px', width: '100%', outline: 'none' }} />
-                          : <p onClick={() => setEditPrix(true)} style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif", cursor: 'text', borderBottom: '1px dashed rgba(52,211,153,.4)' }} title="Cliquer pour modifier">{prix} ✏️</p>
-                        }
-                        <p style={{ color: '#334155', fontSize: '9px', margin: '2px 0 0' }}>Clique sur le prix pour le modifier</p>
-                      </div>
-                      {result.prix_vente_rapide && result.prix_vente_rapide !== prix && (
-                        <div style={{ textAlign: 'right' }}>
-                          <p style={{ color: '#475569', fontSize: '10px', margin: 0 }}>Vente rapide</p>
-                          <p style={{ color: '#38bdf8', fontWeight: 700, fontSize: '13px', margin: '1px 0 0' }}>{result.prix_vente_rapide}</p>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                      <div style={{ flex: 1, textAlign: 'center' }}>
-                        <p style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Vinted</p>
-                        <p style={{ color: '#34d399', fontWeight: 700, fontSize: '12px', margin: 0 }}>{result.prix_estime || prix}</p>
-                      </div>
-                      {prixVestiaire && (
-                        <div style={{ flex: 1, textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,.06)' }}>
-                          <p style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Vestiaire</p>
-                          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '12px', margin: 0 }}>{prixVestiaire}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>);
+                return (<></>);
               })()}
               </div>{/* end pg-reveal showText */}
 
