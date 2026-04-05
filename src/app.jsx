@@ -372,7 +372,7 @@ function MiniCopyBtn({ text, field, copied, onCopy, children }) {
 }
 
 /* ══ AI BOOST VINTED PANEL — avec Trend Radar ══ */
-function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMobile = false }) {
+function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMobile = false, darkMode = true }) {
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
@@ -854,7 +854,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
       </button>
 
       {open && (
-        <div className="pg-slide-up" style={{ padding: '18px 16px', background: 'rgba(10,8,20,.75)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
+        <div className="pg-slide-up" style={{ padding: '18px 16px', background: darkMode ? 'rgba(10,8,20,.75)' : 'rgba(248,249,252,0.98)', borderTop: '1px solid rgba(124,58,237,.12)' }}>
 
           {/* ── ÉTAT INITIAL ── */}
           {!result && !loading && !error ? (
@@ -869,7 +869,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 <select
                   value={tone}
                   onChange={e => setTone(e.target.value)}
-                  style={{ width: '100%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(124,58,237,.3)', color: '#e2e8f0', borderRadius: '10px', padding: '10px 12px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                  style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.05)' : '#fff', border: '1px solid rgba(124,58,237,.3)', color: darkMode ? '#e2e8f0' : '#111118', borderRadius: '10px', padding: '10px 12px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                 >
                   <option value="casual">😊 Casual — Décontracté, quotidien</option>
                   <option value="streetwear">🔥 Streetwear — Urbain, drip, hype</option>
@@ -878,7 +878,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 </select>
               </div>
               {/* ── INFOS ARTICLE (optionnel) ── */}
-              <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '10px', padding: '12px 14px' }}>
+              <div style={{ marginBottom: '14px', background: darkMode ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.03)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.08)'}`, borderRadius: '10px', padding: '12px 14px' }}>
                 <p style={{ color: '#334155', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 10px' }}>Infos article <span style={{ color: '#475569', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(optionnel — améliore la précision)</span></p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                   <div>
@@ -886,14 +886,14 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                     <input
                       value={userSize} onChange={e => setUserSize(e.target.value)}
                       placeholder="ex: M, 42, L..."
-                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'}`, borderRadius: '8px', padding: '8px 10px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
                     <p style={{ color: '#475569', fontSize: '10px', fontWeight: 600, margin: '0 0 4px' }}>État</p>
                     <select
                       value={userEtat} onChange={e => setUserEtat(e.target.value)}
-                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: userEtat ? '#e2e8f0' : '#475569', fontSize: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'}`, borderRadius: '8px', padding: '8px 10px', color: userEtat ? (darkMode ? '#e2e8f0' : '#111118') : '#475569', fontSize: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', boxSizing: 'border-box' }}
                     >
                       <option value="">Sélectionner...</option>
                       <option value="Neuf avec étiquette">Neuf avec étiquette</option>
@@ -910,7 +910,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                     <input
                       value={userMatiere} onChange={e => setUserMatiere(e.target.value)}
                       placeholder="ex: coton, cuir..."
-                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'}`, borderRadius: '8px', padding: '8px 10px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
@@ -918,7 +918,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                     <input
                       value={userDefauts} onChange={e => setUserDefauts(e.target.value)}
                       placeholder="ex: tache, accroc..."
-                      style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 10px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'}`, borderRadius: '8px', padding: '8px 10px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
@@ -962,7 +962,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                      <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                      <div style={{ flex: 1, height: '8px', background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.08)', borderRadius: '100px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 85 ? 'linear-gradient(90deg,#10b981,#34d399)' : result.score >= 70 ? 'linear-gradient(90deg,#60a5fa,#818cf8)' : result.score >= 50 ? 'linear-gradient(90deg,#f59e0b,#fb923c)' : 'linear-gradient(90deg,#f87171,#ef4444)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
                       </div>
                       <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: isMobile ? '26px' : '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
@@ -1039,8 +1039,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Titre (Vinted)</p>
                   <MiniCopyBtn text={result.titre} field="titre" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 14px' }}>
-                  <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, margin: 0 }}>{result.titre}</p>
+                <div style={{ background: darkMode ? 'rgba(255,255,255,.03)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.1)'}`, borderRadius: '8px', padding: '10px 14px' }}>
+                  <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontWeight: 600, margin: 0 }}>{result.titre}</p>
                 </div>
               </div>
 
@@ -1051,13 +1051,13 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                   <MiniCopyBtn text={result.description} field="desc" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 {isMobile && !mobileDescOpen ? (
-                  <button onClick={() => setMobileDescOpen(true)} style={{ width: '100%', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '8px', padding: '10px 14px', color: '#60a5fa', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <button onClick={() => setMobileDescOpen(true)} style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.03)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.1)'}`, borderRadius: '8px', padding: '10px 14px', color: '#60a5fa', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span>Voir la description complète</span>
                     <span style={{ fontSize: '14px', lineHeight: 1 }}>▼</span>
                   </button>
                 ) : (
-                  <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 14px', maxHeight: isMobile ? 'none' : '130px', overflowY: isMobile ? 'visible' : 'auto' }}>
-                    <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{result.description}</p>
+                  <div style={{ background: darkMode ? 'rgba(255,255,255,.03)' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.1)'}`, borderRadius: '8px', padding: '10px 14px', maxHeight: isMobile ? 'none' : '130px', overflowY: isMobile ? 'visible' : 'auto' }}>
+                    <p style={{ color: darkMode ? '#cbd5e1' : '#374151', fontSize: '12px', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{result.description}</p>
                     {isMobile && (
                       <button onClick={() => setMobileDescOpen(false)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', padding: '8px 0 0', textDecoration: 'underline', display: 'block' }}>Réduire ▲</button>
                     )}
@@ -1078,7 +1078,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                     const isActive = selectedMainHashtags.includes(tag);
                     return (
                       <button key={i} onClick={() => setSelectedMainHashtags(prev => isActive ? prev.filter(h => h !== tag) : [...prev, tag])}
-                        style={{ background: isActive ? 'rgba(124,58,237,.18)' : 'rgba(255,255,255,.03)', border: `1px solid ${isActive ? 'rgba(124,58,237,.45)' : 'rgba(255,255,255,.08)'}`, color: isActive ? '#c4b5fd' : '#475569', fontSize: isMobile ? '13px' : '11px', padding: isMobile ? '6px 14px' : '4px 10px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s', textDecoration: isActive ? 'none' : 'line-through' }}>
+                        style={{ background: isActive ? 'rgba(124,58,237,.18)' : (darkMode ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.04)'), border: `1px solid ${isActive ? 'rgba(124,58,237,.45)' : (darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.1)')}`, color: isActive ? '#c4b5fd' : '#475569', fontSize: isMobile ? '13px' : '11px', padding: isMobile ? '6px 14px' : '4px 10px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s', textDecoration: isActive ? 'none' : 'line-through' }}>
                         {tag}
                       </button>
                     );
@@ -1089,10 +1089,10 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
 
               {/* ══ ANALYSE APPROFONDIE ══ */}
               <div className={`pg-reveal ${showBoostPanel ? 'visible' : ''}`}>
-              <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px', marginBottom: '8px' }}>
+              <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'}`, paddingTop: '14px', marginBottom: '8px' }}>
                 <button
                   onClick={() => { if (!showAnalyse) { setShowAnalyse(true); } else if (!analyseConfirmed) { setShowAnalyse(false); } else { setShowAnalyse(false); setAnalyseConfirmed(false); } }}
-                  style={{ width: '100%', background: showAnalyse ? 'rgba(96,165,250,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${showAnalyse ? 'rgba(96,165,250,.25)' : 'rgba(255,255,255,.08)'}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: showAnalyse ? '12px' : '10px', transition: 'all .2s' }}
+                  style={{ width: '100%', background: showAnalyse ? 'rgba(96,165,250,.06)' : (darkMode ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.02)'), border: `1px solid ${showAnalyse ? 'rgba(96,165,250,.25)' : (darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)')}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: showAnalyse ? '12px' : '10px', transition: 'all .2s' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10h9M2 7h7M2 4h5" stroke="#60a5fa" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -1113,7 +1113,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                           value={prixAchatInput}
                           onChange={e => setPrixAchatInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') { setPrixAchat(prixAchatInput); setAnalyseConfirmed(true); } }}
-                          style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(96,165,250,.25)', borderRadius: '8px', padding: '9px 32px 9px 12px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                          style={{ width: '100%', background: darkMode ? 'rgba(255,255,255,.04)' : '#fff', border: '1px solid rgba(96,165,250,.25)', borderRadius: '8px', padding: '9px 32px 9px 12px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                           autoFocus
                         />
                         <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#475569', fontSize: '13px', pointerEvents: 'none' }}>€</span>
@@ -1209,7 +1209,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                       <p style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', margin: '0 0 10px' }}>Ce qui peut être amélioré</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
                         {criteres.map((c, idx) => (
-                          <div key={idx} style={{ background: c.ok ? 'rgba(16,185,129,.05)' : 'rgba(255,255,255,.03)', border: `1px solid ${c.ok ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.07)'}`, borderRadius: '8px', padding: '9px 11px' }}>
+                          <div key={idx} style={{ background: c.ok ? 'rgba(16,185,129,.05)' : (darkMode ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.03)'), border: `1px solid ${c.ok ? 'rgba(16,185,129,.15)' : (darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.07)')}`, borderRadius: '8px', padding: '9px 11px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                               <span style={{ color: c.ok ? '#10b981' : '#94a3b8', fontSize: '11px', fontWeight: 700 }}>{c.icon} {c.label}</span>
                               <span style={{ color: c.ok ? '#10b981' : c.score >= 15 ? '#60a5fa' : '#f59e0b', fontSize: '11px', fontWeight: 800 }}>{c.score}/25</span>
@@ -1234,7 +1234,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
 
               {/* ══ BOOST TENDANCE ══ */}
               <div className={`pg-reveal ${showBoostPanel ? 'visible' : ''}`}>
-              <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px', marginBottom: '14px' }}>
+              <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'}`, paddingTop: '14px', marginBottom: '14px' }}>
                 {boosted ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: '10px', padding: '10px 14px' }}>
                     <span style={{ fontSize: '16px' }}>🔥</span>
@@ -1247,7 +1247,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 {/* Header Boost Tendance — toggle collapsible */}
                 <button
                   onClick={() => setBoostExpanded(e => !e)}
-                  style={{ width: '100%', background: boostExpanded ? 'rgba(245,158,11,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${boostExpanded ? 'rgba(245,158,11,.25)' : 'rgba(255,255,255,.08)'}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: boostExpanded ? '12px' : 0, transition: 'all .2s' }}
+                  style={{ width: '100%', background: boostExpanded ? 'rgba(245,158,11,.06)' : (darkMode ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.02)'), border: `1px solid ${boostExpanded ? 'rgba(245,158,11,.25)' : (darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)')}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: boostExpanded ? '12px' : 0, transition: 'all .2s' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C6.5 1 9 3.5 9 6a2.5 2.5 0 0 1-5 0C4 4.5 5 3 6.5 1Z" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round"/><path d="M4.5 8.5C3.5 9 3 9.8 3 10.5A1.5 1.5 0 0 0 6 11c0-.8-.5-1.8-1.5-2.5Z" stroke="#f59e0b" strokeWidth="1.1" strokeLinejoin="round"/></svg>
@@ -1303,14 +1303,14 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                         const sel = selectedTrends.includes(word);
                         return (
                           <div key={i} onClick={() => toggleTrend(word)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sel ? 'rgba(245,158,11,.08)' : 'rgba(255,255,255,.02)', border: `1px solid ${sel ? 'rgba(245,158,11,.35)' : 'rgba(255,255,255,.06)'}`, borderRadius: '10px', padding: '9px 12px', cursor: 'pointer', transition: 'all .15s' }}>
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', background: sel ? 'rgba(245,158,11,.08)' : (darkMode ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.02)'), border: `1px solid ${sel ? 'rgba(245,158,11,.35)' : (darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.08)')}`, borderRadius: '10px', padding: '9px 12px', cursor: 'pointer', transition: 'all .15s' }}>
                             {/* Checkbox */}
-                            <div style={{ width: '18px', height: '18px', borderRadius: '5px', background: sel ? '#f59e0b' : 'transparent', border: `2px solid ${sel ? '#f59e0b' : 'rgba(255,255,255,.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
+                            <div style={{ width: '18px', height: '18px', borderRadius: '5px', background: sel ? '#f59e0b' : 'transparent', border: `2px solid ${sel ? '#f59e0b' : (darkMode ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.2)')}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
                               {sel && <span style={{ color: '#000', fontSize: '12px', fontWeight: 900, lineHeight: 1 }}>✓</span>}
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ color: sel ? '#fbbf24' : '#e2e8f0', fontWeight: 700, fontSize: '13px' }}>{word}</span>
+                                <span style={{ color: sel ? '#fbbf24' : (darkMode ? '#e2e8f0' : '#111118'), fontWeight: 700, fontSize: '13px' }}>{word}</span>
                                 {impact && <span style={{ background: 'rgba(239,68,68,.15)', color: '#f87171', fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '100px' }}>{impact}</span>}
                               </div>
                               <p style={{ color: '#64748b', fontSize: '11px', margin: '1px 0 0' }}>{t.raison}</p>
@@ -1331,7 +1331,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                       onClick={applyTrendBoost}
                       disabled={!selectedTrends.length || boostLoading}
                       className={selectedTrends.length ? 'pg-btn' : ''}
-                      style={{ width: '100%', background: selectedTrends.length ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,.03)', color: selectedTrends.length ? '#000' : '#334155', border: 'none', borderRadius: '11px', padding: '13px', fontWeight: 800, cursor: selectedTrends.length ? 'pointer' : 'not-allowed', fontSize: '14px', fontFamily: 'inherit', transition: 'all .2s' }}>
+                      style={{ width: '100%', background: selectedTrends.length ? 'linear-gradient(135deg,#f59e0b,#d97706)' : (darkMode ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.04)'), color: selectedTrends.length ? '#000' : '#334155', border: 'none', borderRadius: '11px', padding: '13px', fontWeight: 800, cursor: selectedTrends.length ? 'pointer' : 'not-allowed', fontSize: '14px', fontFamily: 'inherit', transition: 'all .2s' }}>
                       {selectedTrends.length
                         ? `Booster avec ${selectedTrends.length} mot${selectedTrends.length > 1 ? 's' : ''} tendance → +${potentialScore - result.score} pts estimés`
                         : 'Sélectionne au moins un mot tendance'
@@ -1349,7 +1349,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 <button onClick={handleCopy} className="pg-btn" style={{ flex: 1, background: copied === true ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '15px' : '11px', fontWeight: 800, cursor: 'pointer', fontSize: isMobile ? '15px' : '13px', fontFamily: 'inherit', minWidth: '140px' }}>
                   {copied === true ? '✓ Tout copié !' : '📋 Tout copier pour Vinted'}
                 </button>
-                <button onClick={generateBoost} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '12px', padding: isMobile ? '15px 18px' : '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '16px' : '13px', fontFamily: 'inherit' }}>↺</button>
+                <button onClick={generateBoost} className="pg-ghost" style={{ background: darkMode ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.1)'}`, color: '#64748b', borderRadius: '12px', padding: isMobile ? '15px 18px' : '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '16px' : '13px', fontFamily: 'inherit' }}>↺</button>
               </div>
               {/* ── PARTAGER MA TRANSFORMATION ── */}
               <button onClick={openShareModal} style={{ width: '100%', marginTop: isMobile ? '10px' : '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.15),rgba(16,185,129,.1))', border: '1px solid rgba(124,58,237,.35)', color: '#a78bfa', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '14px' : '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', transition: 'all .2s' }}>
@@ -3397,12 +3397,13 @@ export default function PixGlow() {
                         <button onClick={() => { openReferral(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>
                         <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
                         {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                        <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
                     </>
                   )}
                 </div>}
                 <button onClick={() => setShowPlanModal(true)} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '8px 12px' : '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>+ Crédits</button>
-                <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: isMobile ? '8px 10px' : '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '12px' : '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? '↪' : 'Déco'}</button>
+                {!isMobile && <button onClick={handleLogout} className="pg-ghost" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', borderRadius: '10px', padding: '8px 12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Déco</button>}
               </>
             ) : (
               <>
@@ -4128,9 +4129,8 @@ export default function PixGlow() {
                             ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
                             : <div style={{ position: 'relative' }}>
                                 <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : 300} isMobile={isMobile} />
-                                <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.92),rgba(79,70,229,.92))', backdropFilter: 'blur(6px)', borderRadius: '20px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px', pointerEvents: 'none', zIndex: 10 }}>
+                                <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.92),rgba(79,70,229,.92))', backdropFilter: 'blur(6px)', borderRadius: '20px', padding: '4px 8px', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 10 }}>
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                                  <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.3px', whiteSpace: 'nowrap' }}>Éclairage Studio Pro</span>
                                 </div>
                               </div>
                           }
@@ -4142,7 +4142,7 @@ export default function PixGlow() {
                       </div>
                       {!r.error && (
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <VintedBoostPanel imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} isMobile={isMobile} />
+                          <VintedBoostPanel imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} isMobile={isMobile} darkMode={darkMode} />
                         </div>
                       )}
                     </div>
