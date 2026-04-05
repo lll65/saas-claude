@@ -234,6 +234,33 @@ async def startup_event():
         """)
         # Nettoyage des inscriptions expirées
         cur.execute("DELETE FROM pending_registrations WHERE expires_at < NOW()")
+        # ── Affiliation ──────────────────────────────────────────────────────
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS affiliates (
+                id SERIAL PRIMARY KEY,
+                code TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                commission_rate FLOAT DEFAULT 20.0,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS affiliate_conversions (
+                id SERIAL PRIMARY KEY,
+                affiliate_code TEXT NOT NULL,
+                user_email TEXT NOT NULL,
+                type TEXT NOT NULL,
+                plan TEXT,
+                amount_cents INTEGER DEFAULT 0,
+                commission_cents INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS influencer_ref TEXT")
+        cur.execute("ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS influencer_ref TEXT")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -388,6 +415,24 @@ class AuthBody(BaseModel):
     email: str
     password: str
     referral_code: str | None = None
+    influencer_ref: str | None = None
+
+class AffiliateLoginBody(BaseModel):
+    email: str
+    password: str
+
+class AffiliateCreateBody(BaseModel):
+    code: str
+    name: str
+    email: str
+    password: str
+    commission_rate: float = 20.0
+
+class AffiliatePatchBody(BaseModel):
+    name: str | None = None
+    commission_rate: float | None = None
+    is_active: bool | None = None
+    password: str | None = None
 
 def hash_password(p: str) -> str:
     return _bcrypt.hashpw(p.encode("utf-8")[:72], _bcrypt.gensalt(12)).decode()
@@ -405,6 +450,25 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
     except JWTError:
         return None
+
+def create_affiliate_token(code: str) -> str:
+    exp = datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS)
+    return jwt.encode({"sub": code, "type": "affiliate", "exp": exp}, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_affiliate(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if not credentials: return None
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "affiliate": return None
+        return payload.get("sub")
+    except JWTError:
+        return None
+
+def mask_email(email: str) -> str:
+    parts = email.split("@")
+    if len(parts) != 2: return "***"
+    local = parts[0]
+    return local[:2] + "***@" + parts[1]
 
 MAX_REFERRALS_PER_MONTH = 10
 
@@ -591,18 +655,25 @@ async def register(body: AuthBody, request: Request):
         referrer = cur.fetchone()
         if not referrer or referrer["email"] == email:
             ref_code = None  # invalid or self-referral
+    # Validate influencer affiliate ref
+    inf_ref = body.influencer_ref.strip().upper() if body.influencer_ref else None
+    if inf_ref:
+        cur.execute("SELECT code FROM affiliates WHERE code = %s AND is_active = TRUE", (inf_ref,))
+        if not cur.fetchone():
+            inf_ref = None
     verification_token = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(hours=48)
     # Stocke dans pending — le compte réel sera créé uniquement à la vérification
     cur.execute(
-        """INSERT INTO pending_registrations (email, password_hash, verification_token, referred_by, expires_at)
-           VALUES (%s, %s, %s, %s, %s)
+        """INSERT INTO pending_registrations (email, password_hash, verification_token, referred_by, influencer_ref, expires_at)
+           VALUES (%s, %s, %s, %s, %s, %s)
            ON CONFLICT (email) DO UPDATE
              SET password_hash = EXCLUDED.password_hash,
                  verification_token = EXCLUDED.verification_token,
                  referred_by = EXCLUDED.referred_by,
+                 influencer_ref = EXCLUDED.influencer_ref,
                  expires_at = EXCLUDED.expires_at""",
-        (email, hash_password(body.password), verification_token, ref_code, expires_at)
+        (email, hash_password(body.password), verification_token, ref_code, inf_ref, expires_at)
     )
     conn.commit(); cur.close(); conn.close()
     # Send verification email
@@ -703,7 +774,7 @@ async def verify_email(token: str):
     conn = get_db(); cur = conn.cursor()
 
     # 1. Cherche dans les inscriptions en attente (nouveau flux)
-    cur.execute("SELECT email, password_hash, referred_by, expires_at FROM pending_registrations WHERE verification_token = %s", (token,))
+    cur.execute("SELECT email, password_hash, referred_by, influencer_ref, expires_at FROM pending_registrations WHERE verification_token = %s", (token,))
     pending = cur.fetchone()
     if pending:
         if pending["expires_at"] < datetime.utcnow():
@@ -712,15 +783,22 @@ async def verify_email(token: str):
             raise HTTPException(400, "Lien de vérification expiré. Veuillez vous réinscrire.")
         email = pending["email"]
         ref_code = pending["referred_by"]
+        inf_ref = pending.get("influencer_ref")
         bonus = 5 if ref_code and _can_refer(cur, ref_code) else 0
         new_ref_code = secrets.token_hex(4).upper()
         cur.execute(
-            "INSERT INTO users (email, password_hash, credits, email_verified, verification_token, referral_code, referred_by) VALUES (%s, %s, %s, TRUE, NULL, %s, %s) RETURNING credits",
-            (email, pending["password_hash"], 5 + bonus, new_ref_code, ref_code)
+            "INSERT INTO users (email, password_hash, credits, email_verified, verification_token, referral_code, referred_by, influencer_ref) VALUES (%s, %s, %s, TRUE, NULL, %s, %s, %s) RETURNING credits",
+            (email, pending["password_hash"], 5 + bonus, new_ref_code, ref_code, inf_ref)
         )
         row = cur.fetchone()
         if ref_code and bonus:
             _apply_referral_credit(cur, ref_code)
+        # Enregistre la conversion d'inscription pour l'affilié
+        if inf_ref:
+            cur.execute(
+                "INSERT INTO affiliate_conversions (affiliate_code, user_email, type) VALUES (%s, %s, 'signup')",
+                (inf_ref, email)
+            )
         cur.execute("DELETE FROM pending_registrations WHERE email = %s", (email,))
         conn.commit(); cur.close(); conn.close()
         return {"status": "verified", "token": create_token(email), "credits": row["credits"], "email": email, "bonus": bonus}
@@ -1049,6 +1127,22 @@ async def stripe_webhook(request: Request):
                 conn = get_db(); cur = conn.cursor()
                 cur.execute("UPDATE users SET credits = credits + %s WHERE email = %s RETURNING credits", (credits_to_add, email))
                 result = cur.fetchone()
+                # Enregistre la conversion de paiement pour l'affilié
+                plan_name = metadata.get("plan", "?")
+                plan_amount_map = {"starter": 700, "pro": 1299, "elite": 2900}
+                amount_cents = plan_amount_map.get(plan_name, 0)
+                cur.execute("SELECT influencer_ref FROM users WHERE email = %s", (email,))
+                user_row = cur.fetchone()
+                if user_row and user_row.get("influencer_ref"):
+                    inf_ref = user_row["influencer_ref"]
+                    cur.execute("SELECT commission_rate FROM affiliates WHERE code = %s AND is_active = TRUE", (inf_ref,))
+                    aff_row = cur.fetchone()
+                    if aff_row:
+                        commission_cents = int(amount_cents * aff_row["commission_rate"] / 100)
+                        cur.execute(
+                            "INSERT INTO affiliate_conversions (affiliate_code, user_email, type, plan, amount_cents, commission_cents) VALUES (%s, %s, 'payment', %s, %s, %s)",
+                            (inf_ref, email, plan_name, amount_cents, commission_cents)
+                        )
                 conn.commit(); cur.close(); conn.close()
                 import datetime
                 plan_name = metadata.get("plan", "?")
@@ -1695,6 +1789,161 @@ async def admin_update_credits(user_id: int, body: dict, admin: str = Depends(re
     finally:
         cur.close(); conn.close()
     return {"status": "updated", "credits": credits}
+
+# ─────────────────────────────────────────────
+#  AFFILIATION
+# ─────────────────────────────────────────────
+
+@app.post("/affiliate/login")
+async def affiliate_login(body: AffiliateLoginBody):
+    email = body.email.strip().lower()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT code, name, password_hash, commission_rate, is_active FROM affiliates WHERE email = %s", (email,))
+    aff = cur.fetchone()
+    cur.close(); conn.close()
+    if not aff or not verify_password(body.password, aff["password_hash"]):
+        raise HTTPException(401, "Email ou mot de passe incorrect")
+    if not aff["is_active"]:
+        raise HTTPException(403, "Ce compte affilié est désactivé")
+    token = create_affiliate_token(aff["code"])
+    return {"token": token, "code": aff["code"], "name": aff["name"], "commission_rate": aff["commission_rate"]}
+
+@app.get("/affiliate/stats")
+async def affiliate_stats(aff_code: str = Depends(get_current_affiliate)):
+    if not aff_code:
+        raise HTTPException(401, "Token affilié requis")
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT code, name, email, commission_rate FROM affiliates WHERE code = %s", (aff_code,))
+    aff = cur.fetchone()
+    if not aff:
+        cur.close(); conn.close()
+        raise HTTPException(404, "Affilié introuvable")
+    # Conversions
+    cur.execute("""
+        SELECT type, user_email, plan, amount_cents, commission_cents, created_at
+        FROM affiliate_conversions
+        WHERE affiliate_code = %s
+        ORDER BY created_at DESC
+        LIMIT 200
+    """, (aff_code,))
+    convs = cur.fetchall()
+    cur.close(); conn.close()
+    signups = [c for c in convs if c["type"] == "signup"]
+    payments = [c for c in convs if c["type"] == "payment"]
+    total_revenue = sum(c["amount_cents"] for c in payments)
+    total_commission = sum(c["commission_cents"] for c in payments)
+    return {
+        "code": aff["code"],
+        "name": aff["name"],
+        "email": aff["email"],
+        "commission_rate": aff["commission_rate"],
+        "link": f"{FRONTEND_URL}/?ref={aff['code']}",
+        "signups": len(signups),
+        "paid_conversions": len(payments),
+        "total_revenue_cents": total_revenue,
+        "commission_owed_cents": total_commission,
+        "conversions": [
+            {
+                "type": c["type"],
+                "user_email": mask_email(c["user_email"]),
+                "plan": c.get("plan"),
+                "amount_cents": c["amount_cents"],
+                "commission_cents": c["commission_cents"],
+                "created_at": c["created_at"].isoformat() if c["created_at"] else None
+            }
+            for c in convs
+        ]
+    }
+
+@app.post("/admin/affiliates")
+async def admin_create_affiliate(body: AffiliateCreateBody, admin: str = Depends(require_admin)):
+    code = body.code.strip().upper()
+    if not code or len(code) < 2:
+        raise HTTPException(400, "Code trop court (minimum 2 caractères)")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO affiliates (code, name, email, password_hash, commission_rate) VALUES (%s, %s, %s, %s, %s)",
+            (code, body.name.strip(), body.email.strip().lower(), hash_password(body.password), body.commission_rate)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        if "unique" in str(e).lower():
+            raise HTTPException(400, "Ce code ou cet email est déjà utilisé")
+        raise HTTPException(500, str(e))
+    finally:
+        cur.close(); conn.close()
+    return {"status": "created", "code": code, "link": f"{FRONTEND_URL}/?ref={code}"}
+
+@app.get("/admin/affiliates")
+async def admin_list_affiliates(admin: str = Depends(require_admin)):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT code, name, email, commission_rate, is_active, created_at FROM affiliates ORDER BY created_at DESC")
+    affs = cur.fetchall()
+    result = []
+    for a in affs:
+        cur.execute("""
+            SELECT
+                COUNT(*) FILTER (WHERE type='signup') as signups,
+                COUNT(*) FILTER (WHERE type='payment') as paid_conversions,
+                COALESCE(SUM(amount_cents) FILTER (WHERE type='payment'), 0) as revenue_cents,
+                COALESCE(SUM(commission_cents) FILTER (WHERE type='payment'), 0) as commission_cents
+            FROM affiliate_conversions WHERE affiliate_code = %s
+        """, (a["code"],))
+        stats = cur.fetchone()
+        result.append({
+            "code": a["code"],
+            "name": a["name"],
+            "email": a["email"],
+            "commission_rate": a["commission_rate"],
+            "is_active": a["is_active"],
+            "created_at": a["created_at"].isoformat() if a["created_at"] else None,
+            "link": f"{FRONTEND_URL}/?ref={a['code']}",
+            "signups": stats["signups"] if stats else 0,
+            "paid_conversions": stats["paid_conversions"] if stats else 0,
+            "revenue_cents": stats["revenue_cents"] if stats else 0,
+            "commission_cents": stats["commission_cents"] if stats else 0,
+        })
+    cur.close(); conn.close()
+    return result
+
+@app.patch("/admin/affiliates/{code}")
+async def admin_patch_affiliate(code: str, body: AffiliatePatchBody, admin: str = Depends(require_admin)):
+    code = code.upper()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id FROM affiliates WHERE code = %s", (code,))
+    if not cur.fetchone():
+        cur.close(); conn.close()
+        raise HTTPException(404, "Affilié introuvable")
+    updates = []
+    values = []
+    if body.name is not None:
+        updates.append("name = %s"); values.append(body.name.strip())
+    if body.commission_rate is not None:
+        updates.append("commission_rate = %s"); values.append(body.commission_rate)
+    if body.is_active is not None:
+        updates.append("is_active = %s"); values.append(body.is_active)
+    if body.password is not None:
+        updates.append("password_hash = %s"); values.append(hash_password(body.password))
+    if not updates:
+        cur.close(); conn.close()
+        return {"status": "nothing_to_update"}
+    values.append(code)
+    cur.execute(f"UPDATE affiliates SET {', '.join(updates)} WHERE code = %s", values)
+    conn.commit(); cur.close(); conn.close()
+    return {"status": "updated"}
+
+@app.delete("/admin/affiliates/{code}")
+async def admin_delete_affiliate(code: str, admin: str = Depends(require_admin)):
+    code = code.upper()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("DELETE FROM affiliates WHERE code = %s RETURNING code", (code,))
+    if not cur.fetchone():
+        conn.rollback(); cur.close(); conn.close()
+        raise HTTPException(404, "Affilié introuvable")
+    conn.commit(); cur.close(); conn.close()
+    return {"status": "deleted"}
 
 # ── Serve React SPA (doit être après toutes les routes API) ──────────────────
 _dist = os.path.join(os.path.dirname(__file__), "dist")
