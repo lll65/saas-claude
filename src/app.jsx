@@ -403,6 +403,9 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Analyse approfondie
   const [showAnalyse, setShowAnalyse] = useState(false);
+  // Prix d'achat
+  const [prixAchat, setPrixAchat] = useState('');
+  const [editPrixAchat, setEditPrixAchat] = useState(false);
   // Prix éditable
   const [editPrix, setEditPrix] = useState(false);
   const mountedRef = useRef(true);
@@ -415,12 +418,14 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     if (result.hashtags) {
       setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 5));
     }
+    setShowAnalyse(false);
     const t1 = setTimeout(() => { if (mountedRef.current) setShowScoreDetails(true); }, 600);
     const t2 = setTimeout(() => { if (mountedRef.current) setShowText(true); }, 1000);
     const t3 = setTimeout(() => { if (mountedRef.current) setShowFullDesc(true); }, 1400);
     const t4 = setTimeout(() => { if (mountedRef.current) setShowHashtags(true); }, 1800);
     const t5 = setTimeout(() => { if (mountedRef.current) setShowBoostPanel(true); }, 2200);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+    const t6 = setTimeout(() => { if (mountedRef.current) setShowAnalyse(true); }, 2800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); };
   }, [result]);
 
   const authHeaders = () => {
@@ -486,7 +491,24 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
-      if (mountedRef.current) { setResult({ ...result, ...data, prix_estime: result.prix_estime, prix_vente_rapide: result.prix_vente_rapide }); setBoosted(true); }
+      if (mountedRef.current) {
+        const tendancePoints = selectedTrends.reduce((sum, mot) => {
+          const t = trends?.trends.find(tr => (tr.mot || tr.word) === mot);
+          const pts = t?.score_plus ? parseInt(String(t.score_plus).replace(/[^0-9]/g, '')) : 3;
+          return sum + (isNaN(pts) || pts === 0 ? 3 : pts);
+        }, 0);
+        setResult({
+          ...result,
+          ...data,
+          prix_estime: result.prix_estime,
+          prix_vente_rapide: result.prix_vente_rapide,
+          score_details: {
+            ...(result.score_details || {}),
+            tendance: Math.min(25, tendancePoints),
+          },
+        });
+        setBoosted(true);
+      }
     } catch(e) { if (mountedRef.current) setTrendError(e.message); }
     finally { if (mountedRef.current) setBoostLoading(false); }
   };
@@ -997,6 +1019,42 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                         </div>
                       )}
                     </div>
+                    {/* Prix d'achat + marge */}
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 3px' }}>Prix d'achat</p>
+                          {editPrixAchat
+                            ? <input autoFocus type="number" min="0" step="0.5" defaultValue={prixAchat}
+                                onBlur={e => { const v = e.target.value.trim(); setPrixAchat(v); setEditPrixAchat(false); }}
+                                onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditPrixAchat(false); }}
+                                style={{ color: '#94a3b8', fontWeight: 700, fontSize: '13px', fontFamily: "'Bricolage Grotesque',sans-serif", background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.2)', borderRadius: '6px', padding: '2px 6px', width: '80px', outline: 'none' }} />
+                            : <p onClick={() => setEditPrixAchat(true)} style={{ color: prixAchat ? '#94a3b8' : '#334155', fontWeight: 700, fontSize: '13px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", cursor: 'text', borderBottom: '1px dashed rgba(255,255,255,.15)' }} title="Cliquer pour saisir">
+                                {prixAchat ? `${prixAchat}€ ✏️` : 'Saisir ✏️'}
+                              </p>
+                          }
+                        </div>
+                        {(() => {
+                          const achat = parseFloat(prixAchat);
+                          const venteMatch = (result.prix_estime || prix).match(/(\d+)/);
+                          const vente = venteMatch ? parseInt(venteMatch[1]) : null;
+                          if (!achat || !vente) return null;
+                          const marge = vente - achat;
+                          const margeColor = marge > 0 ? '#10b981' : '#f87171';
+                          return (
+                            <div style={{ textAlign: 'right' }}>
+                              <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Marge estimée</p>
+                              <p style={{ color: margeColor, fontWeight: 800, fontSize: '15px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>
+                                {marge > 0 ? '+' : ''}{marge}€
+                              </p>
+                              <p style={{ color: '#475569', fontSize: '9px', margin: '1px 0 0' }}>
+                                {vente > 0 ? `${Math.round((marge / vente) * 100)}% de marge` : ''}
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </>);
               })()}
@@ -1109,8 +1167,12 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       score: tendSc,
                       max: 25,
                       icon: '🔥',
-                      ok: false,
-                      conseil: 'La tendance est à 0/25 — active le Boost Tendance pour intégrer des mots-clés viraux (ex : "matelassé", "brillant", "hiver 2026") et gagner jusqu\'à +15 pts.',
+                      ok: tendSc >= 20,
+                      conseil: tendSc >= 20
+                        ? 'Mots tendance parfaitement intégrés — visibilité maximale garantie.'
+                        : tendSc > 0
+                        ? `Boost tendance actif — ${tendSc} pts gagnés. Sélectionne 3-4 mots pour atteindre le maximum.`
+                        : 'La tendance est à 0/25 — active le Boost Tendance pour intégrer des mots-clés viraux (ex : "matelassé", "brillant", "hiver 2026") et gagner jusqu\'à +15 pts.',
                     },
                   ];
                   // Prix advice
