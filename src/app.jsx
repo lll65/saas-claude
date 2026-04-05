@@ -571,20 +571,43 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
     setShowShareModal(true);
   };
 
-  const handleSharePlatform = (platform) => {
+  const handleSharePlatform = async (platform) => {
     const score = result?.score || 0;
     const prix = result?.prix_estime || '';
     const fullText = `${shareText}\n\n${activeHashtags.join(' ')}`;
     const encodedText = encodeURIComponent(fullText);
     const pageUrl = encodeURIComponent(window.location.href);
-    const urls = {
+    const urlFallbacks = {
       twitter: `https://twitter.com/intent/tweet?text=${encodedText}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${pageUrl}&quote=${encodedText}`,
       whatsapp: `https://api.whatsapp.com/send?text=${encodedText}`,
       telegram: `https://t.me/share/url?url=${pageUrl}&text=${encodedText}`,
     };
-    if (urls[platform]) {
-      window.open(urls[platform], '_blank', 'noopener,noreferrer');
+    // WhatsApp & Telegram : partage natif image+texte sur mobile, URL-fallback sur desktop
+    if (platform === 'whatsapp' || platform === 'telegram') {
+      if (navigator.share) {
+        try {
+          const imgResp = await fetch(imageUrl);
+          if (imgResp.ok) {
+            const blob = await imgResp.blob();
+            const file = new File([blob], 'pixglow-transformation.jpg', { type: 'image/jpeg' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], text: fullText });
+              return;
+            }
+          }
+          await navigator.share({ text: fullText });
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') return;
+          // Network error or share failed → fall through to URL
+        }
+      }
+      window.open(urlFallbacks[platform], '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (urlFallbacks[platform]) {
+      window.open(urlFallbacks[platform], '_blank', 'noopener,noreferrer');
     } else if (platform === 'copy') {
       navigator.clipboard.writeText(`${fullText}\n\n${window.location.href}`).then(() => {
         setShareCopied(true);
@@ -3078,17 +3101,17 @@ export default function PixGlow() {
     const token = getToken(); const savedEmail = localStorage.getItem('pg_email');
     if (token && savedEmail) {
       setUserEmail(savedEmail); setIsConnected(true);
-      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); if (d.is_admin) setIsAdmin(true); }).catch(() => {});
+      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); if (d.is_admin) setIsAdmin(true); }).catch(() => {});
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
       const purchasedCredits = parseInt(params.get('credits') || '0', 10);
-      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.credits !== undefined) { const added = purchasedCredits > 0 ? purchasedCredits : d.credits; setCredits(d.credits); setPaymentSuccess({ total: d.credits, added }); setPage('app'); window.history.replaceState({}, '', window.location.pathname); } }); }, 1500);
+      setTimeout(() => { fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { if (d.credits !== undefined) { const added = purchasedCredits > 0 ? purchasedCredits : d.credits; setCredits(d.credits); setPaymentSuccess({ total: d.credits, added }); setPage('app'); window.history.replaceState({}, '', window.location.pathname); } }).catch(() => {}); }, 1500);
     }
     const verifyT = params.get('verify');
     if (verifyT) {
       window.history.replaceState({}, '', window.location.pathname);
-      fetch(`${API_URL}/verify-email/${verifyT}`).then(r => r.json()).then(d => {
+      fetch(`${API_URL}/verify-email/${verifyT}`).then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d))).then(d => {
         if (d.status === 'verified' || d.status === 'already_verified') {
           if (d.token) { localStorage.setItem('pg_token', d.token); localStorage.setItem('pg_email', d.email); setUserEmail(d.email); setCredits(d.credits); setIsConnected(true); }
           setVerifyMsg({ ok: true, text: d.status === 'already_verified' ? 'Email déjà vérifié. Connectez-vous.' : d.bonus > 0 ? `🎉 Email confirmé ! +5 crédits offerts + 5 crédits bonus de parrainage = ${d.credits} crédits au total !` : '✅ Email confirmé ! Vos 5 crédits ont été ajoutés.' });
