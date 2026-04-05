@@ -409,6 +409,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Description collapsible sur mobile
   const [mobileDescOpen, setMobileDescOpen] = useState(false);
+  // Prix estimé collapsible sur mobile
+  const [mobilePrixOpen, setMobilePrixOpen] = useState(false);
   // Analyse approfondie
   const [showAnalyse, setShowAnalyse] = useState(false);
   const [analyseConfirmed, setAnalyseConfirmed] = useState(false);
@@ -1007,6 +1009,12 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 const prixBase = prixBaseMatch ? parseInt(prixBaseMatch[1]) : null;
                 const prixVestiaire = prixBase ? `${Math.round(prixBase * vestiaireMult * 0.9)}–${Math.round(prixBase * vestiaireMult * 1.2)}€` : null;
                 return (<>
+                  {isMobile && !mobilePrixOpen ? (
+                    <button onClick={() => setMobilePrixOpen(true)} style={{ width: '100%', marginBottom: '12px', background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px', color: '#34d399', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span>💰</span><span>Prix estimé marché — {prix}</span></span>
+                      <span style={{ fontSize: '14px', lineHeight: 1, color: '#475569' }}>▼</span>
+                    </button>
+                  ) : (
                   <div style={{ marginBottom: '12px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '15px' }}>💰</span>
@@ -1040,7 +1048,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                         </div>
                       )}
                     </div>
-                    {/* Prix d'achat + marge */}
+                    {/* Prix d'achat + marge — visible seulement après analyse approfondie */}
+                    {analyseConfirmed && (
                     <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ flex: 1 }}>
@@ -1076,7 +1085,12 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                         })()}
                       </div>
                     </div>
+                    )}
+                    {isMobile && mobilePrixOpen && (
+                      <button onClick={() => setMobilePrixOpen(false)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', padding: '8px 0 0', textDecoration: 'underline', display: 'block' }}>Réduire ▲</button>
+                    )}
                   </div>
+                  )}
                 </>);
               })()}
               </div>{/* end pg-reveal showText */}
