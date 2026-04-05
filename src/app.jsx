@@ -403,6 +403,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Analyse approfondie
   const [showAnalyse, setShowAnalyse] = useState(false);
+  // Prix éditable
+  const [editPrix, setEditPrix] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -411,7 +413,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
     if (!result) return;
     // Init hashtags cliquables (max 7, tous actifs par défaut)
     if (result.hashtags) {
-      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 12));
+      setSelectedMainHashtags(result.hashtags.split(' ').filter(Boolean).slice(0, 5));
     }
     const t1 = setTimeout(() => { if (mountedRef.current) setShowScoreDetails(true); }, 600);
     const t2 = setTimeout(() => { if (mountedRef.current) setShowText(true); }, 1000);
@@ -967,8 +969,14 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       <span style={{ fontSize: '15px' }}>💰</span>
                       <div style={{ flex: 1 }}>
                         <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Prix estimé marché</p>
-                        <p style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif" }}>{prix}</p>
-                        <p style={{ color: '#334155', fontSize: '9px', margin: '2px 0 0' }}>Basé sur la photo · Précise l'état pour affiner</p>
+                        {editPrix
+                          ? <input autoFocus type="text" defaultValue={prix}
+                              onBlur={e => { const v = e.target.value.trim(); if (v) setResult(r => ({ ...r, prix_estime: v })); setEditPrix(false); }}
+                              onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditPrix(false); }}
+                              style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif", background: 'rgba(52,211,153,.08)', border: '1px solid rgba(52,211,153,.4)', borderRadius: '6px', padding: '2px 6px', width: '100%', outline: 'none' }} />
+                          : <p onClick={() => setEditPrix(true)} style={{ color: '#34d399', fontWeight: 800, fontSize: '15px', margin: '1px 0 0', fontFamily: "'Bricolage Grotesque',sans-serif", cursor: 'text', borderBottom: '1px dashed rgba(52,211,153,.4)' }} title="Cliquer pour modifier">{prix} ✏️</p>
+                        }
+                        <p style={{ color: '#334155', fontSize: '9px', margin: '2px 0 0' }}>Clique sur le prix pour le modifier</p>
                       </div>
                       {result.prix_vente_rapide && result.prix_vente_rapide !== prix && (
                         <div style={{ textAlign: 'right' }}>
@@ -980,7 +988,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
                       <div style={{ flex: 1, textAlign: 'center' }}>
                         <p style={{ color: '#64748b', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Vinted</p>
-                        <p style={{ color: '#34d399', fontWeight: 700, fontSize: '12px', margin: 0 }}>{prix}</p>
+                        <p style={{ color: '#34d399', fontWeight: 700, fontSize: '12px', margin: 0 }}>{result.prix_estime || prix}</p>
                       </div>
                       {prixVestiaire && (
                         <div style={{ flex: 1, textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,.06)' }}>
@@ -1026,7 +1034,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                   <MiniCopyBtn text={selectedMainHashtags.join(' ')} field="tags" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {result.hashtags.split(' ').filter(Boolean).slice(0, 12).map((tag, i) => {
+                  {result.hashtags.split(' ').filter(Boolean).slice(0, 5).map((tag, i) => {
                     const isActive = selectedMainHashtags.includes(tag);
                     return (
                       <button key={i} onClick={() => setSelectedMainHashtags(prev => isActive ? prev.filter(h => h !== tag) : [...prev, tag])}
