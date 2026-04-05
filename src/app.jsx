@@ -259,7 +259,7 @@ function AvatarInitials({ name, size = 30, style: extraStyle = {} }) {
 }
 
 /* ══ BEFORE/AFTER SLIDER ══ */
-function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false }) {
+function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false, isMobile = false }) {
   const [pos, setPos] = useState(75);
   const [dragging, setDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -283,7 +283,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
     return Math.round((x / rect.width) * 100);
   }, []);
 
-  const onMouseDown = (e) => { e.preventDefault(); setDragging(true); };
+  const onMouseDown = (e) => { e.preventDefault(); setDragging(true); setAutoAnimDone(true); };
   const onMouseMove = useCallback((e) => { if (dragging) setPos(getPos(e.clientX)); }, [dragging, getPos]);
   const onMouseUp   = useCallback(() => setDragging(false), []);
   const onTouchMove = useCallback((e) => { if (dragging) { e.preventDefault(); setPos(getPos(e.touches[0].clientX)); } }, [dragging, getPos]);
@@ -334,19 +334,25 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
           style={{ position: 'absolute', inset: 0, width: containerWidth > 0 ? `${containerWidth}px` : '100%', height: '100%', objectFit: 'contain', maxWidth: 'none', background: '#e8e8e8' }} />
       </div>
       {/* Labels */}
-      <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: '#f87171', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)', color: '#f87171', fontSize: isMobile ? '13px' : '11px', fontWeight: 700, padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
         {beforeLabel}
       </div>
-      <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(16,185,129,.75)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(16,185,129,.8)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: isMobile ? '13px' : '11px', fontWeight: 700, padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
         {afterLabel}
       </div>
       {/* Divider line */}
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${pos}%`, width: '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${pos}%`, width: isMobile ? '1.5px' : '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none' }} />
       {/* Handle */}
-      <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setPos(getPos(e.touches[0].clientX)); }}
-        style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 16px rgba(124,58,237,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.25)' }}>
-        <span style={{ color: '#fff', fontSize: '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
+      <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setAutoAnimDone(true); setPos(getPos(e.touches[0].clientX)); }}
+        style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: isMobile ? '28px' : '36px', height: isMobile ? '28px' : '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 12px rgba(124,58,237,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.3)' }}>
+        <span style={{ color: '#fff', fontSize: isMobile ? '11px' : '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
       </div>
+      {/* Hint text — mobile only, disappears after first interaction */}
+      {isMobile && !autoAnimDone && !dragging && (
+        <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,.9)', fontSize: '11px', fontWeight: 600, padding: '4px 14px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          ← Glisse pour comparer →
+        </div>
+      )}
     </div>
   );
 }
@@ -366,7 +372,7 @@ function MiniCopyBtn({ text, field, copied, onCopy, children }) {
 }
 
 /* ══ AI BOOST VINTED PANEL — avec Trend Radar ══ */
-function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
+function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMobile = false }) {
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
@@ -401,6 +407,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [shareCopied, setShareCopied]       = useState(false);
   // Hashtags panel principal (cliquables)
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
+  // Description collapsible sur mobile
+  const [mobileDescOpen, setMobileDescOpen] = useState(false);
   // Analyse approfondie
   const [showAnalyse, setShowAnalyse] = useState(false);
   const [analyseConfirmed, setAnalyseConfirmed] = useState(false);
@@ -935,9 +943,19 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,.06)', borderRadius: '100px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${result.score}%`, background: boosted ? 'linear-gradient(90deg,#f59e0b,#10b981)' : result.score >= 85 ? 'linear-gradient(90deg,#10b981,#34d399)' : result.score >= 70 ? 'linear-gradient(90deg,#60a5fa,#818cf8)' : result.score >= 50 ? 'linear-gradient(90deg,#f59e0b,#fb923c)' : 'linear-gradient(90deg,#f87171,#ef4444)', borderRadius: '100px', transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)' }} />
                       </div>
-                      <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
+                      <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: isMobile ? '26px' : '20px', color: scoreColor, minWidth: '56px', textAlign: 'right' }}>{result.score}/100</span>
                     </div>
                     <p style={{ color: '#475569', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{scoreTip}</p>
+                    {/* Prix estimé inline — mobile uniquement, pour voir l'essentiel sans scroller */}
+                    {isMobile && result.prix_estime && (
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '15px' }}>💰</span>
+                        <div>
+                          <p style={{ color: '#475569', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 1px' }}>Prix estimé Vinted</p>
+                          <p style={{ color: '#34d399', fontWeight: 800, fontSize: '16px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>{result.prix_estime}</p>
+                        </div>
+                      </div>
+                    )}
                     {/* ── CONSEIL ACTIONNABLE ── */}
                     {showScoreDetails && !boosted && (() => {
                       const actions = [];
@@ -1081,9 +1099,19 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                   <p style={{ color: '#334155', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>Description</p>
                   <MiniCopyBtn text={result.description} field="desc" copied={copied} onCopy={copyField}>Copier</MiniCopyBtn>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 14px', maxHeight: '130px', overflowY: 'auto' }}>
-                  <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{result.description}</p>
-                </div>
+                {isMobile && !mobileDescOpen ? (
+                  <button onClick={() => setMobileDescOpen(true)} style={{ width: '100%', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '8px', padding: '10px 14px', color: '#60a5fa', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Voir la description complète</span>
+                    <span style={{ fontSize: '14px', lineHeight: 1 }}>▼</span>
+                  </button>
+                ) : (
+                  <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '8px', padding: '10px 14px', maxHeight: isMobile ? 'none' : '130px', overflowY: isMobile ? 'visible' : 'auto' }}>
+                    <p style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{result.description}</p>
+                    {isMobile && (
+                      <button onClick={() => setMobileDescOpen(false)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', padding: '8px 0 0', textDecoration: 'underline', display: 'block' }}>Réduire ▲</button>
+                    )}
+                  </div>
+                )}
               </div>
               </div>{/* end pg-reveal showFullDesc */}
 
@@ -1099,7 +1127,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                     const isActive = selectedMainHashtags.includes(tag);
                     return (
                       <button key={i} onClick={() => setSelectedMainHashtags(prev => isActive ? prev.filter(h => h !== tag) : [...prev, tag])}
-                        style={{ background: isActive ? 'rgba(124,58,237,.18)' : 'rgba(255,255,255,.03)', border: `1px solid ${isActive ? 'rgba(124,58,237,.45)' : 'rgba(255,255,255,.08)'}`, color: isActive ? '#c4b5fd' : '#475569', fontSize: '11px', padding: '4px 10px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s', textDecoration: isActive ? 'none' : 'line-through' }}>
+                        style={{ background: isActive ? 'rgba(124,58,237,.18)' : 'rgba(255,255,255,.03)', border: `1px solid ${isActive ? 'rgba(124,58,237,.45)' : 'rgba(255,255,255,.08)'}`, color: isActive ? '#c4b5fd' : '#475569', fontSize: isMobile ? '13px' : '11px', padding: isMobile ? '6px 14px' : '4px 10px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s', textDecoration: isActive ? 'none' : 'line-through' }}>
                         {tag}
                       </button>
                     );
@@ -1366,14 +1394,14 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
               </div>{/* end pg-reveal showBoostPanel */}
 
               {/* ── BOUTONS FINAUX ── */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
-                <button onClick={handleCopy} className="pg-btn" style={{ flex: 1, background: copied === true ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', minWidth: '140px' }}>
-                  {copied === true ? 'Tout copié ✓' : 'Tout copier pour Vinted'}
+              <div style={{ display: 'flex', gap: isMobile ? '10px' : '8px', flexWrap: 'wrap', marginTop: isMobile ? '8px' : '4px' }}>
+                <button onClick={handleCopy} className="pg-btn" style={{ flex: 1, background: copied === true ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '15px' : '11px', fontWeight: 800, cursor: 'pointer', fontSize: isMobile ? '15px' : '13px', fontFamily: 'inherit', minWidth: '140px' }}>
+                  {copied === true ? '✓ Tout copié !' : '📋 Tout copier pour Vinted'}
                 </button>
-                <button onClick={generateBoost} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '10px', padding: '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>↺</button>
+                <button onClick={generateBoost} className="pg-ghost" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: '12px', padding: isMobile ? '15px 18px' : '11px 14px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? '16px' : '13px', fontFamily: 'inherit' }}>↺</button>
               </div>
               {/* ── PARTAGER MA TRANSFORMATION ── */}
-              <button onClick={openShareModal} style={{ width: '100%', marginTop: '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.15),rgba(16,185,129,.1))', border: '1px solid rgba(124,58,237,.35)', color: '#a78bfa', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', transition: 'all .2s' }}>
+              <button onClick={openShareModal} style={{ width: '100%', marginTop: isMobile ? '10px' : '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.15),rgba(16,185,129,.1))', border: '1px solid rgba(124,58,237,.35)', color: '#a78bfa', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '14px' : '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', transition: 'all .2s' }}>
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="12" cy="2.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><circle cx="12" cy="12.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><circle cx="3" cy="7.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><path d="M4.7 8.2l5.6 3.6M10.3 3.2 4.7 6.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 Partager ma transformation 🚀
               </button>
@@ -3860,24 +3888,24 @@ export default function PixGlow() {
                 gap: '14px', marginBottom: '14px'
               }}>
                 {results.map((r, i) => (
-                  <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: '14px' }}>
+                  <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: isMobile ? '10px' : '14px' }}>
                     {/* Layout horizontal sur desktop si 1 seul résultat */}
                     <div style={{ display: !isMobile && results.length === 1 ? 'flex' : 'block', gap: '20px', alignItems: 'flex-start' }}>
                       <div style={{ flex: !isMobile && results.length === 1 ? '0 0 340px' : undefined }}>
                         <div style={{ marginBottom: '12px' }}>
                           {r.error
                             ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                            : <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 240 : 300} />
+                            : <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : 300} isMobile={isMobile} />
                           }
                         </div>
                         {!r.error && (
-                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
                         )}
                         {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                       </div>
                       {!r.error && (
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <VintedBoostPanel imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} />
+                          <VintedBoostPanel imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} isMobile={isMobile} />
                         </div>
                       )}
                     </div>
