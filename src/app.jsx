@@ -323,25 +323,31 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
     return () => observer.disconnect();
   }, [autoAnimDone]);
 
+  const FRAME = 8;
+  const innerWidth = containerWidth > 0 ? containerWidth - 2 * FRAME : 0;
+
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none', background: '#f8f8f8' }}>
-      {/* AFTER (full background) */}
-      <img src={afterSrc} alt="Après" draggable={false}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#ffffff' }} />
-      {/* BEFORE (clipped left portion) */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${pos}%` }}>
-        <img src={beforeSrc} alt="Avant" draggable={false}
-          style={{ position: 'absolute', inset: 0, width: containerWidth > 0 ? `${containerWidth}px` : '100%', height: '100%', objectFit: 'contain', maxWidth: 'none', background: '#e8e8e8' }} />
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none', background: '#f0f0f0' }}>
+      {/* Inner image area with padding frame */}
+      <div style={{ position: 'absolute', inset: `${FRAME}px`, overflow: 'hidden', borderRadius: '8px' }}>
+        {/* AFTER (full background) */}
+        <img src={afterSrc} alt="Après" draggable={false}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#ffffff' }} />
+        {/* BEFORE (clipped left portion) */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${pos}%` }}>
+          <img src={beforeSrc} alt="Avant" draggable={false}
+            style={{ position: 'absolute', inset: 0, width: innerWidth > 0 ? `${innerWidth}px` : '100%', height: '100%', objectFit: 'contain', maxWidth: 'none', background: '#e8e8e8' }} />
+        </div>
       </div>
       {/* Labels */}
-      <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)', color: '#f87171', fontSize: isMobile ? '13px' : '11px', fontWeight: 700, padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)', color: '#f87171', fontSize: isMobile ? '13px' : '11px', fontWeight: 700, padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px', zIndex: 5 }}>
         {beforeLabel}
       </div>
-      <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(16,185,129,.8)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: isMobile ? '13px' : '11px', fontWeight: 700, padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(16,185,129,.8)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: isMobile ? '13px' : '11px', fontWeight: 700, padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px', zIndex: 5 }}>
         {afterLabel}
       </div>
       {/* Divider line */}
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${pos}%`, width: isMobile ? '1.5px' : '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: `${FRAME}px`, bottom: `${FRAME}px`, left: `${pos}%`, width: isMobile ? '1.5px' : '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none', zIndex: 4 }} />
       {/* Handle */}
       <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setAutoAnimDone(true); setPos(getPos(e.touches[0].clientX)); }}
         style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: isMobile ? '28px' : '36px', height: isMobile ? '28px' : '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 12px rgba(124,58,237,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.3)' }}>
