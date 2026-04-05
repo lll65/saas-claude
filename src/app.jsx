@@ -3366,7 +3366,7 @@ export default function PixGlow() {
   };
 
   const Nav = ({ showBack = false }) => (
-    <nav style={{ padding: isMobile ? '14px 16px' : '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)'}`, background: T.navBg, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100, overflow: 'hidden', maxWidth: '100vw', boxSizing: 'border-box' }}>
+    <nav style={{ padding: isMobile ? '14px 16px' : '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)'}`, background: T.navBg, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100, maxWidth: '100vw', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setPage('landing')}>
         <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>✨</div>
         <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '20px', fontWeight: 800, color: T.text }}>PixGlow</span>
@@ -3390,8 +3390,8 @@ export default function PixGlow() {
                   <button onClick={() => setNavMenuOpen(o => !o)} style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '10px', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>⋯</button>
                   {navMenuOpen && (
                     <>
-                      <div onClick={() => setNavMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
-                      <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: darkMode ? '#1a1730' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '12px', padding: '6px', minWidth: '160px', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,.25)' }}>
+                      <div onClick={() => setNavMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
+                      <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: darkMode ? '#1a1730' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '12px', padding: '6px', minWidth: '160px', zIndex: 9999, boxShadow: '0 8px 32px rgba(0,0,0,.25)' }}>
                         <button onClick={() => { setPage('nouveautes'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#60a5fa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📰 Nouveautés</button>
                         <button onClick={() => { setShowTracker(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#10b981', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>
                         <button onClick={() => { openReferral(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>
@@ -4122,12 +4122,12 @@ export default function PixGlow() {
                   <div key={i} style={{ background: r.error ? 'rgba(239,68,68,.05)' : 'rgba(16,185,129,.03)', border: `1px solid ${r.error ? 'rgba(239,68,68,.18)' : 'rgba(16,185,129,.18)'}`, borderRadius: '14px', padding: isMobile ? '10px' : '14px' }}>
                     {/* Layout horizontal sur desktop si 1 seul résultat */}
                     <div style={{ display: !isMobile && results.length === 1 ? 'flex' : 'block', gap: '20px', alignItems: 'flex-start' }}>
-                      <div style={{ flex: !isMobile && results.length === 1 ? '0 0 340px' : undefined }}>
+                      <div style={{ flex: !isMobile && results.length === 1 ? '0 0 500px' : undefined }}>
                         <div style={{ marginBottom: '12px' }}>
                           {r.error
                             ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
                             : <div style={{ position: 'relative' }}>
-                                <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : 300} isMobile={isMobile} />
+                                <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : results.length === 1 ? 460 : 300} isMobile={isMobile} />
                                 <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.92),rgba(79,70,229,.92))', backdropFilter: 'blur(6px)', borderRadius: '20px', padding: '4px 8px', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 10 }}>
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                                 </div>

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Auto-rebuild dist si des fichiers src/ sont modifiés
+
+# Vérifie si des fichiers src/ sont staged
+if git diff --cached --name-only | grep -q "^src/"; then
+  echo "🔨 Fichiers src/ détectés — rebuild du dist en cours..."
+  npm run build
+  if [ $? -ne 0 ]; then
+    echo "❌ Build échoué — commit annulé"
+    exit 1
+  fi
+  # Stage le dist rebuilt
+  git add dist/
+  echo "✅ dist/ rebuilt et stagé automatiquement"
+fi
