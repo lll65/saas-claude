@@ -46,6 +46,8 @@ load_dotenv()
 STRIPE_SECRET_KEY     = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 SECRET_KEY            = os.getenv("JWT_SECRET", "change-moi-avec-un-vrai-secret-long")
+if SECRET_KEY == "change-moi-avec-un-vrai-secret-long":
+    print("[WARNING] ⚠️  JWT_SECRET non configuré — utilisez une vraie clé secrète en production !")
 FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://pixglow.app")
 ALGORITHM             = "HS256"
 TOKEN_EXPIRE_DAYS     = 30
@@ -1158,10 +1160,10 @@ async def stripe_webhook(request: Request):
         obj      = event["data"]["object"]
         email    = (obj.get("customer_email") or obj.get("metadata", {}).get("email", "")).strip().lower()
         metadata = obj.get("metadata", {})
-        try:
-            credits_to_add = int(metadata.get("credits", 100))
-        except (ValueError, TypeError):
-            credits_to_add = 100
+        # Validate credits from PLANS dict (not from metadata, which could be tampered)
+        plan_name_meta = metadata.get("plan", "")
+        plan_data = PLANS.get(plan_name_meta)
+        credits_to_add = plan_data["credits"] if plan_data else 30
         if email:
             try:
                 conn = get_db(); cur = conn.cursor()
