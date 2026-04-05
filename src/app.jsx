@@ -4128,9 +4128,6 @@ export default function PixGlow() {
                             ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
                             : <div style={{ position: 'relative' }}>
                                 <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : results.length === 1 ? 460 : 300} isMobile={isMobile} />
-                                <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'linear-gradient(135deg,rgba(124,58,237,.92),rgba(79,70,229,.92))', backdropFilter: 'blur(6px)', borderRadius: '20px', padding: '4px 8px', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 10 }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                                </div>
                               </div>
                           }
                         </div>
