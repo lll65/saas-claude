@@ -409,6 +409,45 @@ def reduce_wrinkles(img: Image.Image, strength: float = 0.45) -> Image.Image:
     return result
 
 # ─────────────────────────────────────────────
+#  ÉCLAIRAGE STUDIO PRO
+# ─────────────────────────────────────────────
+def apply_studio_lighting(img_rgba: Image.Image, intensity: float = 0.35) -> Image.Image:
+    """Simule un éclairage studio professionnel sur le sujet (image RGBA, fond transparent)."""
+    arr = np.array(img_rgba, dtype=np.float32)   # H, W, 4
+    rgb = arr[:, :, :3]
+    alpha = arr[:, :, 3] / 255.0                 # 0-1
+
+    h, w = rgb.shape[:2]
+    Y, X = np.mgrid[0:h, 0:w]
+    xn = X / max(w - 1, 1)
+    yn = Y / max(h - 1, 1)
+
+    # Lumière principale (key light) : haut-gauche, chaude
+    key_dist = np.sqrt((xn - 0.25) ** 2 + (yn - 0.05) ** 2)
+    key = np.exp(-key_dist * 1.6)
+
+    # Lumière de remplissage (rim light) : côté droit, douce
+    rim_dist = np.sqrt((xn - 1.0) ** 2 + (yn - 0.5) ** 2)
+    rim = np.exp(-rim_dist * 2.2) * 0.35
+
+    # Normalise → plage [-shadow, +highlight]
+    raw = key + rim
+    rmin, rmax = raw.min(), raw.max()
+    if rmax - rmin < 1e-6:
+        return img_rgba
+    norm = (raw - rmin) / (rmax - rmin)           # 0-1
+    light_effect = norm * (intensity + 0.12 * intensity) - 0.12 * intensity
+
+    light_3d = light_effect[:, :, np.newaxis]      # broadcast sur RGB
+    mask_3d = alpha[:, :, np.newaxis]              # appliqué seulement au sujet
+
+    result_rgb = rgb + light_3d * rgb * mask_3d
+    result_rgb = np.clip(result_rgb, 0, 255).astype(np.uint8)
+
+    result = np.concatenate([result_rgb, arr[:, :, 3:4].astype(np.uint8)], axis=2)
+    return Image.fromarray(result, "RGBA")
+
+# ─────────────────────────────────────────────
 #  UTILITAIRES AUTH
 # ─────────────────────────────────────────────
 class AuthBody(BaseModel):
@@ -1004,6 +1043,7 @@ async def enhance_photo(
             tmp_smooth = Image.merge("RGBA", (r, g, b, a))
 
         no_bg = remove(tmp_smooth)
+        no_bg = apply_studio_lighting(no_bg)
 
         bg_img = Image.new("RGB", (proc_w, proc_h), (255, 255, 255))
         bg_img.paste(no_bg, (0, 0), no_bg if no_bg.mode == "RGBA" else None)
