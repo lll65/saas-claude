@@ -327,11 +327,11 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none', background: '#f8f8f8' }}>
       {/* AFTER (full background) */}
       <img src={afterSrc} alt="Après" draggable={false}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', background: '#ffffff' }} />
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#ffffff' }} />
       {/* BEFORE (clipped left portion) */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${pos}%` }}>
         <img src={beforeSrc} alt="Avant" draggable={false}
-          style={{ position: 'absolute', inset: 0, width: containerWidth > 0 ? `${containerWidth}px` : '100%', height: '100%', objectFit: 'cover', maxWidth: 'none', background: '#e8e8e8' }} />
+          style={{ position: 'absolute', inset: 0, width: containerWidth > 0 ? `${containerWidth}px` : '100%', height: '100%', objectFit: 'contain', maxWidth: 'none', background: '#e8e8e8' }} />
       </div>
       {/* Labels */}
       <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: '#f87171', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '1px' }}>
