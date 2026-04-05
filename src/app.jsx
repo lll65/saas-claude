@@ -409,8 +409,6 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Description collapsible sur mobile
   const [mobileDescOpen, setMobileDescOpen] = useState(false);
-  // Prix estimé collapsible sur mobile
-  const [mobilePrixOpen, setMobilePrixOpen] = useState(false);
   // Analyse approfondie
   const [showAnalyse, setShowAnalyse] = useState(false);
   const [analyseConfirmed, setAnalyseConfirmed] = useState(false);
@@ -1009,12 +1007,6 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                 const prixBase = prixBaseMatch ? parseInt(prixBaseMatch[1]) : null;
                 const prixVestiaire = prixBase ? `${Math.round(prixBase * vestiaireMult * 0.9)}–${Math.round(prixBase * vestiaireMult * 1.2)}€` : null;
                 return (<>
-                  {isMobile && !mobilePrixOpen ? (
-                    <button onClick={() => setMobilePrixOpen(true)} style={{ width: '100%', marginBottom: '12px', background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px', color: '#34d399', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span>💰</span><span>Prix estimé marché — {prix}</span></span>
-                      <span style={{ fontSize: '14px', lineHeight: 1, color: '#475569' }}>▼</span>
-                    </button>
-                  ) : (
                   <div style={{ marginBottom: '12px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: '10px', padding: '10px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '15px' }}>💰</span>
@@ -1048,49 +1040,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                         </div>
                       )}
                     </div>
-                    {/* Prix d'achat + marge — visible seulement après analyse approfondie */}
-                    {analyseConfirmed && (
-                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 3px' }}>Prix d'achat</p>
-                          {editPrixAchat
-                            ? <input autoFocus type="number" min="0" step="0.5" defaultValue={prixAchat}
-                                onBlur={e => { const v = e.target.value.trim(); setPrixAchat(v); setEditPrixAchat(false); }}
-                                onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditPrixAchat(false); }}
-                                style={{ color: '#94a3b8', fontWeight: 700, fontSize: '13px', fontFamily: "'Bricolage Grotesque',sans-serif", background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.2)', borderRadius: '6px', padding: '2px 6px', width: '80px', outline: 'none' }} />
-                            : <p onClick={() => setEditPrixAchat(true)} style={{ color: prixAchat ? '#94a3b8' : '#334155', fontWeight: 700, fontSize: '13px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", cursor: 'text', borderBottom: '1px dashed rgba(255,255,255,.15)' }} title="Cliquer pour saisir">
-                                {prixAchat ? `${prixAchat}€ ✏️` : 'Saisir ✏️'}
-                              </p>
-                          }
-                        </div>
-                        {(() => {
-                          const achat = parseFloat(prixAchat);
-                          const venteMatch = (result.prix_estime || prix).match(/(\d+)/);
-                          const vente = venteMatch ? parseInt(venteMatch[1]) : null;
-                          if (!achat || !vente) return null;
-                          const marge = vente - achat;
-                          const margeColor = marge > 0 ? '#10b981' : '#f87171';
-                          return (
-                            <div style={{ textAlign: 'right' }}>
-                              <p style={{ color: '#475569', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', margin: '0 0 1px' }}>Marge estimée</p>
-                              <p style={{ color: margeColor, fontWeight: 800, fontSize: '15px', margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif" }}>
-                                {marge > 0 ? '+' : ''}{marge}€
-                              </p>
-                              <p style={{ color: '#475569', fontSize: '9px', margin: '1px 0 0' }}>
-                                {vente > 0 ? `${Math.round((marge / vente) * 100)}% de marge` : ''}
-                              </p>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                    )}
-                    {isMobile && mobilePrixOpen && (
-                      <button onClick={() => setMobilePrixOpen(false)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', padding: '8px 0 0', textDecoration: 'underline', display: 'block' }}>Réduire ▲</button>
-                    )}
                   </div>
-                  )}
                 </>);
               })()}
               </div>{/* end pg-reveal showText */}
@@ -1790,7 +1740,10 @@ function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken
     setLoading(true);
     try {
       const body = { email: email.trim().toLowerCase(), password };
-      if (mode === 'register') { const ref = sessionStorage.getItem('pg_ref'); if (ref) body.referral_code = ref; }
+      if (mode === 'register') {
+        const ref = sessionStorage.getItem('pg_ref'); if (ref) body.referral_code = ref;
+        const affRef = localStorage.getItem('pg_aff_ref'); if (affRef) body.influencer_ref = affRef;
+      }
       const res = await fetch(`${API_URL}/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) {
@@ -2586,6 +2539,148 @@ function Changelog({ onBack, darkMode }) {
   );
 }
 
+/* ══ AFFILIATE DASHBOARD ══ */
+function AffiliatePage({ onBack }) {
+  const [step, setStep] = React.useState('login'); // login | dashboard
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [err, setErr] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [token, setToken] = React.useState(null);
+  const [stats, setStats] = React.useState(null);
+  const [copied, setCopied] = React.useState(false);
+
+  const handleLogin = async () => {
+    setErr(''); setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/affiliate/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
+      const data = await res.json();
+      if (!res.ok) { setErr(data.detail || 'Identifiants incorrects'); setLoading(false); return; }
+      setToken(data.token);
+      loadStats(data.token);
+    } catch { setErr('Erreur réseau'); setLoading(false); }
+  };
+
+  const loadStats = async (t) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/affiliate/stats`, { headers: { Authorization: `Bearer ${t}` } });
+      const data = await res.json();
+      if (!res.ok) { setErr(data.detail || 'Erreur'); setLoading(false); return; }
+      setStats(data); setStep('dashboard');
+    } catch { setErr('Erreur réseau'); }
+    setLoading(false);
+  };
+
+  const copyLink = () => { navigator.clipboard.writeText(stats.link); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+
+  const fmt = (cents) => (cents / 100).toFixed(2).replace('.', ',') + ' €';
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—';
+
+  const S = {
+    page: { background: '#0a0a0f', minHeight: '100vh', color: '#e2e8f0', fontFamily: "'DM Sans',system-ui,sans-serif" },
+    nav: { padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.07)', background: 'rgba(10,10,15,.97)', position: 'sticky', top: 0, zIndex: 100 },
+    wrap: { maxWidth: '900px', margin: '0 auto', padding: '32px 20px' },
+    card: { background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '14px', padding: '20px 24px', marginBottom: '16px' },
+    label: { color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 4px' },
+    val: { fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '28px', color: '#e2e8f0', margin: 0 },
+    input: { width: '100%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)', borderRadius: '10px', padding: '12px 14px', color: '#e2e8f0', fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' },
+    btn: { width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' },
+  };
+
+  return (
+    <div style={S.page}>
+      <nav style={S.nav}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800 }}>PixGlow</span>
+          <span style={{ background: 'rgba(124,58,237,.2)', color: '#a78bfa', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>AFFILIÉ</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>← Retour</button>
+      </nav>
+
+      <div style={S.wrap}>
+        {step === 'login' && (
+          <div style={{ maxWidth: '420px', margin: '60px auto' }}>
+            <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '26px', fontWeight: 800, marginBottom: '8px' }}>Espace affilié</h1>
+            <p style={{ color: '#475569', marginBottom: '28px', fontSize: '14px' }}>Accédez à vos statistiques de parrainage</p>
+            {err && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', color: '#f87171', fontSize: '13px' }}>{err}</div>}
+            <input style={S.input} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+            <input style={S.input} type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+            <button onClick={handleLogin} style={S.btn} disabled={loading}>{loading ? 'Connexion...' : 'Se connecter →'}</button>
+          </div>
+        )}
+
+        {step === 'dashboard' && stats && (
+          <>
+            <div style={{ marginBottom: '24px' }}>
+              <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, margin: '0 0 4px' }}>Bonjour {stats.name} 👋</h1>
+              <p style={{ color: '#475569', fontSize: '13px', margin: 0 }}>Commission : {stats.commission_rate}% par vente générée</p>
+            </div>
+
+            {/* Lien d'affiliation */}
+            <div style={{ ...S.card, background: 'rgba(124,58,237,.06)', border: '1px solid rgba(124,58,237,.2)' }}>
+              <p style={{ ...S.label, color: '#a78bfa', marginBottom: '8px' }}>Ton lien d'affiliation</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <code style={{ flex: 1, background: 'rgba(0,0,0,.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#c4b5fd', wordBreak: 'break-all' }}>{stats.link}</code>
+                <button onClick={copyLink} style={{ background: copied ? 'rgba(16,185,129,.2)' : 'rgba(124,58,237,.2)', border: `1px solid ${copied ? 'rgba(16,185,129,.4)' : 'rgba(124,58,237,.4)'}`, color: copied ? '#34d399' : '#a78bfa', borderRadius: '8px', padding: '10px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{copied ? '✓ Copié' : 'Copier'}</button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+              {[
+                { label: 'Inscriptions', val: stats.signups, color: '#60a5fa' },
+                { label: 'Achats générés', val: stats.paid_conversions, color: '#a78bfa' },
+                { label: 'Revenus générés', val: fmt(stats.total_revenue_cents), color: '#34d399' },
+                { label: 'Commission à percevoir', val: fmt(stats.commission_owed_cents), color: '#f59e0b' },
+              ].map(({ label, val, color }) => (
+                <div key={label} style={S.card}>
+                  <p style={S.label}>{label}</p>
+                  <p style={{ ...S.val, color, fontSize: typeof val === 'string' ? '22px' : '28px' }}>{val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Conversions list */}
+            {stats.conversions.length > 0 && (
+              <div style={S.card}>
+                <p style={{ ...S.label, marginBottom: '14px' }}>Historique des conversions</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {stats.conversions.map((c, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(255,255,255,.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '16px' }}>{c.type === 'payment' ? '💰' : '👤'}</span>
+                        <div>
+                          <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>
+                            {c.type === 'payment' ? `Achat Pack ${c.plan || ''}` : 'Inscription'}
+                          </p>
+                          <p style={{ margin: 0, fontSize: '11px', color: '#475569' }}>{c.user_email} · {fmtDate(c.created_at)}</p>
+                        </div>
+                      </div>
+                      {c.type === 'payment' && (
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#34d399' }}>+{fmt(c.commission_cents)}</p>
+                          <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{fmt(c.amount_cents)} vente</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {stats.conversions.length === 0 && (
+              <div style={{ ...S.card, textAlign: 'center', padding: '40px' }}>
+                <p style={{ fontSize: '32px', marginBottom: '8px' }}>🚀</p>
+                <p style={{ color: '#475569', fontSize: '14px' }}>Aucune conversion pour l'instant.<br/>Partage ton lien pour commencer !</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ══ ADMIN PANEL ══ */
 function AdminPanel({ onBack, userEmail }) {
   const [tab, setTab] = React.useState('analytics');
@@ -2684,7 +2779,7 @@ function AdminPanel({ onBack, userEmail }) {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-          {[['analytics', '📊 Analytics'], ['users', '👥 Utilisateurs']].map(([key, label]) => (
+          {[['analytics', '📊 Analytics'], ['users', '👥 Utilisateurs'], ['affiliates', '🤝 Affiliés']].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{ background: tab === key ? 'rgba(124,58,237,.2)' : 'rgba(255,255,255,.04)', border: `1px solid ${tab === key ? 'rgba(124,58,237,.4)' : 'rgba(255,255,255,.08)'}`, color: tab === key ? '#a78bfa' : '#64748b', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit' }}>{label}</button>
           ))}
         </div>
@@ -2837,7 +2932,138 @@ function AdminPanel({ onBack, userEmail }) {
             {loading && <p style={{ color: '#475569', textAlign: 'center', marginTop: '20px' }}>Chargement...</p>}
           </div>
         )}
+
+        {/* ── AFFILIÉS ── */}
+        {tab === 'affiliates' && <AdminAffiliates authHeaders={authHeaders} setMsg={setMsg} />}
       </div>
+    </div>
+  );
+}
+
+function AdminAffiliates({ authHeaders, setMsg }) {
+  const [affiliates, setAffiliates] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [showCreate, setShowCreate] = React.useState(false);
+  const [form, setForm] = React.useState({ code: '', name: '', email: '', password: '', commission_rate: 20 });
+  const [editAff, setEditAff] = React.useState(null); // { code, commission_rate, is_active, name }
+  const [creating, setCreating] = React.useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/affiliates`, { headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Erreur');
+      setAffiliates(await res.json());
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+    setLoading(false);
+  };
+  React.useEffect(() => { load(); }, []);
+
+  const create = async () => {
+    if (!form.code || !form.name || !form.email || !form.password) { setMsg({ ok: false, text: 'Tous les champs sont requis' }); return; }
+    setCreating(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/affiliates`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...form, commission_rate: parseFloat(form.commission_rate) }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erreur');
+      setMsg({ ok: true, text: `Affilié ${data.code} créé — lien : ${data.link}` });
+      setShowCreate(false); setForm({ code: '', name: '', email: '', password: '', commission_rate: 20 });
+      load();
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+    setCreating(false);
+  };
+
+  const patch = async (code, updates) => {
+    try {
+      const res = await fetch(`${API_URL}/admin/affiliates/${code}`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify(updates) });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Erreur');
+      setMsg({ ok: true, text: 'Affilié mis à jour' });
+      setEditAff(null); load();
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+  };
+
+  const del = async (code) => {
+    if (!confirm(`Supprimer l'affilié ${code} ? L'historique de conversions sera conservé.`)) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/affiliates/${code}`, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Erreur');
+      setMsg({ ok: true, text: 'Affilié supprimé' }); load();
+    } catch(e) { setMsg({ ok: false, text: e.message }); }
+  };
+
+  const fmt = (cents) => (cents / 100).toFixed(2).replace('.', ',') + ' €';
+  const inp = { background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', padding: '9px 12px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'inherit', outline: 'none' };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Affiliés ({affiliates.length})</h2>
+        <button onClick={() => setShowCreate(v => !v)} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', border: 'none', color: '#fff', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit' }}>+ Nouvel affilié</button>
+      </div>
+
+      {showCreate && (
+        <div style={{ background: 'rgba(124,58,237,.06)', border: '1px solid rgba(124,58,237,.2)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+          <p style={{ color: '#a78bfa', fontWeight: 700, fontSize: '14px', margin: '0 0 14px' }}>Créer un affilié</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+            <div><label style={{ color: '#475569', fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>CODE (ex: TIKTOKER1)</label><input style={{ ...inp, width: '100%', boxSizing: 'border-box', textTransform: 'uppercase' }} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="TIKTOKER1" /></div>
+            <div><label style={{ color: '#475569', fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Nom</label><input style={{ ...inp, width: '100%', boxSizing: 'border-box' }} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Emma Martin" /></div>
+            <div><label style={{ color: '#475569', fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Email</label><input style={{ ...inp, width: '100%', boxSizing: 'border-box' }} type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="emma@tiktok.com" /></div>
+            <div><label style={{ color: '#475569', fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Mot de passe</label><input style={{ ...inp, width: '100%', boxSizing: 'border-box' }} type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" /></div>
+            <div><label style={{ color: '#475569', fontSize: '11px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Commission (%)</label><input style={{ ...inp, width: '100%', boxSizing: 'border-box' }} type="number" min="0" max="100" value={form.commission_rate} onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))} /></div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={create} disabled={creating} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', border: 'none', color: '#fff', borderRadius: '8px', padding: '9px 20px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit' }}>{creating ? 'Création...' : 'Créer'}</button>
+            <button onClick={() => setShowCreate(false)} style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', color: '#64748b', borderRadius: '8px', padding: '9px 16px', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {loading && <p style={{ color: '#475569' }}>Chargement...</p>}
+
+      {affiliates.map(a => (
+        <div key={a.code} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '16px 20px', marginBottom: '10px' }}>
+          {editAff?.code === a.code ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+              <input style={{ ...inp, width: '120px' }} type="number" min="0" max="100" value={editAff.commission_rate} onChange={e => setEditAff(v => ({ ...v, commission_rate: parseFloat(e.target.value) }))} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#e2e8f0', fontSize: '13px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={editAff.is_active} onChange={e => setEditAff(v => ({ ...v, is_active: e.target.checked }))} /> Actif
+              </label>
+              <button onClick={() => patch(a.code, { commission_rate: editAff.commission_rate, is_active: editAff.is_active })} style={{ background: 'rgba(16,185,129,.15)', border: '1px solid rgba(16,185,129,.3)', color: '#34d399', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Sauver</button>
+              <button onClick={() => setEditAff(null)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Annuler</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px' }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '15px', color: '#e2e8f0' }}>{a.name}</span>
+                  <code style={{ background: 'rgba(124,58,237,.15)', color: '#a78bfa', fontSize: '11px', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>{a.code}</code>
+                  {!a.is_active && <span style={{ background: 'rgba(239,68,68,.1)', color: '#f87171', fontSize: '10px', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>INACTIF</span>}
+                </div>
+                <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>{a.email} · {a.commission_rate}% commission</p>
+              </div>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                {[['👤', a.signups, 'inscrits'], ['💰', a.paid_conversions, 'achats'], ['📈', fmt(a.revenue_cents), 'CA généré'], ['🏆', fmt(a.commission_cents), 'commission']].map(([icon, val, lbl]) => (
+                  <div key={lbl} style={{ textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#e2e8f0' }}>{icon} {val}</p>
+                    <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{lbl}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button onClick={() => setEditAff({ code: a.code, commission_rate: a.commission_rate, is_active: a.is_active })} style={{ background: 'rgba(96,165,250,.1)', border: '1px solid rgba(96,165,250,.2)', color: '#60a5fa', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}>Éditer</button>
+                <button onClick={() => del(a.code)} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit' }}>Suppr.</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {!loading && affiliates.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#475569' }}>
+          <p style={{ fontSize: '32px' }}>🤝</p>
+          <p>Aucun affilié pour l'instant. Créez-en un pour commencer.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -2908,6 +3134,9 @@ export default function PixGlow() {
     // Referral code in URL → store for registration
     const refCode = params.get('ref');
     if (refCode) { sessionStorage.setItem('pg_ref', refCode.toUpperCase()); window.history.replaceState({}, '', window.location.pathname); }
+    // Influencer affiliate ref → store persistently
+    const affRef = params.get('ref');
+    if (affRef) { localStorage.setItem('pg_aff_ref', affRef.toUpperCase()); }
     const resetT = params.get('reset');
     if (resetT) {
       window.history.replaceState({}, '', window.location.pathname);
@@ -3118,6 +3347,7 @@ export default function PixGlow() {
   if (page === 'cgv') return <><InjectCSS /><CGV onBack={() => setPage('landing')} /></>;
   if (page === 'nouveautes') return <><InjectCSS /><Changelog onBack={() => setPage('landing')} darkMode={darkMode} /></>;
   if (page === 'admin' && isConnected) return <AdminPanel onBack={() => setPage('app')} userEmail={userEmail} />;
+  if (page === 'affiliate') return <><InjectCSS /><AffiliatePage onBack={() => setPage('landing')} /></>;
 
   // Tokens de thème — tous les styles conditionnels passent par T
   const T = darkMode ? {
@@ -3228,7 +3458,7 @@ export default function PixGlow() {
         <a href="mailto:pixglow.support@proton.me" style={{ color: '#7c3aed', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>pixglow.support@proton.me</a>
       </div>
       <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '10px' }}>
-        {[['mentions','Mentions légales'],['cgv','CGV'],['confidentialite','Confidentialité']].map(([p, label]) => (
+        {[['mentions','Mentions légales'],['cgv','CGV'],['confidentialite','Confidentialité'],['affiliate','Espace affilié']].map(([p, label]) => (
           <button key={p} onClick={() => setPage(p)} className="pg-navlink" style={{ color: '#64748b', fontSize: '12px', padding: 0 }}>{label}</button>
         ))}
       </div>
@@ -3273,7 +3503,7 @@ export default function PixGlow() {
           <div>
             <p style={{ color: T.text, fontWeight: 700, fontSize: '13px', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Légal</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[['mentions','Mentions légales'],['cgv','CGV'],['confidentialite','Confidentialité']].map(([p, label]) => (
+              {[['mentions','Mentions légales'],['cgv','CGV'],['confidentialite','Confidentialité'],['affiliate','Espace affilié']].map(([p, label]) => (
                 <button key={p} onClick={() => setPage(p)} className="pg-navlink" style={{ color: '#475569', fontSize: '13px', textAlign: 'left', padding: 0 }}>{label}</button>
               ))}
             </div>
