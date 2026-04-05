@@ -403,6 +403,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
   const [selectedMainHashtags, setSelectedMainHashtags] = useState([]);
   // Analyse approfondie
   const [showAnalyse, setShowAnalyse] = useState(false);
+  const [analyseConfirmed, setAnalyseConfirmed] = useState(false);
+  const [prixAchatInput, setPrixAchatInput] = useState('');
   // Prix d'achat
   const [prixAchat, setPrixAchat] = useState('');
   const [editPrixAchat, setEditPrixAchat] = useState(false);
@@ -492,19 +494,20 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `Erreur ${res.status}`); }
       const data = await res.json();
       if (mountedRef.current) {
-        const tendancePoints = selectedTrends.reduce((sum, mot) => {
-          const t = trends?.trends.find(tr => (tr.mot || tr.word) === mot);
-          const pts = t?.score_plus ? parseInt(String(t.score_plus).replace(/[^0-9]/g, '')) : 3;
-          return sum + (isNaN(pts) || pts === 0 ? 3 : pts);
-        }, 0);
+        const newScore = data.score ?? result.score;
+        const scoreGain = Math.max(0, newScore - result.score);
+        const prevDetails = result.score_details || {};
+        const prevTendance = prevDetails.tendance ?? 0;
+        const newTendance = Math.min(25, prevTendance + Math.max(scoreGain, selectedTrends.length * 3));
         setResult({
           ...result,
           ...data,
           prix_estime: result.prix_estime,
           prix_vente_rapide: result.prix_vente_rapide,
+          score: newScore,
           score_details: {
-            ...(result.score_details || {}),
-            tendance: Math.min(25, tendancePoints),
+            ...prevDetails,
+            tendance: newTendance,
           },
         });
         setBoosted(true);
@@ -1109,16 +1112,45 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
               <div className={`pg-reveal ${showBoostPanel ? 'visible' : ''}`}>
               <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px', marginBottom: '8px' }}>
                 <button
-                  onClick={() => setShowAnalyse(e => !e)}
+                  onClick={() => { if (!showAnalyse) { setShowAnalyse(true); } else if (!analyseConfirmed) { setShowAnalyse(false); } else { setShowAnalyse(false); setAnalyseConfirmed(false); } }}
                   style={{ width: '100%', background: showAnalyse ? 'rgba(96,165,250,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${showAnalyse ? 'rgba(96,165,250,.25)' : 'rgba(255,255,255,.08)'}`, borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', marginBottom: showAnalyse ? '12px' : '10px', transition: 'all .2s' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10h9M2 7h7M2 4h5" stroke="#60a5fa" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                    <span style={{ color: '#60a5fa', fontWeight: 700, fontSize: '13px' }}>Analyse approfondie de l'annonce</span>
+                    <span style={{ color: '#60a5fa', fontWeight: 700, fontSize: '13px' }}>Analyse approfondie en temps réel</span>
                   </div>
                   <span style={{ fontSize: '16px', lineHeight: 1, transition: 'transform .2s', display: 'inline-block', transform: showAnalyse ? 'rotate(180deg)' : 'rotate(0deg)', color: '#475569' }}>⌄</span>
                 </button>
-                {showAnalyse && (() => {
+                {showAnalyse && !analyseConfirmed && (
+                  <div style={{ background: 'rgba(96,165,250,.04)', border: '1px solid rgba(96,165,250,.15)', borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
+                    <p style={{ color: '#60a5fa', fontSize: '12px', fontWeight: 700, margin: '0 0 4px' }}>💰 Prix d'achat de l'article</p>
+                    <p style={{ color: '#475569', fontSize: '11px', margin: '0 0 12px', lineHeight: 1.5 }}>Entre le prix auquel tu as acheté cet article pour calculer ta marge et stratégie de vente optimale.</p>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Ex : 25"
+                          value={prixAchatInput}
+                          onChange={e => setPrixAchatInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { setPrixAchat(prixAchatInput); setAnalyseConfirmed(true); } }}
+                          style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(96,165,250,.25)', borderRadius: '8px', padding: '9px 32px 9px 12px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                          autoFocus
+                        />
+                        <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#475569', fontSize: '13px', pointerEvents: 'none' }}>€</span>
+                      </div>
+                      <button
+                        onClick={() => { setPrixAchat(prixAchatInput); setAnalyseConfirmed(true); }}
+                        style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', border: 'none', color: '#fff', borderRadius: '8px', padding: '9px 16px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      >Analyser →</button>
+                    </div>
+                    <button
+                      onClick={() => { setPrixAchat(''); setAnalyseConfirmed(true); }}
+                      style={{ background: 'none', border: 'none', color: '#475569', fontSize: '11px', cursor: 'pointer', padding: '8px 0 0', fontFamily: 'inherit', textDecoration: 'underline' }}
+                    >Passer cette étape</button>
+                  </div>
+                )}
+                {showAnalyse && analyseConfirmed && (() => {
                   const sd = result.score_details || {};
                   const photoSc = sd.photo ?? Math.round(result.score * 0.22);
                   const titreSc = sd.titre ?? Math.round(result.score * 0.28);
@@ -1175,13 +1207,23 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                         : 'La tendance est à 0/25 — active le Boost Tendance pour intégrer des mots-clés viraux (ex : "matelassé", "brillant", "hiver 2026") et gagner jusqu\'à +15 pts.',
                     },
                   ];
-                  // Prix advice
+                  // Prix advice avec marge si prix d'achat connu
                   const prixParts = result.prix_estime ? String(result.prix_estime).match(/(\d+).*?(\d+)/) : null;
                   const prixLow = prixParts ? parseInt(prixParts[1]) : null;
                   const prixHigh = prixParts ? parseInt(prixParts[2]) : null;
-                  const prixConeil = prixLow && prixHigh
-                    ? `Fourchette estimée ${result.prix_estime}. Pour vendre vite : affiche ${prixLow}€. Pour maximiser : ${prixHigh}€ avec photos qualitatives et description complète.`
-                    : `Précise l'état de l'article (Neuf, TBE, Bon état) pour affiner le prix et rassurer l'acheteur.`;
+                  const achat = prixAchat ? parseFloat(prixAchat) : null;
+                  let prixConeil;
+                  if (achat && prixLow && prixHigh) {
+                    const margeLow = prixLow - achat;
+                    const margeHigh = prixHigh - achat;
+                    const margeLowPct = Math.round((margeLow / achat) * 100);
+                    const margeHighPct = Math.round((margeHigh / achat) * 100);
+                    prixConeil = `Acheté ${achat}€ — vente rapide à ${prixLow}€ = +${margeLow}€ (${margeLowPct > 0 ? '+' : ''}${margeLowPct}%). Prix max ${prixHigh}€ = +${margeHigh}€ (${margeHighPct > 0 ? '+' : ''}${margeHighPct}%) avec description complète et photos qualitatives.`;
+                  } else if (prixLow && prixHigh) {
+                    prixConeil = `Fourchette estimée ${result.prix_estime}. Pour vendre vite : affiche ${prixLow}€. Pour maximiser : ${prixHigh}€ avec photos qualitatives et description complète.`;
+                  } else {
+                    prixConeil = `Précise l'état de l'article (Neuf, TBE, Bon état) pour affiner le prix et rassurer l'acheteur.`;
+                  }
                   return (
                     <div style={{ background: 'rgba(96,165,250,.04)', border: '1px solid rgba(96,165,250,.15)', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
                       {/* Per-criterion advice */}
@@ -1199,7 +1241,10 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade }) {
                       </div>
                       {/* Prix conseil */}
                       <div style={{ background: 'rgba(16,185,129,.05)', border: '1px solid rgba(16,185,129,.15)', borderRadius: '8px', padding: '9px 11px' }}>
-                        <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, margin: '0 0 3px' }}>💰 Prix &amp; stratégie de vente</p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <p style={{ color: '#10b981', fontSize: '11px', fontWeight: 700, margin: 0 }}>💰 Prix &amp; stratégie de vente</p>
+                          {achat && <button onClick={() => { setAnalyseConfirmed(false); setPrixAchatInput(String(achat)); }} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '10px', cursor: 'pointer', fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>Modifier</button>}
+                        </div>
                         <p style={{ color: '#64748b', fontSize: '11px', margin: 0, lineHeight: 1.5 }}>{prixConeil}</p>
                       </div>
                     </div>
@@ -3755,7 +3800,7 @@ export default function PixGlow() {
                           ? <div style={{ width: '20px', height: '20px', border: '2px solid rgba(124,58,237,.2)', borderTop: '2px solid #7c3aed', borderRadius: '50%', animation: 'pg-spin 0.8s linear infinite' }} />
                           : (src === 'heic-placeholder' || src === 'error-placeholder')
                             ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}><span style={{ fontSize: '24px' }}>📷</span><span style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 600 }}>HEIC</span></div>
-                            : <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            : <img src={src} alt={`Photo ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#0d0d18' }} />
                         }
                         {loading && i < progress && <div className="pg-check" style={{ position: 'absolute', inset: 0, background: 'rgba(16,185,129,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10l4.5 4.5L16 6" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
                       </div>
