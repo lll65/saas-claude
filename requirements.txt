@@ -12,4 +12,5 @@ python-multipart
 psycopg2-binary
 httpx
 numpy
+opencv-python-headless
 aiofiles
