@@ -386,25 +386,46 @@ def _schedule_cleanup():
     t.start()
 
 # ─────────────────────────────────────────────
-#  LISSAGE DES PLIS
+#  LISSAGE DES PLIS — filtre bilatéral approximé multi-échelle
 # ─────────────────────────────────────────────
-def reduce_wrinkles(img: Image.Image, strength: float = 0.45) -> Image.Image:
+def reduce_wrinkles(img: Image.Image, strength: float = 0.65) -> Image.Image:
+    """
+    Lissage intelligent des plis par décomposition fréquentielle multi-échelle.
+    - Cible les plis (fréquences moyennes) sans flouter les contours du vêtement.
+    - Préserve la texture du tissu (hautes fréquences fines).
+    - Aucune dépendance externe : numpy + Pillow uniquement.
+    """
     mode = img.mode
     work = img.convert("RGB")
     arr = np.array(work, dtype=np.float32)
-    pil_smooth = work.filter(ImageFilter.GaussianBlur(radius=4))
-    smooth = np.array(pil_smooth, dtype=np.float32)
-    pil_base = work.filter(ImageFilter.GaussianBlur(radius=8))
-    base = np.array(pil_base, dtype=np.float32)
-    diff = np.abs(smooth - base)
-    diff_gray = diff.mean(axis=2, keepdims=True)
-    max_diff = diff_gray.max()
-    if max_diff > 0:
-        wrinkle_map = np.clip(diff_gray / (max_diff * 0.6), 0, 1)
-    else:
+
+    # 3 niveaux de flou pour décomposer les fréquences spatiales
+    fine   = np.array(work.filter(ImageFilter.GaussianBlur(radius=2)),  dtype=np.float32)
+    medium = np.array(work.filter(ImageFilter.GaussianBlur(radius=5)),  dtype=np.float32)
+    coarse = np.array(work.filter(ImageFilter.GaussianBlur(radius=10)), dtype=np.float32)
+
+    # Fréquences moyennes = zone des plis (différence entre flou moyen et flou fort)
+    mid_freq  = np.abs(fine - coarse).mean(axis=2, keepdims=True)
+    # Hautes fréquences = contours nets, texture fine du tissu
+    high_freq = np.abs(arr - fine).mean(axis=2, keepdims=True)
+
+    mid_max  = mid_freq.max()
+    high_max = high_freq.max()
+    if mid_max < 1e-6:
         return img
-    blended = arr * (1 - wrinkle_map * strength) + smooth * (wrinkle_map * strength)
+
+    # Carte des plis : zones à variation moyenne élevée
+    wrinkle_map = np.clip(mid_freq / (mid_max * 0.45), 0, 1)
+    # Protection des contours nets : on ne lisse pas les bords du vêtement
+    edge_guard  = np.clip(high_freq / (high_max * 0.35 + 1e-6), 0, 1)
+
+    # Masque final : plis détectés MOINS les contours à préserver
+    smooth_mask = wrinkle_map * (1.0 - edge_guard * 0.85)
+
+    # Fusion : l'original avec le flou moyen, pondéré par le masque
+    blended = arr * (1.0 - smooth_mask * strength) + medium * (smooth_mask * strength)
     blended = np.clip(blended, 0, 255).astype(np.uint8)
+
     result = Image.fromarray(blended, "RGB")
     if mode == "RGBA":
         result = result.convert("RGBA")
