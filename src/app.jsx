@@ -3256,19 +3256,20 @@ export default function PixGlow() {
   // Téléchargement via blob — évite la navigation hors de l'app sur mobile
   const handleDownload = async (r) => {
     try {
+      if (isIOS) {
+        // Sur iOS : window.open avec un blobUrl après un await est bloqué par le popup blocker de Safari
+        // car l'await casse la chaîne de geste utilisateur. On ouvre directement l'URL serveur —
+        // l'utilisateur appuie longuement sur l'image pour l'enregistrer dans Photos.
+        window.open(r.url, '_blank');
+        return;
+      }
       const res = await fetch(r.url);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      if (isIOS) {
-        // Sur iOS : window.open ouvre l'image dans un onglet → l'utilisateur appuie longuement pour sauvegarder
-        window.open(blobUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-      } else {
-        const a = document.createElement('a');
-        a.href = blobUrl; a.download = r.filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
-      }
+      const a = document.createElement('a');
+      a.href = blobUrl; a.download = r.filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
     } catch {
       window.open(r.url, '_blank');
     }
