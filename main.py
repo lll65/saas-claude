@@ -1286,21 +1286,40 @@ async def generate_description(
     if user_info_parts:
         user_info_section = "\nINFOS FOURNIES PAR LE VENDEUR (à intégrer OBLIGATOIREMENT dans la description) :\n" + "\n".join(f"- {p}" for p in user_info_parts) + "\n"
 
-    prompt = f"""Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo et génère UNIQUEMENT ce JSON (sans markdown, sans texte autour) :
-{{"titre":"marque visible + couleur principale + type d'article, max 60 caractères","description":"description vendeuse structurée en 4 parties : 1) caractéristiques précises (type, couleur, matière, coupe si visible) 2) points forts / détails qui donnent envie d'acheter 3) état visible de l'article 4) une phrase finale percutante style 'Idéal pour...' adaptée à l'article. Utilise 2-3 emojis pertinents répartis naturellement. Entre 80 et 150 mots.","hashtags":"#tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10 #tag11 #tag12","score":72,"categorie":"vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"10-15€","conseils_photo":"","score_details":{{"photo":15,"titre":18,"description":16,"tendance":0}}}}
+    tone_examples = {
+        "casual":     "ex: 'Top vraiment sympa, parfait pour tous les jours ! 😊 Couleur canon, trop confortable.'",
+        "streetwear": "ex: 'Pièce ultra fire 🔥 Ce fit est straight drip, collab hype qui claque grave.'",
+        "luxe":       "ex: 'Pièce d'exception ✨ Tissu noble et raffiné, coupe impeccable, finitions irréprochables.'",
+        "pro":        "ex: 'Article de qualité, coupe structurée et sobre. Idéal pour un environnement professionnel ou smart casual.'",
+    }
+    tone_example = tone_examples.get(tone_key, tone_examples["casual"])
+
+    prompt = f"""Tu es expert vente Vinted France. Analyse PRÉCISÉMENT CE vêtement/article visible sur la photo.
+
+⚠️ TON IMPOSÉ : {tone_key.upper()} — {tone_instruction}
+La description DOIT refléter ce ton. {tone_example}
+
+Génère UNIQUEMENT ce JSON valide (sans markdown, sans texte autour). Remplace CHAQUE valeur par une évaluation réelle basée sur l'image :
+{{"titre":"STRING — marque si visible + couleur + type article, max 60 chars","description":"STRING — 80 à 150 mots RÉDIGÉS avec le TON {tone_key.upper()} ci-dessus. Structure: 1)caractéristiques visibles 2)points forts 3)état 4)phrase finale Idéal pour...","hashtags":"STRING — exactement 5 hashtags: #Vinted + #marque + #couleur + #style + #tag_populaire","score":INTEGER_CALCULE,"categorie":"STRING — un parmi: vetement|chaussures|accessoires|sacs|bijoux|montres|sport|maison","prix_estime":"STRING — fourchette réaliste ex: 15-25€","conseils_photo":"STRING — 2-3 conseils si score<65, sinon chaîne vide","score_details":{{"photo":INTEGER_CALCULE,"titre":INTEGER_CALCULE,"description":INTEGER_CALCULE,"tendance":0}},"conseils":{{"titre":"STRING — conseil précis et actionnable pour améliorer CE titre spécifique","description":"STRING — conseil précis et actionnable pour améliorer CETTE description","photo":"STRING — conseil précis et actionnable pour améliorer la photo de CET article"}}}}
 {user_info_section}
-RÈGLES STRICTES :
-- Décris UNIQUEMENT ce qui est visible sur la photo — ne suppose rien
-- TON DE LA DESCRIPTION : {tone_instruction}
-- Titre : marque en premier si visible (ex: "Nike Air Max blanc"), sinon couleur + type d'article précis
-- Description : structurée et vendeuse. Commence par les caractéristiques factuelles (ex: "Doudoune matelassée noire, tissu brillant effet laqué, coupe droite oversize"), puis les points forts visibles (ex: "Logo brodé sur la poitrine, fermeture zippée, poches plaquées"), puis l'état ("Excellent état, aucun défaut visible"). Intègre les infos vendeur si fournies (taille, état, matière, défauts). Termine TOUJOURS par une phrase courte et accrocheuse du style "Idéal pour..." ou "Parfait pour..." adaptée à l'article. Adapte le ton et le vocabulaire selon le TON ci-dessus.
-- LANGAGE CERTAIN : n'écris JAMAIS "semble être", "paraît être", "probablement", "peut-être", "il me semble" — si tu n'es pas sûr d'une matière, ne la mentionne pas plutôt que de douter
-- TAILLE : si la taille est fournie par le vendeur, utilise-la. Sinon, si elle n'est pas clairement visible sur la photo, NE MENTIONNE PAS LA TAILLE
-- HASHTAGS : génère EXACTEMENT 5 hashtags pertinents. Inclus : #Vinted + #marque (ou type) + #couleur + #style + 1 tag populaire ciblé (ex: #DoudouneHomme, #SecondeMain, #ModeFemme). Ne mets PAS plus de 5 hashtags.
-- Prix estimé : fourchette OBLIGATOIRE et COHÉRENTE — donne toujours une estimation réaliste selon marque, état et catégorie. Si l'état est fourni par le vendeur, ajuste le prix en conséquence. Reste cohérent et ne change pas d'une régénération à l'autre pour le même article.
-- Score : évalue HONNÊTEMENT entre 50 et 95. Article basique = 55-65, bon état sans marque = 65-75, marque connue bon état = 75-88, rare/tendance/neuf = 88-95. Ne mets JAMAIS 85 par défaut
-- score_details : décompose le score en 4 critères chacun sur 25 points — photo (qualité photo, éclairage, fond), titre (précision, marque, longueur), description (richesse, structure, accroche), tendance (met 0 ici, sera boosté séparément). La somme photo+titre+description+tendance doit approximer le score total.
-- conseils_photo : si le score est inférieur à 65 (photo floue, fond encombré, mauvais éclairage, article froissé), donne 2-3 conseils courts et bienveillants pour améliorer la photo (ex: "Essaie sur fond blanc ou clair 📸", "Utilise la lumière naturelle près d'une fenêtre ☀️", "Défroisse l'article avant la photo 👕"). Sinon laisse la chaîne vide."""
+RÈGLES DE CALCUL DES SCORES (OBLIGATOIRE — NE JAMAIS COPIER DES VALEURS EXEMPLES) :
+- score (INTEGER entre 50 et 95) : évalue objectivement selon l'article VU sur la photo
+  → Article basique/inconnu = 52 à 64 | Bon état sans marque = 65 à 74 | Marque connue bon état = 75 à 87 | Rare/tendance/neuf = 88 à 95
+  → INTERDIT de mettre 72, 75 ou 85 par défaut — calcule vraiment
+- score_details.photo (INTEGER 0-25) : qualité réelle de la photo (netteté, éclairage, fond, cadrage)
+- score_details.titre (INTEGER 0-25) : évalue le titre que TU vas générer (précision, présence marque, longueur)
+- score_details.description (INTEGER 0-25) : évalue la description que TU vas générer (richesse, structure, accroche)
+- La somme photo+titre+description doit être proche du score total (tendance=0 toujours)
+
+RÈGLES DESCRIPTION :
+- Décris UNIQUEMENT ce qui est visible — ne suppose rien
+- Titre : marque en premier si visible, sinon couleur + type précis
+- LANGAGE CERTAIN : jamais "semble être", "probablement", "peut-être"
+- TAILLE : utilise celle du vendeur si fournie, sinon NE MENTIONNE PAS LA TAILLE
+- Prix : fourchette réaliste selon marque, état, catégorie
+- conseils.titre/description/photo : conseils SPÉCIFIQUES à CET article, pas génériques
+
+RAPPEL TON {tone_key.upper()} : {tone_instruction}"""
 
     VISION_MODELS = [
         "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -1374,6 +1393,11 @@ RÈGLES STRICTES :
                 sd_photo = min(25, third + (score % 3))
                 sd_titre = min(25, third)
                 sd_desc  = min(25, score - sd_photo - sd_titre)
+            # Parse per-criterion AI advice
+            raw_conseils = parsed.get("conseils", {})
+            ai_conseil_titre = str(raw_conseils.get("titre", ""))[:300] if isinstance(raw_conseils, dict) else ""
+            ai_conseil_desc  = str(raw_conseils.get("description", ""))[:300] if isinstance(raw_conseils, dict) else ""
+            ai_conseil_photo = str(raw_conseils.get("photo", ""))[:300] if isinstance(raw_conseils, dict) else ""
             return {
                 "titre": str(parsed.get("titre", "Article en bon état"))[:80],
                 "description": str(parsed.get("description", "Bel article 📦"))[:600],
@@ -1385,6 +1409,7 @@ RÈGLES STRICTES :
                 "probabilite_vente": prob,
                 "conseils_photo": str(parsed.get("conseils_photo", ""))[:300] if score < 65 else "",
                 "score_details": {"photo": sd_photo, "titre": sd_titre, "description": sd_desc, "tendance": 0},
+                "conseils": {"titre": ai_conseil_titre, "description": ai_conseil_desc, "photo": ai_conseil_photo},
                 "tone": tone_key,
             }
     except HTTPException:
