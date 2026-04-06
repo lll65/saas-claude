@@ -386,47 +386,30 @@ def _schedule_cleanup():
     t.start()
 
 # ─────────────────────────────────────────────
-#  LISSAGE DES PLIS — filtre bilatéral approximé multi-échelle
+#  LISSAGE DES PLIS — OpenCV Non-Local Means Denoising
 # ─────────────────────────────────────────────
 def reduce_wrinkles(img: Image.Image, strength: float = 0.65) -> Image.Image:
     """
-    Lissage intelligent des plis par décomposition fréquentielle multi-échelle.
-    - Cible les plis (fréquences moyennes) sans flouter les contours du vêtement.
-    - Préserve la texture du tissu (hautes fréquences fines).
-    - Aucune dépendance externe : numpy + Pillow uniquement.
+    Lissage des plis par Non-Local Means (OpenCV).
+    - Préserve les contours nets (bords, coutures) contrairement au Gaussian blur.
+    - Lisse efficacement les plis sans flouter l'image.
+    - h : force du filtre, calibré via `strength` (valeurs typiques 6-14).
     """
+    import cv2
+
     mode = img.mode
     work = img.convert("RGB")
-    arr = np.array(work, dtype=np.float32)
+    arr = np.array(work, dtype=np.uint8)
 
-    # 3 niveaux de flou pour décomposer les fréquences spatiales
-    fine   = np.array(work.filter(ImageFilter.GaussianBlur(radius=2)),  dtype=np.float32)
-    medium = np.array(work.filter(ImageFilter.GaussianBlur(radius=12)), dtype=np.float32)
-    coarse = np.array(work.filter(ImageFilter.GaussianBlur(radius=22)), dtype=np.float32)
+    # h = force de débruitage (+ élevé = + lisse, mais risque de perdre texture)
+    # On mappe strength 0..1 → h 4..14 pour rester conservateur
+    h = int(4 + strength * 10)
 
-    # Fréquences moyennes = zone des plis (différence entre flou fin et flou fort)
-    mid_freq  = np.abs(fine - coarse).mean(axis=2, keepdims=True)
-    # Hautes fréquences = contours nets du vêtement (bords tranchants uniquement)
-    high_freq = np.abs(arr - fine).mean(axis=2, keepdims=True)
+    # fastNlMeansDenoisingColored : traite chaque canal couleur séparément
+    # templateWindowSize=7, searchWindowSize=21 : bon équilibre qualité/vitesse
+    denoised = cv2.fastNlMeansDenoisingColored(arr, None, h, h, 7, 21)
 
-    mid_max  = mid_freq.max()
-    high_max = high_freq.max()
-    if mid_max < 1e-6:
-        return img
-
-    # Carte des plis : zones à variation moyenne élevée
-    wrinkle_map = np.clip(mid_freq / (mid_max * 0.4), 0, 1)
-    # Protection des contours nets : seuil plus élevé pour ne pas bloquer la texture tissu
-    edge_guard  = np.clip(high_freq / (high_max * 0.7 + 1e-6), 0, 1)
-
-    # Masque final : plis détectés MOINS les contours à préserver
-    smooth_mask = wrinkle_map * (1.0 - edge_guard * 0.55)
-
-    # Fusion : l'original avec le flou moyen, pondéré par le masque
-    blended = arr * (1.0 - smooth_mask * strength) + medium * (smooth_mask * strength)
-    blended = np.clip(blended, 0, 255).astype(np.uint8)
-
-    result = Image.fromarray(blended, "RGB")
+    result = Image.fromarray(denoised, "RGB")
     if mode == "RGBA":
         result = result.convert("RGBA")
     return result
