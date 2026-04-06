@@ -1058,12 +1058,8 @@ async def enhance_photo(
             tmp = orig.copy()
             proc_w, proc_h = w, h
 
-        tmp_rgb = tmp.convert("RGB") if tmp.mode == "RGBA" else tmp
+        tmp_rgb = tmp.convert("RGB") if tmp.mode != "RGB" else tmp
         tmp_smooth = reduce_wrinkles(tmp_rgb, strength=0.75)
-        if tmp.mode == "RGBA":
-            r, g, b = tmp_smooth.split()
-            _, _, _, a = tmp.split()
-            tmp_smooth = Image.merge("RGBA", (r, g, b, a))
 
         no_bg = remove(tmp_smooth)
         no_bg = apply_studio_lighting(no_bg)
