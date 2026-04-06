@@ -447,7 +447,13 @@ def apply_studio_lighting(img_rgba: Image.Image, intensity: float = 0.35) -> Ima
     light_3d = light_effect[:, :, np.newaxis]      # broadcast sur RGB
     mask_3d = alpha[:, :, np.newaxis]              # appliqué seulement au sujet
 
-    result_rgb = rgb + light_3d * rgb * mask_3d
+    # Protège les pixels déjà très clairs (vêtements blancs) : réduit l'effet
+    # progressivement quand la luminance dépasse 0.75 (disparaît à 1.0)
+    luminance = rgb.mean(axis=2) / 255.0
+    white_protection = 1.0 - np.clip((luminance - 0.75) / 0.25, 0, 1)
+    white_protection_3d = white_protection[:, :, np.newaxis]
+
+    result_rgb = rgb + light_3d * rgb * mask_3d * white_protection_3d
     result_rgb = np.clip(result_rgb, 0, 255).astype(np.uint8)
 
     result = np.concatenate([result_rgb, arr[:, :, 3:4].astype(np.uint8)], axis=2)
