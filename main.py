@@ -401,12 +401,12 @@ def reduce_wrinkles(img: Image.Image, strength: float = 0.65) -> Image.Image:
 
     # 3 niveaux de flou pour décomposer les fréquences spatiales
     fine   = np.array(work.filter(ImageFilter.GaussianBlur(radius=2)),  dtype=np.float32)
-    medium = np.array(work.filter(ImageFilter.GaussianBlur(radius=5)),  dtype=np.float32)
-    coarse = np.array(work.filter(ImageFilter.GaussianBlur(radius=10)), dtype=np.float32)
+    medium = np.array(work.filter(ImageFilter.GaussianBlur(radius=12)), dtype=np.float32)
+    coarse = np.array(work.filter(ImageFilter.GaussianBlur(radius=22)), dtype=np.float32)
 
-    # Fréquences moyennes = zone des plis (différence entre flou moyen et flou fort)
+    # Fréquences moyennes = zone des plis (différence entre flou fin et flou fort)
     mid_freq  = np.abs(fine - coarse).mean(axis=2, keepdims=True)
-    # Hautes fréquences = contours nets, texture fine du tissu
+    # Hautes fréquences = contours nets du vêtement (bords tranchants uniquement)
     high_freq = np.abs(arr - fine).mean(axis=2, keepdims=True)
 
     mid_max  = mid_freq.max()
@@ -415,12 +415,12 @@ def reduce_wrinkles(img: Image.Image, strength: float = 0.65) -> Image.Image:
         return img
 
     # Carte des plis : zones à variation moyenne élevée
-    wrinkle_map = np.clip(mid_freq / (mid_max * 0.45), 0, 1)
-    # Protection des contours nets : on ne lisse pas les bords du vêtement
-    edge_guard  = np.clip(high_freq / (high_max * 0.35 + 1e-6), 0, 1)
+    wrinkle_map = np.clip(mid_freq / (mid_max * 0.4), 0, 1)
+    # Protection des contours nets : seuil plus élevé pour ne pas bloquer la texture tissu
+    edge_guard  = np.clip(high_freq / (high_max * 0.7 + 1e-6), 0, 1)
 
     # Masque final : plis détectés MOINS les contours à préserver
-    smooth_mask = wrinkle_map * (1.0 - edge_guard * 0.85)
+    smooth_mask = wrinkle_map * (1.0 - edge_guard * 0.55)
 
     # Fusion : l'original avec le flou moyen, pondéré par le masque
     blended = arr * (1.0 - smooth_mask * strength) + medium * (smooth_mask * strength)
