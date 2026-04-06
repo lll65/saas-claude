@@ -1141,7 +1141,9 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                   const titreSc = sd.titre ?? Math.round(result.score * 0.28);
                   const descSc  = sd.description ?? Math.round(result.score * 0.38);
                   const tendSc  = sd.tendance ?? 0;
-                  // Build per-criterion actionable tips
+                  // Conseils IA retournés par le backend (spécifiques à l'annonce)
+                  const aiConseils = result.conseils || {};
+                  // Build per-criterion actionable tips — priorité aux conseils IA
                   const criteres = [
                     {
                       label: 'Titre',
@@ -1149,11 +1151,11 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                       max: 25,
                       icon: '✏️',
                       ok: titreSc >= 20,
-                      conseil: titreSc >= 20
+                      conseil: aiConseils.titre || (titreSc >= 20
                         ? 'Titre bien structuré — marque, couleur et type d\'article sont présents.'
                         : titreSc >= 15
                         ? 'Ajoute la taille (ex : Taille M) et l\'état (Neuf / TBE) dans le titre pour gagner +5 pts.'
-                        : 'Place la marque en premier, puis couleur + type d\'article. Exemple : "Ralph Lauren doudoune noire Taille M".',
+                        : 'Place la marque en premier, puis couleur + type d\'article. Exemple : "Ralph Lauren doudoune noire Taille M".'),
                     },
                     {
                       label: 'Description',
@@ -1161,11 +1163,11 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                       max: 25,
                       icon: '📝',
                       ok: descSc >= 20,
-                      conseil: descSc >= 20
+                      conseil: aiConseils.description || (descSc >= 20
                         ? 'Description complète et vendeuse — structure, accroche et détails visuels sont au rendez-vous.'
                         : descSc >= 15
                         ? 'Mentionne les matières et 1–2 détails uniques (broderie, fermeture, poches) pour renforcer l\'attrait.'
-                        : 'Structure en 3 parties : caractéristiques précises → points forts → état de l\'article. Termine par "Idéal pour...".',
+                        : 'Structure en 3 parties : caractéristiques précises → points forts → état de l\'article. Termine par "Idéal pour...".'),
                     },
                     {
                       label: 'Photo',
@@ -1173,11 +1175,11 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                       max: 25,
                       icon: '📸',
                       ok: photoSc >= 20,
-                      conseil: photoSc >= 20
+                      conseil: aiConseils.photo || result.conseils_photo || (photoSc >= 20
                         ? 'Bonne qualité photo — éclairage et cadrage sont adaptés.'
                         : photoSc >= 15
                         ? 'Ajoute un plan rapproché sur le logo, l\'étiquette ou les poches pour rassurer l\'acheteur.'
-                        : result.conseils_photo || 'Photographie sur fond blanc ou clair avec la lumière naturelle. Ajoute 2–3 angles (face, dos, détail).',
+                        : 'Photographie sur fond blanc ou clair avec la lumière naturelle. Ajoute 2–3 angles (face, dos, détail).'),
                     },
                     {
                       label: 'Tendance',
@@ -1189,7 +1191,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
                         ? 'Mots tendance parfaitement intégrés — visibilité maximale garantie.'
                         : tendSc > 0
                         ? `Boost tendance actif — ${tendSc} pts gagnés. Sélectionne 3-4 mots pour atteindre le maximum.`
-                        : 'La tendance est à 0/25 — active le Boost Tendance pour intégrer des mots-clés viraux (ex : "matelassé", "brillant", "hiver 2026") et gagner jusqu\'à +15 pts.',
+                        : 'La tendance est à 0/25 — active le Boost Tendance pour intégrer des mots-clés viraux et gagner jusqu\'à +15 pts.',
                     },
                   ];
                   // Prix advice avec marge si prix d'achat connu
@@ -3254,19 +3256,20 @@ export default function PixGlow() {
   // Téléchargement via blob — évite la navigation hors de l'app sur mobile
   const handleDownload = async (r) => {
     try {
+      if (isIOS) {
+        // Sur iOS : window.open avec un blobUrl après un await est bloqué par le popup blocker de Safari
+        // car l'await casse la chaîne de geste utilisateur. On ouvre directement l'URL serveur —
+        // l'utilisateur appuie longuement sur l'image pour l'enregistrer dans Photos.
+        window.open(r.url, '_blank');
+        return;
+      }
       const res = await fetch(r.url);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      if (isIOS) {
-        // Sur iOS : window.open ouvre l'image dans un onglet → l'utilisateur appuie longuement pour sauvegarder
-        window.open(blobUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-      } else {
-        const a = document.createElement('a');
-        a.href = blobUrl; a.download = r.filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
-      }
+      const a = document.createElement('a');
+      a.href = blobUrl; a.download = r.filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
     } catch {
       window.open(r.url, '_blank');
     }
