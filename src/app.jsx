@@ -363,6 +363,31 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
   );
 }
 
+/* ══ BEFORE/AFTER MODAL ══ */
+function BeforeAfterModal({ beforeSrc, afterSrc, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '900px', position: 'relative' }}>
+        <button
+          onClick={onClose}
+          style={{ position: 'absolute', top: '-14px', right: '-14px', zIndex: 10, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', lineHeight: 1 }}
+        >✕</button>
+        <BeforeAfterSlider beforeSrc={beforeSrc} afterSrc={afterSrc} landscape={true} />
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,.45)', fontSize: '12px', marginTop: '10px', marginBottom: 0 }}>⇔ Glisse pour comparer · Clic hors image ou Échap pour fermer</p>
+      </div>
+    </div>
+  );
+}
+
 /* ══ MINI COPY BUTTON ══ */
 function MiniCopyBtn({ text, field, copied, onCopy, children }) {
   return (
@@ -3170,6 +3195,7 @@ export default function PixGlow() {
   const [resetToken, setResetToken] = useState(null);
   const [verifyMsg, setVerifyMsg] = useState(null);
   const [parrainNotif, setParrainNotif] = useState(0);
+  const [sliderModal, setSliderModal] = useState(null); // { before, after }
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -4023,6 +4049,7 @@ export default function PixGlow() {
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
+      {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} />}
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} onOptimize={() => { setShowTracker(false); isConnected ? null : setShowPlanModal(true); }} />}
       {showReferral && referralData && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowReferral(false)}>
@@ -4210,8 +4237,12 @@ export default function PixGlow() {
                         <div style={{ marginBottom: '12px' }}>
                           {r.error
                             ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                            : <div style={{ position: 'relative' }}>
+                            : <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => setSliderModal({ before: r.original, after: r.url })} title="Agrandir">
                                 <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : results.length === 1 ? 460 : 300} isMobile={isMobile} />
+                                <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,.85)', fontSize: '11px', fontWeight: 600, padding: '3px 12px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                                  Agrandir
+                                </div>
                               </div>
                           }
                         </div>
