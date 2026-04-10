@@ -370,12 +370,31 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
 }
 
 /* ══ BEFORE/AFTER MODAL ══ */
-function BeforeAfterModal({ beforeSrc, afterSrc, onClose }) {
+function BeforeAfterModal({ beforeSrc, afterSrc, onClose, isMobile = false }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  if (isMobile) {
+    return (
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#000', display: 'flex', flexDirection: 'column' }}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{ position: 'absolute', top: '14px', right: '14px', zIndex: 20, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: '#fff', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', lineHeight: 1 }}
+        >✕</button>
+        {/* Slider prend tout l'écran sauf une petite zone basse */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <BeforeAfterSlider beforeSrc={beforeSrc} afterSrc={afterSrc} height={window.innerHeight - 60} isMobile={true} />
+        </div>
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,.45)', fontSize: '12px', margin: '0 0 12px', paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>⇔ Glisse pour comparer</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1557,7 +1576,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
       </button>
       {open && panelContent}
     </div>
-    {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} />}
+    {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} isMobile={isMobile} />}
     </>
   );
 }
@@ -2299,7 +2318,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
         </div>
       </div>
     </section>
-    {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} />}
+    {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} isMobile={isMobile} />}
     </>
   );
 }
@@ -4062,7 +4081,7 @@ export default function PixGlow() {
       <InjectCSS />
       <AuthModal show={showAuth} initialMode={authMode} onClose={() => { setShowAuth(false); setResetToken(null); }} onSuccess={handleAuthSuccess} isMobile={isMobile} resetToken={resetToken} />
       <PlanModal show={showPlanModal} onClose={() => setShowPlanModal(false)} onSelect={(plan) => { setShowPlanModal(false); handlePayment(plan); }} isMobile={isMobile} />
-      {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} />}
+      {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} isMobile={isMobile} />}
       {showTracker && <GainsTracker onClose={() => setShowTracker(false)} userEmail={userEmail} onOptimize={() => { setShowTracker(false); isConnected ? null : setShowPlanModal(true); }} />}
       {showReferral && referralData && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowReferral(false)}>
@@ -4260,7 +4279,7 @@ export default function PixGlow() {
                       </div>
                       {!r.error && (
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          {results.length > 1
+                          {(results.length > 1 || isMobile)
                             ? <VintedBoostModal imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} isMobile={isMobile} darkMode={darkMode} />
                             : <VintedBoostPanel imageUrl={r.url} originalUrl={r.original} isConnected={isConnected} onUpgrade={() => setShowPlanModal(true)} isMobile={isMobile} darkMode={darkMode} />
                           }
