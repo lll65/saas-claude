@@ -259,12 +259,13 @@ function AvatarInitials({ name, size = 30, style: extraStyle = {} }) {
 }
 
 /* ══ BEFORE/AFTER SLIDER ══ */
-function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false, isMobile = false }) {
+function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false, isMobile = false, onOpen }) {
   const [pos, setPos] = useState(75);
   const [dragging, setDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [autoAnimDone, setAutoAnimDone] = useState(false);
   const containerRef = useRef(null);
+  const didDragRef = useRef(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -283,10 +284,15 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
     return Math.round((x / rect.width) * 100);
   }, []);
 
-  const onMouseDown = (e) => { e.preventDefault(); setDragging(true); setAutoAnimDone(true); };
-  const onMouseMove = useCallback((e) => { if (dragging) setPos(getPos(e.clientX)); }, [dragging, getPos]);
+  const onMouseDown = (e) => { e.preventDefault(); setDragging(true); setAutoAnimDone(true); didDragRef.current = false; };
+  const onMouseMove = useCallback((e) => { if (dragging) { setPos(getPos(e.clientX)); didDragRef.current = true; } }, [dragging, getPos]);
   const onMouseUp   = useCallback(() => setDragging(false), []);
-  const onTouchMove = useCallback((e) => { if (dragging) { e.preventDefault(); setPos(getPos(e.touches[0].clientX)); } }, [dragging, getPos]);
+  const onTouchMove = useCallback((e) => { if (dragging) { e.preventDefault(); setPos(getPos(e.touches[0].clientX)); didDragRef.current = true; } }, [dragging, getPos]);
+
+  const handleContainerClick = () => {
+    if (!didDragRef.current && onOpen) onOpen();
+    didDragRef.current = false;
+  };
 
   useEffect(() => {
     window.addEventListener('mousemove', onMouseMove);
@@ -327,7 +333,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
   const innerWidth = containerWidth > 0 ? containerWidth - 2 * FRAME : 0;
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none', background: '#f0f0f0' }}>
+    <div ref={containerRef} onClick={handleContainerClick} style={{ position: 'relative', width: '100%', height: landscape ? 0 : `${height}px`, paddingBottom: landscape ? '56.25%' : 0, borderRadius: '14px', overflow: 'hidden', cursor: dragging ? 'grabbing' : (onOpen ? 'zoom-in' : 'grab'), userSelect: 'none', touchAction: 'none', background: '#f0f0f0' }}>
       {/* Inner image area with padding frame */}
       <div style={{ position: 'absolute', inset: `${FRAME}px`, overflow: 'hidden', borderRadius: '8px' }}>
         {/* AFTER (full background) */}
@@ -349,7 +355,7 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
       {/* Divider line */}
       <div style={{ position: 'absolute', top: `${FRAME}px`, bottom: `${FRAME}px`, left: `${pos}%`, width: isMobile ? '1.5px' : '2px', background: '#fff', transform: 'translateX(-50%)', boxShadow: '0 0 8px rgba(0,0,0,.5)', pointerEvents: 'none', zIndex: 4 }} />
       {/* Handle */}
-      <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setAutoAnimDone(true); setPos(getPos(e.touches[0].clientX)); }}
+      <div onMouseDown={onMouseDown} onTouchStart={(e) => { setDragging(true); setAutoAnimDone(true); didDragRef.current = false; setPos(getPos(e.touches[0].clientX)); }}
         style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: isMobile ? '28px' : '36px', height: isMobile ? '28px' : '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 12px rgba(124,58,237,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.3)' }}>
         <span style={{ color: '#fff', fontSize: isMobile ? '11px' : '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
       </div>
@@ -431,6 +437,8 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
   const [showBoostPanel, setShowBoostPanel]     = useState(false);
   const [showMoreTrends, setShowMoreTrends]     = useState(false);
   const [boostExpanded, setBoostExpanded]       = useState(false);
+  // Slider modal (agrandir avant/après)
+  const [sliderModal, setSliderModal] = useState(null);
   // Share modal
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareText, setShareText]           = useState('');
@@ -1393,7 +1401,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
               <div>
                 <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Avant / Après</p>
                 <div style={{ borderRadius: '14px', overflow: 'hidden' }}>
-                  <BeforeAfterSlider beforeSrc={originalUrl} afterSrc={imageUrl} height={280} beforeLabel="Avant" afterLabel="Après PixGlow ✅" />
+                  <BeforeAfterSlider beforeSrc={originalUrl} afterSrc={imageUrl} height={280} beforeLabel="Avant" afterLabel="Après PixGlow ✅" onOpen={() => setSliderModal({ before: originalUrl, after: imageUrl })} />
                 </div>
               </div>
             ) : (
@@ -1549,6 +1557,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
       </button>
       {open && panelContent}
     </div>
+    {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} />}
     </>
   );
 }
@@ -2247,6 +2256,7 @@ function TrustBar({ darkMode, isMobile }) {
 function DemoSlider({ darkMode, T, isMobile }) {
   const [demoIdx, setDemoIdx] = useState(0);
   const [userPicked, setUserPicked] = useState(false);
+  const [sliderModal, setSliderModal] = useState(null);
   const pair = DEMO_PAIRS[demoIdx];
 
   // Auto-rotate every 5s unless user manually picked
@@ -2258,6 +2268,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
 
   const pickIdx = (i) => { setDemoIdx(i); setUserPicked(true); };
   return (
+    <>
     <section id="section-demo" style={{ maxWidth: '820px', margin: '0 auto', padding: isMobile ? '0 16px 52px' : '0 40px 72px' }}>
       <div style={{ background: darkMode ? 'linear-gradient(160deg,#111118,#0d0d18)' : '#ffffff', border: `1px solid ${T.cardBorder}`, borderRadius: '24px', padding: isMobile ? '20px' : '32px' }}>
         <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', marginBottom: '8px' }}>Exemples réels · avant / après PixGlow</p>
@@ -2269,7 +2280,7 @@ function DemoSlider({ darkMode, T, isMobile }) {
             </button>
           ))}
         </div>
-        <BeforeAfterSlider key={demoIdx} beforeSrc={pair.beforeSrc} afterSrc={pair.afterSrc} beforeLabel={pair.beforeLabel} afterLabel={pair.afterLabel} landscape={true} />
+        <BeforeAfterSlider key={demoIdx} beforeSrc={pair.beforeSrc} afterSrc={pair.afterSrc} beforeLabel={pair.beforeLabel} afterLabel={pair.afterLabel} landscape={true} onOpen={() => setSliderModal({ before: pair.beforeSrc, after: pair.afterSrc })} />
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px', marginBottom: '20px' }}>
           <span style={{ background: 'rgba(239,68,68,.1)', color: '#ef4444', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeBefore}</span>
           <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
@@ -2288,6 +2299,8 @@ function DemoSlider({ darkMode, T, isMobile }) {
         </div>
       </div>
     </section>
+    {sliderModal && <BeforeAfterModal beforeSrc={sliderModal.before} afterSrc={sliderModal.after} onClose={() => setSliderModal(null)} />}
+    </>
   );
 }
 function TypedText({ text, className, style }) {
@@ -4237,13 +4250,7 @@ export default function PixGlow() {
                         <div style={{ marginBottom: '12px' }}>
                           {r.error
                             ? <div style={{ width: '100%', aspectRatio: '1', background: 'rgba(239,68,68,.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#ef4444" strokeWidth="1.5" opacity=".4"/><path d="M14 8v6M14 17v2" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg></div>
-                            : <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => setSliderModal({ before: r.original, after: r.url })} title="Agrandir">
-                                <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : results.length === 1 ? 460 : 300} isMobile={isMobile} />
-                                <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,.85)', fontSize: '11px', fontWeight: 600, padding: '3px 12px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                                  Agrandir
-                                </div>
-                              </div>
+                            : <BeforeAfterSlider beforeSrc={r.original} afterSrc={r.url} height={isMobile ? 320 : results.length === 1 ? 460 : 300} isMobile={isMobile} onOpen={() => setSliderModal({ before: r.original, after: r.url })} />
                           }
                         </div>
                         {!r.error && (
