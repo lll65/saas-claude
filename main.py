@@ -460,6 +460,57 @@ def apply_studio_lighting(img_rgba: Image.Image, intensity: float = 0.35) -> Ima
     return Image.fromarray(result, "RGBA")
 
 # ─────────────────────────────────────────────
+#  FOND D'ARRIÈRE-PLAN — couleurs studio
+# ─────────────────────────────────────────────
+def create_background(width: int, height: int, bg_style: str) -> Image.Image:
+    """Crée un fond selon le style choisi (blanc, gris, beige, nature, tendance)."""
+    if bg_style == "gris":
+        return Image.new("RGB", (width, height), (230, 230, 234))
+    if bg_style == "beige":
+        return Image.new("RGB", (width, height), (242, 236, 222))
+    if bg_style == "nature":
+        return Image.new("RGB", (width, height), (224, 237, 222))
+    if bg_style == "tendance":
+        # Dégradé vertical lilas → rose nacré
+        arr = np.zeros((height, width, 3), dtype=np.uint8)
+        top    = np.array([230, 210, 250], dtype=np.float32)   # lilas clair
+        bottom = np.array([250, 215, 235], dtype=np.float32)   # rose nacré
+        for y in range(height):
+            t = y / max(height - 1, 1)
+            arr[y, :] = (top + (bottom - top) * t).astype(np.uint8)
+        return Image.fromarray(arr, "RGB")
+    # Défaut : blanc studio
+    return Image.new("RGB", (width, height), (255, 255, 255))
+
+# ─────────────────────────────────────────────
+#  AJUSTEMENTS PAR CATÉGORIE D'ARTICLE
+# ─────────────────────────────────────────────
+def adjust_for_category(img: Image.Image, category: str) -> Image.Image:
+    """Applique des réglages fins selon la catégorie pour un rendu optimal."""
+    if category == "chaussure":
+        # Chaussures : texture nette, contraste marqué
+        img = ImageEnhance.Contrast(img).enhance(1.10)
+        img = ImageEnhance.Sharpness(img).enhance(1.20)
+        img = ImageEnhance.Color(img).enhance(1.08)
+    elif category == "bijou":
+        # Bijoux : éclat maximal, brillance amplifiée
+        img = ImageEnhance.Brightness(img).enhance(1.06)
+        img = ImageEnhance.Contrast(img).enhance(1.12)
+        img = ImageEnhance.Color(img).enhance(1.18)
+        img = ImageEnhance.Sharpness(img).enhance(1.25)
+    elif category == "sac":
+        # Sacs & maroquinerie : rendu cuir, texture fine
+        img = ImageEnhance.Contrast(img).enhance(1.08)
+        img = ImageEnhance.Color(img).enhance(1.10)
+        img = ImageEnhance.Sharpness(img).enhance(1.12)
+    elif category == "vetement":
+        # Vêtements : couleurs fidèles, netteté légère
+        img = ImageEnhance.Color(img).enhance(1.08)
+        img = ImageEnhance.Sharpness(img).enhance(1.08)
+    # "autre" → pas de réglage supplémentaire
+    return img
+
+# ─────────────────────────────────────────────
 #  UTILITAIRES AUTH
 # ─────────────────────────────────────────────
 class AuthBody(BaseModel):
@@ -995,9 +1046,16 @@ async def reset_password(body: ResetPasswordBody, request: Request):
 @app.post("/enhance")
 async def enhance_photo(
     file: UploadFile = File(...),
+    bg_style: str = File("blanc"),
+    category: str = File("autre"),
     request: Request = None,
     current_user: str = Depends(get_current_user)
 ):
+    # Validation des valeurs enum
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance"):
+        bg_style = "blanc"
+    if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
+        category = "autre"
     # ── 1. Validation fichier (aucune DB, aucun quota consommé) ──────────────
     content_type = (file.content_type or "").lower()
     # Fallback par extension si le content-type est générique (ex: application/octet-stream envoyé par certains navigateurs/OS pour HEIC)
@@ -1053,13 +1111,17 @@ async def enhance_photo(
         no_bg = remove(tmp_smooth)
         no_bg = apply_studio_lighting(no_bg)
 
-        bg_img = Image.new("RGB", (proc_w, proc_h), (255, 255, 255))
+        bg_img = create_background(proc_w, proc_h, bg_style)
         bg_img.paste(no_bg, (0, 0), no_bg if no_bg.mode == "RGBA" else None)
 
+        # Corrections lumière de base (toujours appliquées)
         bg_img = ImageEnhance.Brightness(bg_img).enhance(1.04)
         bg_img = ImageEnhance.Contrast(bg_img).enhance(1.04)
         bg_img = ImageEnhance.Color(bg_img).enhance(1.06)
         bg_img = ImageEnhance.Sharpness(bg_img).enhance(1.08)
+
+        # Ajustements fins par catégorie d'article
+        bg_img = adjust_for_category(bg_img, category)
 
         filename = f"{uuid.uuid4()}.png"
         bg_img.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
@@ -1106,7 +1168,9 @@ async def enhance_photo(
         "filename": filename,
         "url": f"/image/{filename}",
         "credits_left": credits_left,
-        "free_remaining": free_remaining,   # retourné pour les utilisateurs anonymes
+        "free_remaining": free_remaining,
+        "bg_style": bg_style,
+        "category": category,
     })
 
 @app.get("/image/{filename}")
