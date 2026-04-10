@@ -371,11 +371,24 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
 
 /* ══ BEFORE/AFTER MODAL ══ */
 function BeforeAfterModal({ beforeSrc, afterSrc, onClose, isMobile = false }) {
+  const sliderWrapRef = useRef(null);
+  const [sliderH, setSliderH] = useState(0);
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Mesure la hauteur disponible via ResizeObserver pour éviter window.innerHeight statique
+  useEffect(() => {
+    if (!isMobile || !sliderWrapRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) setSliderH(Math.round(e.contentRect.height));
+    });
+    ro.observe(sliderWrapRef.current);
+    return () => ro.disconnect();
+  }, [isMobile]);
 
   if (isMobile) {
     return (
@@ -387,9 +400,9 @@ function BeforeAfterModal({ beforeSrc, afterSrc, onClose, isMobile = false }) {
           onClick={onClose}
           style={{ position: 'absolute', top: '14px', right: '14px', zIndex: 20, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: '#fff', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', lineHeight: 1 }}
         >✕</button>
-        {/* Slider prend tout l'écran sauf une petite zone basse */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <BeforeAfterSlider beforeSrc={beforeSrc} afterSrc={afterSrc} height={window.innerHeight - 60} isMobile={true} />
+        {/* Slider prend toute la hauteur disponible (réactif au clavier virtuel) */}
+        <div ref={sliderWrapRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+          {sliderH > 0 && <BeforeAfterSlider beforeSrc={beforeSrc} afterSrc={afterSrc} height={sliderH} isMobile={true} />}
         </div>
         <p style={{ textAlign: 'center', color: 'rgba(255,255,255,.45)', fontSize: '12px', margin: '0 0 12px', paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>⇔ Glisse pour comparer</p>
       </div>
@@ -454,7 +467,6 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
   const [showHashtags, setShowHashtags]   = useState(false);
   const [showScoreDetails, setShowScoreDetails] = useState(false);
   const [showBoostPanel, setShowBoostPanel]     = useState(false);
-  const [showMoreTrends, setShowMoreTrends]     = useState(false);
   const [boostExpanded, setBoostExpanded]       = useState(false);
   // Slider modal (agrandir avant/après)
   const [sliderModal, setSliderModal] = useState(null);
@@ -473,9 +485,6 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
   const [prixAchatInput, setPrixAchatInput] = useState('');
   // Prix d'achat
   const [prixAchat, setPrixAchat] = useState('');
-  const [editPrixAchat, setEditPrixAchat] = useState(false);
-  // Prix éditable
-  const [editPrix, setEditPrix] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -3195,8 +3204,31 @@ function AdminAffiliates({ authHeaders, setMsg }) {
   );
 }
 
+/* ══ ERROR BOUNDARY ══ */
+class AppErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(err) { return { error: err }; }
+  componentDidCatch(err, info) { console.error('[PixGlow] Erreur non gérée:', err, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ position: 'fixed', inset: 0, background: '#0a0a0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'DM Sans',system-ui,sans-serif", color: '#e2e8f0' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, margin: '0 0 8px', textAlign: 'center' }}>Oups, quelque chose s'est mal passé</h2>
+          <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 24px', textAlign: 'center', maxWidth: '400px' }}>Une erreur inattendue s'est produite. Rechargez la page pour continuer.</p>
+          <button
+            onClick={() => { this.setState({ error: null }); window.location.reload(); }}
+            style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', border: 'none', color: '#fff', borderRadius: '12px', padding: '12px 28px', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit' }}
+          >Recharger l'application</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /* ══ COMPOSANT PRINCIPAL ══ */
-export default function PixGlow() {
+function PixGlowApp() {
   const [page, setPageRaw] = useState('landing');
   const setPage = (p) => { setPageRaw(p); window.scrollTo({ top: 0, behavior: 'instant' }); };
   const [files, setFiles] = useState([]);
@@ -3210,6 +3242,7 @@ export default function PixGlow() {
   const [isConnected, setIsConnected] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const uploadAbortRef = useRef(null); // AbortController actif pour pouvoir annuler l'upload
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -3275,7 +3308,12 @@ export default function PixGlow() {
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   useEffect(() => { if (page === 'app' && !isConnected) { openAuth('register'); setPage('landing'); } }, [page, isConnected]);
-  const handleLogout = () => { ['pg_token','pg_email'].forEach(k => localStorage.removeItem(k)); setUserEmail(''); setCredits(null); setIsConnected(false); setIsAdmin(false); setPage('landing'); };
+  const handleLogout = () => {
+    // On garde pg_theme (préférence UI) et pg_total_enhanced (compteur UX)
+    ['pg_token', 'pg_email'].forEach(k => localStorage.removeItem(k));
+    sessionStorage.removeItem('pg_ref');
+    setUserEmail(''); setCredits(null); setIsConnected(false); setIsAdmin(false); setPage('landing');
+  };
   const openReferral = () => {
     if (!isConnected) { openAuth('register'); return; }
     fetch(`${API_URL}/my-referral`, { headers: authHeaders() })
@@ -3302,13 +3340,29 @@ export default function PixGlow() {
   const handleFilesChange = (e) => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
+
+    // Validation taille : max 20 Mo par fichier
+    const MAX_FILE_MB = 20;
+    const oversized = selected.filter(f => f.size > MAX_FILE_MB * 1024 * 1024);
+    if (oversized.length) {
+      setError(`${oversized.length} fichier(s) dépassent ${MAX_FILE_MB} Mo et ont été ignorés.`);
+    }
+    // Filtrer les types non acceptés (on accepte images + HEIC)
+    const ACCEPTED_TYPES = ['image/jpeg','image/jpg','image/png','image/webp','image/heic','image/heif'];
+    const valid = selected.filter(f => {
+      if (oversized.includes(f)) return false;
+      const ext = f.name?.toLowerCase().split('.').pop();
+      return ACCEPTED_TYPES.includes(f.type) || ['jpg','jpeg','png','webp','heic','heif'].includes(ext);
+    });
+    if (!valid.length) return;
+
     const available = credits ?? 0;
     const totalMax = Math.min(MAX_SIMULTANEOUS, Math.max(available, 1));
 
     // Append new files to existing ones, capped at totalMax
-    const combined = [...files, ...selected];
+    const combined = [...files, ...valid];
     const chosenAll = combined.slice(0, totalMax);
-    if (combined.length > totalMax) setError(`Maximum ${totalMax} photo(s) selon vos crédits disponibles.`); else setError(null);
+    if (combined.length > totalMax && !oversized.length) setError(`Maximum ${totalMax} photo(s) selon vos crédits disponibles.`); else if (!oversized.length) setError(null);
     if (e.target.value !== undefined) { try { e.target.value = ''; } catch(_) {} }
 
     // FileReader est plus fiable sur Android (content:// URIs, HEIC, etc.)
@@ -3356,17 +3410,28 @@ export default function PixGlow() {
     if (!files.length) { setError('Sélectionnez au moins une photo'); return; }
     if (!isConnected) { setError('Connectez-vous pour continuer.'); return; }
     if (credits !== null && credits < files.length) { setError(`Crédits insuffisants : ${credits} crédit(s) pour ${files.length} photo(s).`); return; }
+    // Annule un éventuel upload précédent encore en cours
+    if (uploadAbortRef.current) uploadAbortRef.current.abort();
+    const abortCtrl = new AbortController();
+    uploadAbortRef.current = abortCtrl;
+
     setLoading(true); setError(null); setResults([]); setProgress(0);
     const uploadHeaders = authHeaders();
     const newResults = [];
     for (let i = 0; i < files.length; i++) {
+      if (abortCtrl.signal.aborted) break;
       setProgress(i + 1);
       try {
         const form = new FormData(); form.append('file', files[i]);
-        const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: uploadHeaders, body: form });
-        const data = await res.json();
+        const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: uploadHeaders, body: form, signal: abortCtrl.signal });
+        let data;
+        try { data = await res.json(); } catch { data = {}; }
         if (!res.ok) {
-          newResults.push({ error: data.detail || 'Erreur serveur', original: previews[i] });
+          const msg = res.status === 413 ? 'Fichier trop lourd (max 20 Mo)'
+            : res.status === 429 ? 'Trop de requêtes — réessayez dans quelques secondes'
+            : res.status === 402 ? 'Crédits insuffisants — rechargez votre compte'
+            : data.detail || `Erreur serveur (${res.status})`;
+          newResults.push({ error: msg, original: previews[i] });
         } else {
           newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: previews[i] });
           if (data.credits_left !== null && data.credits_left !== undefined) {
@@ -3375,11 +3440,13 @@ export default function PixGlow() {
           const prev = parseInt(localStorage.getItem('pg_total_enhanced') || '0', 10);
           localStorage.setItem('pg_total_enhanced', String(prev + 1));
         }
-      } catch {
+      } catch (err) {
+        if (err.name === 'AbortError') break; // Upload annulé volontairement
         newResults.push({ error: 'Erreur réseau — vérifiez votre connexion et réessayez.', original: previews[i] });
       }
       setResults([...newResults]);
     }
+    uploadAbortRef.current = null;
     setLoading(false);
   };
 
@@ -4349,6 +4416,15 @@ export default function PixGlow() {
     </div>
   );
 }
+
+export default function PixGlow() {
+  return (
+    <AppErrorBoundary>
+      <PixGlowApp />
+    </AppErrorBoundary>
+  );
+}
+
 /*
 ══════════════════════════════════════════════════════════════
   CHANGELOG v2 — MODIFICATIONS APPORTÉES
