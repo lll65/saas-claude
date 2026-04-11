@@ -1,5 +1,64 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import heic2any from 'heic2any';
+
+/* ══════════════════════════════════════════════════════════════
+   HISTORIQUE — IndexedDB (stockage client, 20 entrées max)
+══════════════════════════════════════════════════════════════ */
+const IDB = {
+  DB: 'pixglow_db', VERSION: 1, STORE: 'history', MAX: 20,
+  open() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(this.DB, this.VERSION);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(this.STORE)) {
+          const s = db.createObjectStore(this.STORE, { keyPath: 'id' });
+          s.createIndex('ts', 'ts');
+        }
+      };
+      req.onsuccess = e => res(e.target.result);
+      req.onerror  = e => rej(e.target.error);
+    });
+  },
+  async add(entry) {
+    const db = await this.open();
+    await new Promise((res, rej) => {
+      const tx = db.transaction(this.STORE, 'readwrite');
+      const s  = tx.objectStore(this.STORE);
+      s.add({ ...entry, id: Date.now(), ts: new Date().toISOString() });
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+    // Supprime les plus vieilles entrées au-delà de MAX
+    const all = await this.getAll();
+    if (all.length > this.MAX) {
+      const toDelete = all.slice(this.MAX);
+      const db2 = await this.open();
+      await new Promise((res, rej) => {
+        const tx = db2.transaction(this.STORE, 'readwrite');
+        const s  = tx.objectStore(this.STORE);
+        toDelete.forEach(e => s.delete(e.id));
+        tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+      });
+    }
+  },
+  async getAll() {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(this.STORE, 'readonly');
+      const req = tx.objectStore(this.STORE).index('ts').getAll();
+      req.onsuccess = () => res([...req.result].reverse()); // newest first
+      req.onerror   = e => rej(e.target.error);
+    });
+  },
+  async clear() {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(this.STORE, 'readwrite');
+      tx.objectStore(this.STORE).clear();
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+  },
+};
 
 /* ─── PAGES LÉGALES ─── */
 const LS = {
@@ -254,6 +313,226 @@ function AvatarInitials({ name, size = 30, style: extraStyle = {} }) {
       flexShrink: 0, ...extraStyle,
     }}>
       {initials}
+    </div>
+  );
+}
+
+/* ══ STYLE PICKER ══ */
+const BG_STYLES = [
+  { id: 'blanc',    label: 'Blanc',    sub: 'Studio pur',   color: '#ffffff', border: '#e2e8f0', check: '#7c3aed' },
+  { id: 'gris',     label: 'Gris',     sub: 'Studio pro',   color: '#e6e6ea', border: '#cbd5e1', check: '#7c3aed' },
+  { id: 'beige',    label: 'Beige',    sub: 'Chaleureux',   color: '#f2ecde', border: '#d4c9b0', check: '#92400e' },
+  { id: 'nature',   label: 'Nature',   sub: 'Minimaliste',  color: '#e0edde', border: '#9dc49a', check: '#166534' },
+  { id: 'tendance', label: 'Tendance', sub: 'Dégradé',
+    gradient: 'linear-gradient(160deg,#e6d2fa,#fad7eb)', border: '#c084fc', check: '#7c3aed' },
+];
+
+const CATEGORIES = [
+  { id: 'vetement',  label: 'Vêtement',   icon: '👕', tip: 'Couleurs fidèles + netteté' },
+  { id: 'chaussure', label: 'Chaussures', icon: '👟', tip: 'Contraste & texture nets' },
+  { id: 'sac',       label: 'Sac',        icon: '👜', tip: 'Rendu cuir & matière' },
+  { id: 'bijou',     label: 'Bijoux',     icon: '💍', tip: 'Éclat & brillance max' },
+  { id: 'autre',     label: 'Autre',      icon: '📦', tip: 'Réglages standard' },
+];
+
+function StylePicker({ bgStyle, setBgStyle, category, setCategory, darkMode, isMobile }) {
+  const T2 = darkMode
+    ? { card: 'rgba(255,255,255,.04)', cardBorder: 'rgba(255,255,255,.08)', text: '#e2e8f0', sub: '#64748b', selBg: 'rgba(124,58,237,.18)', selBorder: 'rgba(124,58,237,.6)' }
+    : { card: '#f8f8ff', cardBorder: 'rgba(0,0,0,.08)', text: '#111118', sub: '#64748b', selBg: 'rgba(124,58,237,.08)', selBorder: 'rgba(124,58,237,.55)' };
+
+  return (
+    <div style={{ background: darkMode ? 'rgba(255,255,255,.02)' : 'rgba(124,58,237,.03)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.07)' : 'rgba(124,58,237,.15)'}`, borderRadius: '16px', padding: isMobile ? '14px' : '18px', marginBottom: '14px' }}>
+
+      {/* ─── Fond ─── */}
+      <div style={{ marginBottom: '16px' }}>
+        <p style={{ color: '#a78bfa', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="1.5" width="10" height="10" rx="2" stroke="#a78bfa" strokeWidth="1.3"/><path d="M1.5 8.5l3-3 2 2 2.5-3 2.5 2.5" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Fond d'arrière-plan
+        </p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {BG_STYLES.map(s => {
+            const selected = bgStyle === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setBgStyle(s.id)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '8px 10px', borderRadius: '12px', border: `2px solid ${selected ? s.selBorder || '#7c3aed' : (darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)')}`, background: selected ? (T2.selBg) : T2.card, cursor: 'pointer', transition: 'all .18s', fontFamily: 'inherit', flexShrink: 0, minWidth: isMobile ? '54px' : '64px', transform: selected ? 'scale(1.05)' : 'scale(1)', boxShadow: selected ? `0 0 0 3px ${s.check || '#7c3aed'}22` : 'none' }}
+              >
+                {/* Aperçu couleur */}
+                <div style={{ width: isMobile ? '36px' : '44px', height: isMobile ? '36px' : '44px', borderRadius: '8px', background: s.gradient || s.color, border: `1px solid ${s.border}`, position: 'relative', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,.12)' }}>
+                  {selected && (
+                    <div style={{ position: 'absolute', bottom: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', background: s.check || '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l1.5 1.5L6.5 2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: selected ? 800 : 600, color: selected ? '#a78bfa' : T2.sub, whiteSpace: 'nowrap', lineHeight: 1 }}>{s.label}</span>
+                {!isMobile && <span style={{ fontSize: '10px', color: T2.sub, opacity: .7, whiteSpace: 'nowrap' }}>{s.sub}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Catégorie ─── */}
+      <div>
+        <p style={{ color: '#a78bfa', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 4h9M2 7h6M2 10h4" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          Type d'article <span style={{ color: T2.sub, fontSize: '10px', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>— améliore le traitement</span>
+        </p>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {CATEGORIES.map(c => {
+            const selected = category === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCategory(c.id)}
+                title={c.tip}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: isMobile ? '7px 11px' : '7px 13px', borderRadius: '100px', border: `1.5px solid ${selected ? 'rgba(124,58,237,.7)' : (darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)')}`, background: selected ? 'rgba(124,58,237,.15)' : T2.card, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s', fontWeight: selected ? 800 : 600, fontSize: isMobile ? '12px' : '13px', color: selected ? '#a78bfa' : T2.sub, whiteSpace: 'nowrap', boxShadow: selected ? '0 0 0 3px rgba(124,58,237,.15)' : 'none' }}
+              >
+                <span style={{ fontSize: isMobile ? '14px' : '15px' }}>{c.icon}</span>
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Tip pour la catégorie sélectionnée */}
+        {category !== 'autre' && (
+          <p style={{ color: '#7c3aed', fontSize: '11px', margin: '8px 0 0', opacity: .8 }}>
+            ✦ {CATEGORIES.find(c => c.id === category)?.tip}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══ PAGE MES PHOTOS (Historique IndexedDB) ══ */
+const BG_LABELS = { blanc: 'Blanc', gris: 'Gris', beige: 'Beige', nature: 'Nature', tendance: 'Tendance' };
+const CAT_LABELS = { vetement: '👕 Vêtement', chaussure: '👟 Chaussures', sac: '👜 Sac', bijou: '💍 Bijoux', autre: '📦 Autre' };
+
+function MesPhotos({ onBack, darkMode, isMobile }) {
+  const [photos, setPhotos] = useState(null); // null = loading
+  const [lightbox, setLightbox] = useState(null);
+  const [clearing, setClearing] = useState(false);
+
+  const T = darkMode
+    ? { bg: '#0a0a0f', card: 'rgba(255,255,255,.03)', border: 'rgba(255,255,255,.07)', text: '#e2e8f0', sub: '#64748b', nav: 'rgba(10,10,15,.95)' }
+    : { bg: '#f8f9fc', card: '#fff', border: 'rgba(0,0,0,.08)', text: '#111118', sub: '#64748b', nav: 'rgba(255,255,255,.97)' };
+
+  useEffect(() => {
+    IDB.getAll().then(setPhotos).catch(() => setPhotos([]));
+  }, []);
+
+  const handleClear = async () => {
+    setClearing(true);
+    await IDB.clear().catch(() => {});
+    setPhotos([]);
+    setClearing(false);
+  };
+
+  const handleDownload = async (entry) => {
+    try {
+      const res = await fetch(entry.processedUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = entry.filename || 'pixglow.png';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    } catch { window.open(entry.processedUrl, '_blank'); }
+  };
+
+  const fmt = (iso) => {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  };
+
+  return (
+    <div style={{ minHeight: '100dvh', background: T.bg, fontFamily: "'DM Sans',system-ui,sans-serif", color: T.text }}>
+      {/* Nav */}
+      <nav style={{ padding: isMobile ? '14px 16px' : '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.border}`, background: T.nav, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={onBack} style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${T.border}`, borderRadius: '10px', padding: '8px 14px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', color: T.sub, fontFamily: 'inherit' }}>← Retour</button>
+          <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800, color: T.text }}>Mes photos</span>
+        </div>
+        {photos && photos.length > 0 && (
+          <button onClick={handleClear} disabled={clearing} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171', borderRadius: '10px', padding: '7px 14px', fontWeight: 700, fontSize: '12px', cursor: clearing ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+            {clearing ? 'Suppression...' : 'Vider l\'historique'}
+          </button>
+        )}
+      </nav>
+
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: isMobile ? '16px 12px 100px' : '28px 24px 48px' }}>
+        {photos === null ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+            <div style={{ width: '40px', height: '40px', border: '3px solid rgba(124,58,237,.2)', borderTop: '3px solid #7c3aed', borderRadius: '50%', animation: 'pg-spin .8s linear infinite', margin: '0 auto 16px' }} />
+            <p style={{ color: T.sub }}>Chargement de l'historique...</p>
+          </div>
+        ) : photos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}>🖼</div>
+            <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '22px', fontWeight: 800, margin: '0 0 8px', color: T.text }}>Aucune photo traitée</h2>
+            <p style={{ color: T.sub, marginBottom: '24px' }}>Tes photos traitées apparaîtront ici automatiquement.</p>
+            <button onClick={onBack} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 24px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}>
+              Traiter ma première photo →
+            </button>
+          </div>
+        ) : (
+          <>
+            <p style={{ color: T.sub, fontSize: '13px', marginBottom: '18px' }}>{photos.length} photo{photos.length > 1 ? 's' : ''} — conservées localement sur cet appareil</p>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '12px' }}>
+              {photos.map(p => (
+                <div key={p.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: '14px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  {/* Image */}
+                  <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', cursor: 'zoom-in', background: darkMode ? '#111118' : '#f0f0f5' }} onClick={() => setLightbox(p)}>
+                    <img
+                      src={p.processedUrl}
+                      alt="Photo traitée"
+                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                    <div style={{ display: 'none', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '28px' }}>⚠️</span>
+                      <span style={{ fontSize: '11px', color: T.sub, textAlign: 'center' }}>Image expirée</span>
+                    </div>
+                    {/* Badges */}
+                    <div style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {p.bgStyle && p.bgStyle !== 'blanc' && (
+                        <span style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '100px' }}>{BG_LABELS[p.bgStyle] || p.bgStyle}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Infos + actions */}
+                  <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', color: T.sub }}>{fmt(p.ts)}</span>
+                      {p.category && p.category !== 'autre' && (
+                        <span style={{ fontSize: '11px', color: T.sub }}>{CAT_LABELS[p.category] || p.category}</span>
+                      )}
+                    </div>
+                    <button onClick={() => handleDownload(p)} style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v6M3 5.5l2.5 2.5L8 5.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M1.5 9h8" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      Télécharger
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', cursor: 'zoom-out' }}>
+          <button onClick={() => setLightbox(null)} style={{ position: 'fixed', top: '16px', right: '16px', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', borderRadius: '50%', width: '40px', height: '40px', fontSize: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>✕</button>
+          <img src={lightbox.processedUrl} alt="Photo" style={{ maxWidth: '100%', maxHeight: '90dvh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 24px 80px rgba(0,0,0,.6)' }} onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1759,11 +2038,11 @@ function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits
 }
 
 /* ══ MOBILE NAV BAR (news / gains / aide) ══ */
-function MobileNavBar({ isMobile, show, onNews, onGains, onHelp, onShare, darkMode }) {
+function MobileNavBar({ isMobile, show, onNews, onGains, onHelp, onShare, onPhotos, darkMode }) {
   const [hidden, setHidden] = React.useState(false);
   if (!isMobile || !show || hidden) return null;
   const items = [
-    { icon: '📰', label: 'Nouveautés', onClick: onNews },
+    { icon: '🖼', label: 'Mes photos', onClick: onPhotos },
     { icon: '💰', label: 'Mes gains',  onClick: onGains },
     { icon: '🎁', label: 'Inviter',    onClick: onShare },
     { icon: '❓', label: 'Aide',        onClick: onHelp  },
@@ -3243,6 +3522,9 @@ function PixGlowApp() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const uploadAbortRef = useRef(null); // AbortController actif pour pouvoir annuler l'upload
+  // Style picker
+  const [bgStyle, setBgStyle]     = useState('blanc');
+  const [category, setCategory]   = useState('autre');
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -3422,7 +3704,10 @@ function PixGlowApp() {
       if (abortCtrl.signal.aborted) break;
       setProgress(i + 1);
       try {
-        const form = new FormData(); form.append('file', files[i]);
+        const form = new FormData();
+        form.append('file', files[i]);
+        form.append('bg_style', bgStyle);
+        form.append('category', category);
         const res = await fetch(`${API_URL}/enhance`, { method: 'POST', headers: uploadHeaders, body: form, signal: abortCtrl.signal });
         let data;
         try { data = await res.json(); } catch { data = {}; }
@@ -3433,12 +3718,15 @@ function PixGlowApp() {
             : data.detail || `Erreur serveur (${res.status})`;
           newResults.push({ error: msg, original: previews[i] });
         } else {
-          newResults.push({ url: `${API_URL}${data.url}`, filename: data.filename, original: previews[i] });
+          const processedUrl = `${API_URL}${data.url}`;
+          newResults.push({ url: processedUrl, filename: data.filename, original: previews[i], bgStyle, category });
           if (data.credits_left !== null && data.credits_left !== undefined) {
             setCredits(data.credits_left);
           }
           const prev = parseInt(localStorage.getItem('pg_total_enhanced') || '0', 10);
           localStorage.setItem('pg_total_enhanced', String(prev + 1));
+          // Sauvegarde dans l'historique IndexedDB (fire & forget)
+          IDB.add({ processedUrl, filename: data.filename, bgStyle, category }).catch(() => {});
         }
       } catch (err) {
         if (err.name === 'AbortError') break; // Upload annulé volontairement
@@ -3544,6 +3832,7 @@ function PixGlowApp() {
   if (page === 'nouveautes') return <><InjectCSS /><Changelog onBack={() => setPage('landing')} darkMode={darkMode} /></>;
   if (page === 'admin' && isConnected) return <AdminPanel onBack={() => setPage('app')} userEmail={userEmail} />;
   if (page === 'affiliate') return <><InjectCSS /><AffiliatePage onBack={() => setPage('landing')} /></>;
+  if (page === 'mes-photos') return <MesPhotos onBack={() => setPage('app')} darkMode={darkMode} isMobile={isMobile} />;
 
   // Tokens de thème — tous les styles conditionnels passent par T
   const T = darkMode ? {
@@ -3592,6 +3881,7 @@ function PixGlowApp() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
+                {!isMobile && <button onClick={() => setPage('mes-photos')} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🖼 Mes photos</button>}
                 {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
                 {!isMobile && isAdmin && <button onClick={() => setPage('admin')} style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
@@ -3602,6 +3892,7 @@ function PixGlowApp() {
                       <div onClick={() => setNavMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
                       <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: darkMode ? '#1a1730' : '#fff', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '12px', padding: '6px', minWidth: '160px', zIndex: 9999, boxShadow: '0 8px 32px rgba(0,0,0,.25)' }}>
                         <button onClick={() => { setPage('nouveautes'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#60a5fa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📰 Nouveautés</button>
+                        <button onClick={() => { setPage('mes-photos'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🖼 Mes photos</button>
                         <button onClick={() => { setShowTracker(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#10b981', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>
                         <button onClick={() => { openReferral(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>
                         <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
@@ -4278,6 +4569,15 @@ function PixGlowApp() {
                 </div>
               )}
 
+              {/* ═══ STYLE PICKER — visible quand des photos sont sélectionnées ═══ */}
+              {previews.length > 0 && !loading && (
+                <StylePicker
+                  bgStyle={bgStyle} setBgStyle={setBgStyle}
+                  category={category} setCategory={setCategory}
+                  darkMode={darkMode} isMobile={isMobile}
+                />
+              )}
+
               {error && <div style={{ background: 'rgba(239,68,68,.07)', border: '1px solid rgba(239,68,68,.22)', borderRadius: '12px', padding: '12px 16px', marginBottom: '14px', color: '#f87171', fontSize: '14px', textAlign: 'center' }}>{error}</div>}
 
               {loading && (
@@ -4295,11 +4595,18 @@ function PixGlowApp() {
 
               {!limitReached && (
                 <button onClick={handleUpload} disabled={!files.length || loading || previews.some(p => p === null)} className={files.length && !loading && !previews.some(p => p === null) ? 'pg-btn' : ''}
-                  style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '18px', fontSize: isMobile ? '17px' : '19px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.03)', color: files.length && !loading ? '#fff' : '#1e293b', fontFamily: 'inherit', transition: 'all .2s' }}>
+                  style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '18px', fontSize: isMobile ? '17px' : '19px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.03)', color: files.length && !loading ? '#fff' : '#1e293b', fontFamily: 'inherit', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   {loading
                     ? `Traitement ${progress}/${files.length}...`
                     : files.length
-                      ? `Améliorer ${files.length} photo${files.length > 1 ? 's' : ''}`
+                      ? (<>
+                          <span>✨ Améliorer {files.length} photo{files.length > 1 ? 's' : ''}</span>
+                          {files.length > 0 && bgStyle !== 'blanc' && (
+                            <span style={{ background: 'rgba(255,255,255,.2)', borderRadius: '100px', padding: '2px 9px', fontSize: isMobile ? '13px' : '14px', fontWeight: 700 }}>
+                              {BG_STYLES.find(s => s.id === bgStyle)?.label}
+                            </span>
+                          )}
+                        </>)
                       : 'Sélectionnez des photos ci-dessus'}
                 </button>
               )}
@@ -4412,6 +4719,17 @@ function PixGlowApp() {
         onBuyCredits={isConnected ? () => setShowPlanModal(true) : () => openAuth('register')}
         isMobile={isMobile}
         zipping={zipping}
+      />
+      {/* ══ MOBILE NAV BAR (liens raccourcis bas d'écran) ══ */}
+      <MobileNavBar
+        isMobile={isMobile}
+        show={!hasResults && isConnected}
+        onPhotos={() => setPage('mes-photos')}
+        onGains={() => setShowTracker(true)}
+        onShare={() => openReferral()}
+        onHelp={() => setPage('help')}
+        onNews={() => setPage('nouveautes')}
+        darkMode={darkMode}
       />
     </div>
   );
