@@ -320,11 +320,11 @@ function AvatarInitials({ name, size = 30, style: extraStyle = {} }) {
 /* ══ STYLE PICKER ══ */
 const BG_STYLES = [
   { id: 'blanc',    label: 'Blanc',    sub: 'Studio pur',   color: '#ffffff', border: '#e2e8f0', check: '#7c3aed' },
-  { id: 'gris',     label: 'Gris',     sub: 'Studio pro',   color: '#e6e6ea', border: '#cbd5e1', check: '#7c3aed' },
-  { id: 'beige',    label: 'Beige',    sub: 'Chaleureux',   color: '#f2ecde', border: '#d4c9b0', check: '#92400e' },
-  { id: 'nature',   label: 'Nature',   sub: 'Minimaliste',  color: '#e0edde', border: '#9dc49a', check: '#166534' },
+  { id: 'gris',     label: 'Gris',     sub: 'Studio pro',   color: '#9b9ba0', border: '#7a7a80', check: '#ffffff' },
+  { id: 'beige',    label: 'Beige',    sub: 'Chaleureux',   color: '#cdbca0', border: '#b0996e', check: '#92400e' },
+  { id: 'nature',   label: 'Nature',   sub: 'Minimaliste',  color: '#afd0aa', border: '#6ea868', check: '#166534' },
   { id: 'tendance', label: 'Tendance', sub: 'Dégradé',
-    gradient: 'linear-gradient(160deg,#e6d2fa,#fad7eb)', border: '#c084fc', check: '#7c3aed' },
+    gradient: 'linear-gradient(160deg,#c39bf5,#f5afda)', border: '#a855f7', check: '#7c3aed' },
 ];
 
 const CATEGORIES = [

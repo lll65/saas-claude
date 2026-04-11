@@ -465,16 +465,19 @@ def apply_studio_lighting(img_rgba: Image.Image, intensity: float = 0.35) -> Ima
 def create_background(width: int, height: int, bg_style: str) -> Image.Image:
     """Crée un fond selon le style choisi (blanc, gris, beige, nature, tendance)."""
     if bg_style == "gris":
-        return Image.new("RGB", (width, height), (230, 230, 234))
+        # Gris studio vrai — assez foncé pour être clairement gris
+        return Image.new("RGB", (width, height), (155, 155, 160))
     if bg_style == "beige":
-        return Image.new("RGB", (width, height), (242, 236, 222))
+        # Beige chaleureux visible — sable clair
+        return Image.new("RGB", (width, height), (205, 188, 160))
     if bg_style == "nature":
-        return Image.new("RGB", (width, height), (224, 237, 222))
+        # Vert sauge minimaliste — clairement vert sans être criard
+        return Image.new("RGB", (width, height), (175, 208, 170))
     if bg_style == "tendance":
-        # Dégradé vertical lilas → rose nacré
+        # Dégradé vertical lilas → rose nacré — plus saturé et visible
         arr = np.zeros((height, width, 3), dtype=np.uint8)
-        top    = np.array([230, 210, 250], dtype=np.float32)   # lilas clair
-        bottom = np.array([250, 215, 235], dtype=np.float32)   # rose nacré
+        top    = np.array([195, 155, 245], dtype=np.float32)   # lilas saturé
+        bottom = np.array([245, 175, 218], dtype=np.float32)   # rose nacré
         for y in range(height):
             t = y / max(height - 1, 1)
             arr[y, :] = (top + (bottom - top) * t).astype(np.uint8)
@@ -488,26 +491,30 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
 def adjust_for_category(img: Image.Image, category: str) -> Image.Image:
     """Applique des réglages fins selon la catégorie pour un rendu optimal."""
     if category == "chaussure":
-        # Chaussures : texture nette, contraste marqué
-        img = ImageEnhance.Contrast(img).enhance(1.10)
-        img = ImageEnhance.Sharpness(img).enhance(1.20)
-        img = ImageEnhance.Color(img).enhance(1.08)
-    elif category == "bijou":
-        # Bijoux : éclat maximal, brillance amplifiée
-        img = ImageEnhance.Brightness(img).enhance(1.06)
-        img = ImageEnhance.Contrast(img).enhance(1.12)
-        img = ImageEnhance.Color(img).enhance(1.18)
-        img = ImageEnhance.Sharpness(img).enhance(1.25)
-    elif category == "sac":
-        # Sacs & maroquinerie : rendu cuir, texture fine
-        img = ImageEnhance.Contrast(img).enhance(1.08)
+        # Chaussures : texture nette, contraste marqué, couleurs fidèles
+        img = ImageEnhance.Contrast(img).enhance(1.18)
+        img = ImageEnhance.Sharpness(img).enhance(1.35)
         img = ImageEnhance.Color(img).enhance(1.10)
-        img = ImageEnhance.Sharpness(img).enhance(1.12)
+    elif category == "bijou":
+        # Bijoux/montres : éclat maximal, brillance métal amplifiée, contraste fort
+        img = ImageEnhance.Brightness(img).enhance(1.08)
+        img = ImageEnhance.Contrast(img).enhance(1.22)
+        img = ImageEnhance.Color(img).enhance(1.25)
+        img = ImageEnhance.Sharpness(img).enhance(1.45)
+    elif category == "sac":
+        # Sacs & maroquinerie : rendu cuir, texture fine, couleurs riches
+        img = ImageEnhance.Contrast(img).enhance(1.14)
+        img = ImageEnhance.Color(img).enhance(1.18)
+        img = ImageEnhance.Sharpness(img).enhance(1.20)
     elif category == "vetement":
-        # Vêtements : couleurs fidèles, netteté légère
-        img = ImageEnhance.Color(img).enhance(1.08)
-        img = ImageEnhance.Sharpness(img).enhance(1.08)
-    # "autre" → pas de réglage supplémentaire
+        # Vêtements : couleurs fidèles priorité, légère netteté
+        img = ImageEnhance.Color(img).enhance(1.15)
+        img = ImageEnhance.Contrast(img).enhance(1.08)
+        img = ImageEnhance.Sharpness(img).enhance(1.12)
+    else:
+        # "autre" → réglages équilibrés standards
+        img = ImageEnhance.Contrast(img).enhance(1.06)
+        img = ImageEnhance.Sharpness(img).enhance(1.10)
     return img
 
 # ─────────────────────────────────────────────
