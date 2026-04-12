@@ -1495,8 +1495,7 @@ RAPPEL TON {tone_key.upper()} : {tone_instruction}"""
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
     except Exception as e:
         print(f"[generate-description] {type(e).__name__}: {e}")
-        raise HTTPException(500, f"Erreur génération: {str(e)}")
-
+        raise HTTPException(500, "Erreur génération IA — réessaie dans quelques secondes")
 
 # ─────────────────────────────────────────────
 #  TRENDING KEYWORDS
