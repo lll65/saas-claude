@@ -809,7 +809,6 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
         setShowHashtags(false);
         setShowScoreDetails(false);
         setShowBoostPanel(false);
-        setShowMoreTrends(false);
         setBoostExpanded(false);
       }
     } catch(e) { if (mountedRef.current) setError(e.message); }
