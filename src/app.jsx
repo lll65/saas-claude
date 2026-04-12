@@ -811,7 +811,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
         setShowBoostPanel(false);
         setBoostExpanded(false);
       }
-    } catch(e) { if (mountedRef.current) setError(e.message); }
+    } catch(e) { if (mountedRef.current) setError(e.message?.includes('not defined') ? 'Erreur temporaire — réessaie dans quelques secondes' : e.message); }
     finally { if (mountedRef.current) setLoading(false); }
   };
 
