@@ -747,7 +747,7 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
   const [showScoreDetails, setShowScoreDetails] = useState(false);
   const [showBoostPanel, setShowBoostPanel]     = useState(false);
   const [boostExpanded, setBoostExpanded]       = useState(false);
-  const [showMoreTrends, setShowMoreTrends] = useState(false);
+  const [showMoreTrends, setShowMoreTrends]     = useState(false);
   // Slider modal (agrandir avant/après)
   const [sliderModal, setSliderModal] = useState(null);
   // Share modal
