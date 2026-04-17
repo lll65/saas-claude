@@ -1,66 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import heic2any from 'heic2any';
+import { IDB } from './utils/idb.js';
+import { StylePicker, BG_STYLES, CATEGORIES } from './components/StylePicker.jsx';
+import { BeforeAfterSlider, BeforeAfterModal } from './components/BeforeAfterSlider.jsx';
 
-/* ══════════════════════════════════════════════════════════════
-   HISTORIQUE — IndexedDB (stockage client, 20 entrées max)
-══════════════════════════════════════════════════════════════ */
-const IDB = {
-  DB: 'pixglow_db', VERSION: 1, STORE: 'history', MAX: 20,
-  open() {
-    return new Promise((res, rej) => {
-      const req = indexedDB.open(this.DB, this.VERSION);
-      req.onupgradeneeded = e => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains(this.STORE)) {
-          const s = db.createObjectStore(this.STORE, { keyPath: 'id' });
-          s.createIndex('ts', 'ts');
-        }
-      };
-      req.onsuccess = e => res(e.target.result);
-      req.onerror  = e => rej(e.target.error);
-    });
-  },
-  async add(entry) {
-    const db = await this.open();
-    await new Promise((res, rej) => {
-      const tx = db.transaction(this.STORE, 'readwrite');
-      const s  = tx.objectStore(this.STORE);
-      s.add({ ...entry, id: Date.now(), ts: new Date().toISOString() });
-      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
-    });
-    // Supprime les plus vieilles entrées au-delà de MAX
-    const all = await this.getAll();
-    if (all.length > this.MAX) {
-      const toDelete = all.slice(this.MAX);
-      const db2 = await this.open();
-      await new Promise((res, rej) => {
-        const tx = db2.transaction(this.STORE, 'readwrite');
-        const s  = tx.objectStore(this.STORE);
-        toDelete.forEach(e => s.delete(e.id));
-        tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
-      });
-    }
-  },
-  async getAll() {
-    const db = await this.open();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(this.STORE, 'readonly');
-      const req = tx.objectStore(this.STORE).index('ts').getAll();
-      req.onsuccess = () => res([...req.result].reverse()); // newest first
-      req.onerror   = e => rej(e.target.error);
-    });
-  },
-  async clear() {
-    const db = await this.open();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(this.STORE, 'readwrite');
-      tx.objectStore(this.STORE).clear();
-      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
-    });
-  },
-};
+const MesPhotosLazy   = lazy(() => import('./components/MesPhotos.jsx').then(m => ({ default: m.MesPhotos })));
+const MentionsLegalesLazy         = lazy(() => import('./components/LegalPages.jsx').then(m => ({ default: m.MentionsLegales })));
+const PolitiqueConfidentialiteLazy = lazy(() => import('./components/LegalPages.jsx').then(m => ({ default: m.PolitiqueConfidentialite })));
+const CGVLazy                      = lazy(() => import('./components/LegalPages.jsx').then(m => ({ default: m.CGV })));
 
-/* ─── PAGES LÉGALES ─── */
+const PageLoader = () => <div style={{ minHeight: '100vh', background: '#0a0a0f' }} />;
+
+/* IDB, BG_STYLES, CATEGORIES, StylePicker, BeforeAfterSlider, BeforeAfterModal
+   sont importés depuis leurs fichiers respectifs en haut du fichier */
+
+/* ─── PAGES LÉGALES (conservées pour compatibilité — composants lazy en haut) ─── */
 const LS = {
   page: { background: 'linear-gradient(135deg,#0a0a0f,#111118)', minHeight: '100vh', color: '#e2e8f0', fontFamily: "'DM Sans',system-ui,sans-serif" },
   nav:  { padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.05)', background: 'rgba(10,10,15,.95)', position: 'sticky', top: 0, zIndex: 100 },
@@ -317,8 +271,10 @@ function AvatarInitials({ name, size = 30, style: extraStyle = {} }) {
   );
 }
 
-/* ══ STYLE PICKER ══ */
-const BG_STYLES = [
+/* StylePicker, BG_STYLES, CATEGORIES → src/components/StylePicker.jsx
+   MesPhotos → src/components/MesPhotos.jsx
+   BeforeAfterSlider, BeforeAfterModal → src/components/BeforeAfterSlider.jsx */
+const _PLACEHOLDER_BG_STYLES = [
   { id: 'blanc',    label: 'Blanc',    sub: 'Studio pur',   color: '#ffffff', border: '#e2e8f0', check: '#7c3aed' },
   { id: 'gris',     label: 'Gris',     sub: 'Studio pro',   color: '#9b9ba0', border: '#7a7a80', check: '#ffffff' },
   { id: 'beige',    label: 'Beige',    sub: 'Chaleureux',   color: '#cdbca0', border: '#b0996e', check: '#92400e' },
@@ -327,7 +283,7 @@ const BG_STYLES = [
     gradient: 'linear-gradient(160deg,#c39bf5,#f5afda)', border: '#a855f7', check: '#7c3aed' },
 ];
 
-const CATEGORIES = [
+const _OLD_CATEGORIES = [
   { id: 'vetement',  label: 'Vêtement',   icon: '👕', tip: 'Couleurs fidèles + netteté' },
   { id: 'chaussure', label: 'Chaussures', icon: '👟', tip: 'Contraste & texture nets' },
   { id: 'sac',       label: 'Sac',        icon: '👜', tip: 'Rendu cuir & matière' },
@@ -335,7 +291,7 @@ const CATEGORIES = [
   { id: 'autre',     label: 'Autre',      icon: '📦', tip: 'Réglages standard' },
 ];
 
-function StylePicker({ bgStyle, setBgStyle, category, setCategory, darkMode, isMobile }) {
+function _OldStylePicker({ bgStyle, setBgStyle, category, setCategory, darkMode, isMobile }) {
   const T2 = darkMode
     ? { card: 'rgba(255,255,255,.04)', cardBorder: 'rgba(255,255,255,.08)', text: '#e2e8f0', sub: '#64748b', selBg: 'rgba(124,58,237,.18)', selBorder: 'rgba(124,58,237,.6)' }
     : { card: '#f8f8ff', cardBorder: 'rgba(0,0,0,.08)', text: '#111118', sub: '#64748b', selBg: 'rgba(124,58,237,.08)', selBorder: 'rgba(124,58,237,.55)' };
@@ -407,11 +363,11 @@ function StylePicker({ bgStyle, setBgStyle, category, setCategory, darkMode, isM
   );
 }
 
-/* ══ PAGE MES PHOTOS (Historique IndexedDB) ══ */
-const BG_LABELS = { blanc: 'Blanc', gris: 'Gris', beige: 'Beige', nature: 'Nature', tendance: 'Tendance' };
-const CAT_LABELS = { vetement: '👕 Vêtement', chaussure: '👟 Chaussures', sac: '👜 Sac', bijou: '💍 Bijoux', autre: '📦 Autre' };
+/* ══ PAGE MES PHOTOS → src/components/MesPhotos.jsx ══ */
+const _OLD_BG_LABELS = { blanc: 'Blanc', gris: 'Gris', beige: 'Beige', nature: 'Nature', tendance: 'Tendance' };
+const _OLD_CAT_LABELS = { vetement: '👕 Vêtement', chaussure: '👟 Chaussures', sac: '👜 Sac', bijou: '💍 Bijoux', autre: '📦 Autre' };
 
-function MesPhotos({ onBack, darkMode, isMobile }) {
+function _OldMesPhotos({ onBack, darkMode, isMobile }) {
   const [photos, setPhotos] = useState(null); // null = loading
   const [lightbox, setLightbox] = useState(null);
   const [clearing, setClearing] = useState(false);
@@ -537,8 +493,8 @@ function MesPhotos({ onBack, darkMode, isMobile }) {
   );
 }
 
-/* ══ BEFORE/AFTER SLIDER ══ */
-function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false, isMobile = false, onOpen }) {
+/* ══ BEFORE/AFTER SLIDER → src/components/BeforeAfterSlider.jsx ══ */
+function _OldBeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLabel = 'Après ✅', height = 340, landscape = false, isMobile = false, onOpen }) {
   const [pos, setPos] = useState(75);
   const [dragging, setDragging] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -648,8 +604,8 @@ function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', afterLa
   );
 }
 
-/* ══ BEFORE/AFTER MODAL ══ */
-function BeforeAfterModal({ beforeSrc, afterSrc, onClose, isMobile = false }) {
+/* ══ BEFORE/AFTER MODAL → src/components/BeforeAfterSlider.jsx ══ */
+function _OldBeforeAfterModal({ beforeSrc, afterSrc, onClose, isMobile = false }) {
   const sliderWrapRef = useRef(null);
   const [sliderH, setSliderH] = useState(0);
 
@@ -3829,13 +3785,13 @@ function PixGlowApp() {
   const doneCount = results.filter(r => !r.error).length;
   const hasResults = results.length > 0 && results.length === files.length && !loading;
 
-  if (page === 'mentions') return <><InjectCSS /><MentionsLegales onBack={() => setPage('landing')} /></>;
-  if (page === 'confidentialite') return <><InjectCSS /><PolitiqueConfidentialite onBack={() => setPage('landing')} /></>;
-  if (page === 'cgv') return <><InjectCSS /><CGV onBack={() => setPage('landing')} /></>;
+  if (page === 'mentions') return <Suspense fallback={<PageLoader />}><InjectCSS /><MentionsLegalesLazy onBack={() => setPage('landing')} /></Suspense>;
+  if (page === 'confidentialite') return <Suspense fallback={<PageLoader />}><InjectCSS /><PolitiqueConfidentialiteLazy onBack={() => setPage('landing')} /></Suspense>;
+  if (page === 'cgv') return <Suspense fallback={<PageLoader />}><InjectCSS /><CGVLazy onBack={() => setPage('landing')} /></Suspense>;
   if (page === 'nouveautes') return <><InjectCSS /><Changelog onBack={() => setPage('landing')} darkMode={darkMode} /></>;
   if (page === 'admin' && isConnected) return <AdminPanel onBack={() => setPage('app')} userEmail={userEmail} />;
   if (page === 'affiliate') return <><InjectCSS /><AffiliatePage onBack={() => setPage('landing')} /></>;
-  if (page === 'mes-photos') return <MesPhotos onBack={() => setPage('app')} darkMode={darkMode} isMobile={isMobile} />;
+  if (page === 'mes-photos') return <Suspense fallback={<PageLoader />}><MesPhotosLazy onBack={() => setPage('app')} darkMode={darkMode} isMobile={isMobile} /></Suspense>;
 
   // Tokens de thème — tous les styles conditionnels passent par T
   const T = darkMode ? {

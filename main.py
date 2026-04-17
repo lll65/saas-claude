@@ -1,11 +1,12 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
-import os, uuid, json, time, base64, secrets
+import os, uuid, json, time, base64, secrets, logging
 from typing import Optional
 import smtplib
 from email.mime.text import MIMEText
@@ -27,9 +28,9 @@ from jose import JWTError, jwt
 try:
     from pillow_heif import register_heif_opener
     register_heif_opener()
-    print("[STARTUP] ✅ HEIC/HEIF supporté")
+    logger.info("HEIC/HEIF supporté")
 except ImportError:
-    print("[STARTUP] ⚠️ pillow-heif non installé — HEIC non supporté")
+    logger.warning("pillow-heif non installé — HEIC non supporté")
 from datetime import datetime, timedelta
 from collections import defaultdict
 import threading
@@ -41,13 +42,23 @@ from datetime import date as _date
 load_dotenv()
 
 # ─────────────────────────────────────────────
+#  LOGGING
+# ─────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+logger = logging.getLogger("pixglow")
+
+# ─────────────────────────────────────────────
 #  CONFIG
 # ─────────────────────────────────────────────
 STRIPE_SECRET_KEY     = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 SECRET_KEY            = os.getenv("JWT_SECRET", "change-moi-avec-un-vrai-secret-long")
 if SECRET_KEY == "change-moi-avec-un-vrai-secret-long":
-    print("[WARNING] ⚠️  JWT_SECRET non configuré — utilisez une vraie clé secrète en production !")
+    logger.warning("JWT_SECRET non configuré — utilisez une vraie clé secrète en production !")
 FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://pixglow.app")
 ALGORITHM             = "HS256"
 TOKEN_EXPIRE_DAYS     = 30
@@ -142,6 +153,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─────────────────────────────────────────────
+#  SECURITY HEADERS MIDDLEWARE
+# ─────────────────────────────────────────────
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # HSTS uniquement en production (évite de casser les dev locaux HTTP)
+        if request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 def _cors_headers(request: Request) -> dict:
     """Headers CORS corrects pour les exception handlers (middleware ne les gère pas)."""
     origin = request.headers.get("origin", "")
@@ -165,7 +194,7 @@ def _cors_headers(request: Request) -> dict:
 # ─────────────────────────────────────────────
 @app.exception_handler(Exception)
 async def global_exc(request: Request, exc: Exception):
-    print(f"[ERREUR] {type(exc).__name__}: {exc}")
+    logger.error("%s: %s — %s %s", type(exc).__name__, exc, request.method, request.url.path)
     return JSONResponse(status_code=500, content={"detail": f"Erreur serveur: {str(exc)}"}, headers=_cors_headers(request))
 
 @app.exception_handler(StarletteHTTPException)
@@ -185,7 +214,7 @@ def get_db():
 
 @app.on_event("startup")
 async def startup_event():
-    print(f"[STARTUP] PixGlow v2.5 — DB: {'OK' if DATABASE_URL else 'MANQUANTE'}")
+    logger.info("PixGlow v2.5 — DB: %s", "OK" if DATABASE_URL else "MANQUANTE")
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS users (
@@ -269,9 +298,9 @@ async def startup_event():
             code = secrets.token_hex(4).upper()
             cur.execute("UPDATE users SET referral_code = %s WHERE email = %s AND referral_code IS NULL", (code, u["email"]))
         conn.commit(); cur.close(); conn.close()
-        print("[STARTUP] ✅ Tables OK")
+        logger.info("Tables DB OK")
     except Exception as e:
-        print(f"[STARTUP] ⚠️ DB: {e}")
+        logger.error("DB startup: %s", e)
     _schedule_cleanup()
 
 # ─────────────────────────────────────────────
@@ -296,12 +325,12 @@ def _send_via_resend(to: str, subject: str, html: str) -> bool:
             timeout=15
         )
         if r.status_code in (200, 201):
-            print(f"[EMAIL/Resend] ✅ Envoyé à {to}")
+            logger.info("Email Resend envoyé à %s", to)
             return True
-        print(f"[EMAIL/Resend] ❌ {r.status_code} : {r.text}")
+        logger.error("Email Resend échec %s: %s", r.status_code, r.text)
         return False
     except Exception as e:
-        print(f"[EMAIL/Resend] ❌ Exception : {e}")
+        logger.error("Email Resend exception: %s", e)
         return False
 
 def _send_email_sync(to: str, subject: str, html: str):
@@ -330,16 +359,16 @@ def _send_email_sync(to: str, subject: str, html: str):
                 server.ehlo()
                 server.login(SMTP_USER, SMTP_PASS)
                 server.sendmail(from_raw, to, msg.as_string())
-        print(f"[EMAIL/SMTP] ✅ Envoyé à {to} : {subject}")
+        logger.info("Email SMTP envoyé à %s : %s", to, subject)
         return True
     except Exception as e:
-        print(f"[EMAIL/SMTP] ❌ Erreur envoi à {to} : {e}")
+        logger.error("Email SMTP échec à %s: %s", to, e)
         return False
 
 def send_email(to: str, subject: str, html: str) -> bool:
     """Lance l'envoi dans un thread. Retourne True si SMTP configuré (pas garanti livré)."""
     if not EMAIL_ENABLED:
-        print(f"[EMAIL] SMTP non configuré — email ignoré pour {to} : {subject}")
+        logger.debug("Email désactivé — ignoré pour %s: %s", to, subject)
         return False
     t = threading.Thread(target=_send_email_sync, args=(to, subject, html), daemon=True)
     t.start()
@@ -355,27 +384,27 @@ def _cleanup_images():
             fpath = os.path.join(UPLOAD_DIR, fname)
             if os.path.isfile(fpath) and os.path.getmtime(fpath) < cutoff:
                 os.remove(fpath)
-        print(f"[CLEANUP] Images > {IMAGE_TTL_HOURS}h supprimées")
+        logger.info("Images > %dh supprimées", IMAGE_TTL_HOURS)
     except Exception as e:
-        print(f"[CLEANUP] Erreur images: {e}")
+        logger.error("Cleanup images: %s", e)
     # Purge IP usage entries older than 30 days (conformité politique de confidentialité)
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("DELETE FROM ip_usage WHERE first_used < NOW() - INTERVAL '30 days'")
         deleted = cur.rowcount
         conn.commit(); cur.close(); conn.close()
-        if deleted: print(f"[CLEANUP] {deleted} entrées IP > 30j supprimées")
+        if deleted: logger.info("Cleanup: %d entrées IP > 30j supprimées", deleted)
     except Exception as e:
-        print(f"[CLEANUP] Erreur purge IP: {e}")
+        logger.error("Cleanup IP: %s", e)
     # Purge expired/used password reset tokens
     try:
         conn = get_db(); cur = conn.cursor()
         cur.execute("DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used = TRUE")
         deleted = cur.rowcount
         conn.commit(); cur.close(); conn.close()
-        if deleted: print(f"[CLEANUP] {deleted} tokens reset expirés supprimés")
+        if deleted: logger.info("Cleanup: %d tokens reset expirés supprimés", deleted)
     except Exception as e:
-        print(f"[CLEANUP] Erreur purge tokens: {e}")
+        logger.error("Cleanup tokens: %s", e)
 
 def _schedule_cleanup():
     def loop():
@@ -811,7 +840,7 @@ async def register(body: AuthBody, request: Request):
 
 @app.post("/login")
 async def login(body: AuthBody, request: Request):
-    rate_limit(get_real_ip(request), max_calls=10, window_sec=600)
+    rate_limit(get_real_ip(request), max_calls=5, window_sec=300)
     email = body.email.strip().lower()
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE email = %s", (email,))
@@ -1136,7 +1165,7 @@ async def enhance_photo(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[ERREUR enhance processing] {type(e).__name__}: {e}")
+        logger.error("Enhance processing %s: %s", type(e).__name__, e)
         # Image processing échoue → AUCUN crédit consommé (quota pas encore débité)
         raise HTTPException(500, f"Erreur traitement image: {str(e)}")
 
@@ -1165,7 +1194,7 @@ async def enhance_photo(
         conn.commit()
     except Exception as e:
         conn.rollback()
-        print(f"[ERREUR enhance commit] {type(e).__name__}: {e}")
+        logger.error("Enhance DB commit %s: %s", type(e).__name__, e)
         # Le traitement a réussi, on retourne quand même l'image même si le DB commit a raté
     finally:
         cur.close(); conn.close()
@@ -1228,7 +1257,7 @@ async def stripe_webhook(request: Request):
     try:
         event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
     except stripe.error.SignatureVerificationError:
-        print("[WEBHOOK] ❌ Signature invalide")
+        logger.warning("Webhook Stripe: signature invalide")
         return JSONResponse({"error": "Signature invalide"}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
@@ -1266,7 +1295,7 @@ async def stripe_webhook(request: Request):
                 import datetime
                 plan_name = metadata.get("plan", "?")
                 total_credits = result['credits'] if result else '?'
-                print(f"[WEBHOOK] ✅ +{credits_to_add} crédits ({plan_name}) → {email} (total: {total_credits})")
+                logger.info("Webhook: +%d crédits (%s) → %s (total: %s)", credits_to_add, plan_name, email, total_credits)
                 price_map    = {"starter": "7,00 €", "pro": "12,99 €", "elite": "29,00 €"}
                 ht_map       = {"starter": "5,84 €", "pro": "10,83 €", "elite": "24,17 €"}
                 tva_map      = {"starter": "1,16 €", "pro": "2,16 €",  "elite": "4,83 €"}
@@ -1314,7 +1343,7 @@ async def stripe_webhook(request: Request):
 </div></body></html>"""
                 send_email(email, f"Facture PixGlow n° {invoice_num} — {price_str}", receipt_html)
             except Exception as e:
-                print(f"[WEBHOOK] ❌ Erreur DB: {e}")
+                logger.error("Webhook DB: %s", e)
     return {"status": "success"}
 
 
@@ -1328,6 +1357,7 @@ async def generate_description(
 ):
     if not current_user:
         raise HTTPException(401, "Connexion requise pour générer une description AI")
+    rate_limit(current_user, max_calls=10, window_sec=60)
     if not GROQ_API_KEY:
         raise HTTPException(503, "GROQ_API_KEY manquante.")
 
@@ -1494,7 +1524,7 @@ RAPPEL TON {tone_key.upper()} : {tone_instruction}"""
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
     except Exception as e:
-        print(f"[generate-description] {type(e).__name__}: {e}")
+        logger.error("generate-description %s: %s", type(e).__name__, e)
         raise HTTPException(500, "Erreur génération IA — réessaie dans quelques secondes")
 
 # ─────────────────────────────────────────────
@@ -1526,6 +1556,7 @@ async def get_trending(
 ):
     if not current_user:
         raise HTTPException(401, "Connexion requise.")
+    rate_limit(current_user, max_calls=20, window_sec=60)
     if not GROQ_API_KEY:
         raise HTTPException(503, "GROQ_API_KEY manquante.")
 
@@ -1624,7 +1655,7 @@ Réponds UNIQUEMENT avec ce JSON exact (sans markdown, sans texte avant ou aprè
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing tendances — réessaie")
     except Exception as e:
-        print(f"[trending] {type(e).__name__}: {e}")
+        logger.error("trending %s: %s", type(e).__name__, e)
         raise HTTPException(500, f"Erreur tendances: {str(e)}")
 
 
@@ -1640,6 +1671,7 @@ async def generate_boosted(
 ):
     if not current_user:
         raise HTTPException(401, "Connexion requise.")
+    rate_limit(current_user, max_calls=5, window_sec=60)
     if not GROQ_API_KEY:
         raise HTTPException(503, "GROQ_API_KEY manquante.")
 
@@ -1715,7 +1747,7 @@ RÈGLES OBLIGATOIRES :
     except json.JSONDecodeError:
         raise HTTPException(500, "Erreur parsing réponse AI — réessaie")
     except Exception as e:
-        print(f"[generate-boosted] {type(e).__name__}: {e}")
+        logger.error("generate-boosted %s: %s", type(e).__name__, e)
         raise HTTPException(500, f"Erreur boost: {str(e)}")
 
 class SuggestionRequest(BaseModel):
@@ -1791,7 +1823,7 @@ async def cron_remind_credits(request: Request):
                 cur2.close(); conn2.close()
             sent += 1
 
-    print(f"[CRON] Rappels crédits : {sent}/{len(users_to_remind)} emails envoyés")
+    logger.info("CRON rappels: %d/%d emails envoyés", sent, len(users_to_remind))
     return {"sent": sent, "total_eligible": len(users_to_remind)}
 
 
