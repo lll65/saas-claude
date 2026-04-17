@@ -291,6 +291,19 @@ async def startup_event():
         """)
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS influencer_ref TEXT")
         cur.execute("ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS influencer_ref TEXT")
+        # Low-credit notification tracking
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS low_credit_notif_at TIMESTAMP")
+        # Server-side image history (RGPD: max 20 par utilisateur)
+        cur.execute("""CREATE TABLE IF NOT EXISTS user_images (
+            id SERIAL PRIMARY KEY,
+            user_email TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            processed_url TEXT NOT NULL,
+            bg_style TEXT DEFAULT 'blanc',
+            category TEXT DEFAULT 'autre',
+            created_at TIMESTAMP DEFAULT NOW()
+        )""")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_user_images_email ON user_images(user_email, created_at DESC)")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -570,6 +583,10 @@ class AffiliatePatchBody(BaseModel):
     commission_rate: float | None = None
     is_active: bool | None = None
     password: str | None = None
+
+class ChangePasswordBody(BaseModel):
+    current_password: str
+    new_password: str
 
 def hash_password(p: str) -> str:
     return _bcrypt.hashpw(p.encode("utf-8")[:72], _bcrypt.gensalt(12)).decode()
@@ -906,6 +923,56 @@ async def get_me(current_user: str = Depends(get_current_user)):
     cur.close(); conn.close()
     return {"email": current_user, "credits": user["credits"], "parrain_notif": notif, "is_admin": bool(ADMIN_EMAIL and current_user == ADMIN_EMAIL)}
 
+
+@app.post("/change-password")
+async def change_password(body: ChangePasswordBody, current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    if len(body.new_password) < 6: raise HTTPException(400, "Mot de passe : minimum 6 caractères")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT password_hash FROM users WHERE email = %s", (current_user,))
+        user = cur.fetchone()
+        if not user: raise HTTPException(404, "Utilisateur introuvable")
+        if not verify_password(body.current_password, user["password_hash"]):
+            raise HTTPException(400, "Mot de passe actuel incorrect")
+        cur.execute("UPDATE users SET password_hash = %s WHERE email = %s", (hash_password(body.new_password), current_user))
+        conn.commit()
+        logger.info("Mot de passe changé pour %s", current_user)
+    finally:
+        cur.close(); conn.close()
+    return {"ok": True}
+
+
+@app.delete("/delete-account")
+async def delete_account(current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM password_reset_tokens WHERE email = %s", (current_user,))
+        cur.execute("DELETE FROM user_images WHERE user_email = %s", (current_user,))
+        cur.execute("DELETE FROM users WHERE email = %s", (current_user,))
+        conn.commit()
+        logger.info("Compte supprimé (RGPD): %s", current_user)
+    finally:
+        cur.close(); conn.close()
+    return {"ok": True}
+
+
+@app.get("/my-history")
+async def get_my_history(current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT id, filename, processed_url, bg_style, category, created_at FROM user_images WHERE user_email = %s ORDER BY created_at DESC LIMIT 20",
+            (current_user,)
+        )
+        rows = cur.fetchall()
+    finally:
+        cur.close(); conn.close()
+    return {"images": [dict(r) for r in rows]}
+
+
 @app.get("/verify-email/{token}")
 async def verify_email(token: str):
     conn = get_db(); cur = conn.cursor()
@@ -1181,6 +1248,16 @@ async def enhance_photo(
             )
             row = cur.fetchone()
             credits_left = row["credits"] if row else None
+            # Save to server history (keep last 20)
+            processed_url = f"/image/{filename}"
+            cur.execute(
+                "INSERT INTO user_images (user_email, filename, processed_url, bg_style, category) VALUES (%s, %s, %s, %s, %s)",
+                (current_user, filename, processed_url, bg_style, category)
+            )
+            cur.execute(
+                "DELETE FROM user_images WHERE id IN (SELECT id FROM user_images WHERE user_email = %s ORDER BY created_at DESC OFFSET 20)",
+                (current_user,)
+            )
         else:
             # Incrémente IP seulement maintenant (traitement a réussi)
             allowed, new_count = increment_ip(ip)
@@ -1197,6 +1274,40 @@ async def enhance_photo(
         # Le traitement a réussi, on retourne quand même l'image même si le DB commit a raté
     finally:
         cur.close(); conn.close()
+
+    # ── 5. Email alerte crédits bas (fire & forget) ─────────────────────────
+    if current_user and credits_left is not None and credits_left <= 5 and EMAIL_ENABLED:
+        def _send_low_credit_email(email: str, remaining: int):
+            conn2 = get_db(); cur2 = conn2.cursor()
+            try:
+                cur2.execute(
+                    "SELECT low_credit_notif_at FROM users WHERE email = %s",
+                    (email,)
+                )
+                u = cur2.fetchone()
+                last = u["low_credit_notif_at"] if u else None
+                if last and (datetime.utcnow() - last).total_seconds() < 7 * 86400:
+                    return
+                word = "crédit" if remaining == 1 else "crédits"
+                html = f"""
+                <div style="background:#0f172a;padding:32px;font-family:sans-serif;max-width:480px;margin:auto;border-radius:16px">
+                  <h2 style="font-size:20px;color:#fff;margin-bottom:12px;">⚠️ Plus que {remaining} {word} PixGlow</h2>
+                  <p style="color:#94a3b8;line-height:1.6;margin-bottom:20px;">
+                    Il vous reste <strong style="color:#f87171;">{remaining} {word}</strong> sur votre compte PixGlow.
+                    Rechargez maintenant pour continuer à traiter vos photos sans interruption.
+                  </p>
+                  <a href="{FRONTEND_URL}" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;">
+                    Recharger mes crédits →
+                  </a>
+                  <p style="color:#475569;font-size:12px;margin-top:24px;">Vous recevez cet email car votre solde PixGlow est faible.</p>
+                </div>"""
+                ok = send_email(email, f"Plus que {remaining} {word} PixGlow", html)
+                if ok:
+                    cur2.execute("UPDATE users SET low_credit_notif_at = NOW() WHERE email = %s", (email,))
+                    conn2.commit()
+            finally:
+                cur2.close(); conn2.close()
+        threading.Thread(target=_send_low_credit_email, args=(current_user, credits_left), daemon=True).start()
 
     return JSONResponse({
         "status": "success",
@@ -1215,6 +1326,105 @@ async def get_image(filename: str):
     if not os.path.exists(filepath):
         raise HTTPException(404, "Image introuvable ou expirée")
     return FileResponse(filepath, media_type="image/png")
+
+
+@app.post("/enhance-batch")
+async def enhance_batch(
+    files: list[UploadFile] = File(...),
+    bg_style: str = File("blanc"),
+    category: str = File("autre"),
+    request: Request = None,
+    current_user: str = Depends(get_current_user)
+):
+    MAX_BATCH = 10
+    if not current_user: raise HTTPException(401, "Connectez-vous pour traiter des photos en lot.")
+    if len(files) > MAX_BATCH: raise HTTPException(400, f"Maximum {MAX_BATCH} photos par lot.")
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance"): bg_style = "blanc"
+    if category not in ("vetement", "chaussure", "sac", "bijou", "autre"): category = "autre"
+
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT credits FROM users WHERE email = %s", (current_user,))
+        user = cur.fetchone()
+        if not user or user["credits"] < len(files):
+            raise HTTPException(402, f"Crédits insuffisants ({user['credits'] if user else 0} pour {len(files)} photos).")
+    finally:
+        cur.close(); conn.close()
+
+    results = []
+    credits_left = None
+    for file in files:
+        content_type = (file.content_type or "").lower()
+        if content_type not in ALLOWED_TYPES:
+            ext = (file.filename or "").rsplit(".", 1)[-1].lower()
+            ext_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "heic": "image/heic", "heif": "image/heif"}
+            content_type = ext_map.get(ext, content_type)
+        if content_type not in ALLOWED_TYPES:
+            results.append({"error": f"Format non supporté: {file.filename}"})
+            continue
+
+        contents = await file.read()
+        if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
+            results.append({"error": f"Fichier trop lourd: {file.filename}"})
+            continue
+
+        filename = None
+        try:
+            orig = Image.open(BytesIO(contents))
+            orig = ImageOps.exif_transpose(orig)
+            if orig.mode not in ("RGB", "RGBA"):
+                orig = orig.convert("RGBA" if "transparency" in orig.info else "RGB")
+            w, h = orig.size
+            PROCESS_MAX = 1500
+            if w > PROCESS_MAX or h > PROCESS_MAX:
+                scale = PROCESS_MAX / max(w, h)
+                orig = orig.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+            tmp_rgb = orig.convert("RGB") if orig.mode != "RGB" else orig
+            no_bg = remove(reduce_wrinkles(tmp_rgb, 0.75))
+            no_bg = apply_studio_lighting(no_bg)
+            proc_w, proc_h = orig.size
+            bg_img = create_background(proc_w, proc_h, bg_style)
+            bg_img.paste(no_bg, (0, 0), no_bg if no_bg.mode == "RGBA" else None)
+            bg_img = ImageEnhance.Brightness(bg_img).enhance(1.04)
+            bg_img = ImageEnhance.Contrast(bg_img).enhance(1.04)
+            bg_img = ImageEnhance.Color(bg_img).enhance(1.06)
+            bg_img = ImageEnhance.Sharpness(bg_img).enhance(1.08)
+            bg_img = adjust_for_category(bg_img, category)
+            filename = f"{uuid.uuid4()}.png"
+            bg_img.save(os.path.join(UPLOAD_DIR, filename), "PNG", optimize=False)
+        except Exception as e:
+            logger.error("Batch enhance %s: %s", type(e).__name__, e)
+            results.append({"error": f"Erreur traitement: {file.filename}"})
+            continue
+
+        conn2 = get_db(); cur2 = conn2.cursor()
+        try:
+            _increment_total_photos(conn2, cur2)
+            cur2.execute(
+                "UPDATE users SET credits = credits - 1, last_used_at = NOW() WHERE email = %s RETURNING credits",
+                (current_user,)
+            )
+            row = cur2.fetchone()
+            credits_left = row["credits"] if row else None
+            cur2.execute(
+                "INSERT INTO user_images (user_email, filename, processed_url, bg_style, category) VALUES (%s, %s, %s, %s, %s)",
+                (current_user, filename, f"/image/{filename}", bg_style, category)
+            )
+            cur2.execute(
+                "DELETE FROM user_images WHERE id IN (SELECT id FROM user_images WHERE user_email = %s ORDER BY created_at DESC OFFSET 20)",
+                (current_user,)
+            )
+            conn2.commit()
+        except Exception as e:
+            conn2.rollback()
+            logger.error("Batch DB commit: %s", e)
+        finally:
+            cur2.close(); conn2.close()
+
+        results.append({"filename": filename, "url": f"/image/{filename}", "bg_style": bg_style, "category": category})
+
+    return JSONResponse({"results": results, "credits_left": credits_left})
+
 
 class CheckoutBody(BaseModel):
     plan: str = "pro"

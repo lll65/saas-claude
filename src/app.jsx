@@ -8,6 +8,7 @@ const MesPhotosLazy   = lazy(() => import('./components/MesPhotos.jsx').then(m =
 const MentionsLegalesLazy         = lazy(() => import('./components/LegalPages.jsx').then(m => ({ default: m.MentionsLegales })));
 const PolitiqueConfidentialiteLazy = lazy(() => import('./components/LegalPages.jsx').then(m => ({ default: m.PolitiqueConfidentialite })));
 const CGVLazy                      = lazy(() => import('./components/LegalPages.jsx').then(m => ({ default: m.CGV })));
+const AccountSettingsLazy          = lazy(() => import('./components/AccountSettings.jsx').then(m => ({ default: m.AccountSettings })));
 
 const PageLoader = () => <div style={{ minHeight: '100vh', background: '#0a0a0f' }} />;
 
@@ -3790,7 +3791,8 @@ function PixGlowApp() {
   if (page === 'nouveautes') return <><InjectCSS /><Changelog onBack={() => setPage('landing')} darkMode={darkMode} /></>;
   if (page === 'admin' && isConnected) return <AdminPanel onBack={() => setPage('app')} userEmail={userEmail} />;
   if (page === 'affiliate') return <><InjectCSS /><AffiliatePage onBack={() => setPage('landing')} /></>;
-  if (page === 'mes-photos') return <Suspense fallback={<PageLoader />}><MesPhotosLazy onBack={() => setPage('app')} darkMode={darkMode} isMobile={isMobile} /></Suspense>;
+  if (page === 'mes-photos') return <Suspense fallback={<PageLoader />}><MesPhotosLazy onBack={() => setPage('app')} darkMode={darkMode} isMobile={isMobile} isConnected={isConnected} token={localStorage.getItem('pg_token')} /></Suspense>;
+  if (page === 'mon-compte' && isConnected) return <Suspense fallback={<PageLoader />}><AccountSettingsLazy onBack={() => setPage('app')} darkMode={darkMode} isMobile={isMobile} userEmail={userEmail} onLogout={handleLogout} /></Suspense>;
 
   // Tokens de thème — tous les styles conditionnels passent par T
   const T = darkMode ? {
@@ -3853,6 +3855,7 @@ function PixGlowApp() {
                         <button onClick={() => { setPage('mes-photos'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🖼 Mes photos</button>
                         <button onClick={() => { setShowTracker(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#10b981', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>💰 Mes gains</button>
                         <button onClick={() => { openReferral(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#a78bfa', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>
+                        <button onClick={() => { setPage('mon-compte'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Mon compte</button>
                         <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
                         {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
