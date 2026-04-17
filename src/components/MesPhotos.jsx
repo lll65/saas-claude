@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { IDB } from '../utils/idb.js';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
 const BG_LABELS = { blanc: 'Blanc', gris: 'Gris', beige: 'Beige', nature: 'Nature', tendance: 'Tendance' };
 const CAT_LABELS = { vetement: '👕 Vêtement', chaussure: '👟 Chaussures', sac: '👜 Sac', bijou: '💍 Bijoux', autre: '📦 Autre' };
 
-export function MesPhotos({ onBack, darkMode, isMobile }) {
+export function MesPhotos({ onBack, darkMode, isMobile, isConnected, token }) {
   const [photos, setPhotos] = useState(null);
+  const [source, setSource] = useState('local'); // 'local' | 'server'
   const [lightbox, setLightbox] = useState(null);
   const [clearing, setClearing] = useState(false);
 
@@ -14,8 +16,31 @@ export function MesPhotos({ onBack, darkMode, isMobile }) {
     : { bg: '#f8f9fc', card: '#fff', border: 'rgba(0,0,0,.08)', text: '#111118', sub: '#64748b', nav: 'rgba(255,255,255,.97)' };
 
   useEffect(() => {
-    IDB.getAll().then(setPhotos).catch(() => setPhotos([]));
-  }, []);
+    if (isConnected && token) {
+      fetch(`${API_URL}/my-history`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+          const serverPhotos = (data.images || []).map(img => ({
+            id: `srv-${img.id}`,
+            processedUrl: `${API_URL}${img.processed_url}`,
+            filename: img.filename,
+            bgStyle: img.bg_style,
+            category: img.category,
+            ts: img.created_at,
+            fromServer: true,
+          }));
+          setPhotos(serverPhotos);
+          setSource('server');
+        })
+        .catch(() => {
+          IDB.getAll().then(setPhotos).catch(() => setPhotos([]));
+          setSource('local');
+        });
+    } else {
+      IDB.getAll().then(setPhotos).catch(() => setPhotos([]));
+      setSource('local');
+    }
+  }, [isConnected, token]);
 
   const handleClear = async () => {
     setClearing(true);
@@ -44,6 +69,8 @@ export function MesPhotos({ onBack, darkMode, isMobile }) {
     } catch { return ''; }
   };
 
+  const canClear = source === 'local' && photos && photos.length > 0;
+
   return (
     <div style={{ minHeight: '100dvh', background: T.bg, fontFamily: "'DM Sans',system-ui,sans-serif", color: T.text }}>
       <nav style={{ padding: isMobile ? '14px 16px' : '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.border}`, background: T.nav, backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 100 }}>
@@ -51,7 +78,7 @@ export function MesPhotos({ onBack, darkMode, isMobile }) {
           <button onClick={onBack} style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${T.border}`, borderRadius: '10px', padding: '8px 14px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', color: T.sub, fontFamily: 'inherit' }}>← Retour</button>
           <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: '18px', fontWeight: 800, color: T.text }}>Mes photos</span>
         </div>
-        {photos && photos.length > 0 && (
+        {canClear && (
           <button onClick={handleClear} disabled={clearing} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171', borderRadius: '10px', padding: '7px 14px', fontWeight: 700, fontSize: '12px', cursor: clearing ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
             {clearing ? 'Suppression...' : "Vider l'historique"}
           </button>
@@ -75,7 +102,10 @@ export function MesPhotos({ onBack, darkMode, isMobile }) {
           </div>
         ) : (
           <>
-            <p style={{ color: T.sub, fontSize: '13px', marginBottom: '18px' }}>{photos.length} photo{photos.length > 1 ? 's' : ''} — conservées localement sur cet appareil</p>
+            <p style={{ color: T.sub, fontSize: '13px', marginBottom: '18px' }}>
+              {photos.length} photo{photos.length > 1 ? 's' : ''} —{' '}
+              {source === 'server' ? 'historique synchronisé sur tous vos appareils' : 'conservées localement sur cet appareil'}
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '12px' }}>
               {photos.map(p => (
                 <div key={p.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: '14px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
