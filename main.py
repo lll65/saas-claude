@@ -23,6 +23,24 @@ from dotenv import load_dotenv
 from rembg import remove
 import bcrypt as _bcrypt
 from jose import JWTError, jwt
+from datetime import datetime, timedelta
+from collections import defaultdict
+import threading
+import re as _re
+import hashlib as _hashlib
+from datetime import date as _date
+
+load_dotenv()
+
+# ─────────────────────────────────────────────
+#  LOGGING — doit être défini avant tout usage
+# ─────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+logger = logging.getLogger("pixglow")
 
 # Support HEIC/HEIF (photos iPhone)
 try:
@@ -31,25 +49,6 @@ try:
     logger.info("HEIC/HEIF supporté")
 except ImportError:
     logger.warning("pillow-heif non installé — HEIC non supporté")
-from datetime import datetime, timedelta
-from collections import defaultdict
-import threading
-
-import re as _re
-import hashlib as _hashlib
-from datetime import date as _date
-
-load_dotenv()
-
-# ─────────────────────────────────────────────
-#  LOGGING
-# ─────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S",
-)
-logger = logging.getLogger("pixglow")
 
 # ─────────────────────────────────────────────
 #  CONFIG

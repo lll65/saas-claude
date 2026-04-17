@@ -766,12 +766,11 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
         setShowScoreDetails(false);
         setShowBoostPanel(false);
         setBoostExpanded(false);
-        setShowMoreTrends(false); 
+        setShowMoreTrends(false);
       }
-    catch(e) { 
-  if (mountedRef.current) setError(e.message); 
-}
-    finally { if (mountedRef.current) setLoading(false); }
+    } catch(e) {
+      if (mountedRef.current) setError(e.message);
+    } finally { if (mountedRef.current) setLoading(false); }
   };
 
   // Charger les tendances de la semaine
