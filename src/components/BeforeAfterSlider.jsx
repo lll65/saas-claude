@@ -93,11 +93,6 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel = 'Avant', 
         style={{ position: 'absolute', top: '50%', left: `${pos}%`, transform: 'translate(-50%,-50%)', width: isMobile ? '28px' : '36px', height: isMobile ? '28px' : '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 2px 12px rgba(124,58,237,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: dragging ? 'grabbing' : 'grab', zIndex: 10, border: '2px solid rgba(255,255,255,.3)' }}>
         <span style={{ color: '#fff', fontSize: isMobile ? '11px' : '14px', userSelect: 'none', lineHeight: 1 }}>⇔</span>
       </div>
-      {isMobile && !autoAnimDone && !dragging && (
-        <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,.9)', fontSize: '11px', fontWeight: 600, padding: '4px 14px', borderRadius: '100px', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-          ← Glisse pour comparer →
-        </div>
-      )}
     </div>
   );
 }

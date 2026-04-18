@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -33,6 +33,41 @@ export function AccountSettings({ onBack, darkMode, isMobile, userEmail, onLogou
       setPwCurrent(''); setPwNew(''); setPwConfirm('');
     } catch { setPwMsg({ ok: false, text: 'Erreur réseau. Réessayez.' }); }
     finally { setPwLoading(false); }
+  };
+
+  // ── API Keys ──
+  const [apiKeys, setApiKeys] = useState([]);
+  const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [revealedKey, setRevealedKey] = useState(null);
+  const [apiKeyMsg, setApiKeyMsg] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api-keys`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => setApiKeys(d.keys || []))
+      .catch(() => {});
+  }, []);
+
+  const handleCreateKey = async () => {
+    setApiKeyLoading(true); setApiKeyMsg(null);
+    try {
+      const res = await fetch(`${API_URL}/api-keys`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ label: newKeyLabel })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setApiKeyMsg({ ok: false, text: data.detail || 'Erreur.' }); return; }
+      setRevealedKey(data.key);
+      setApiKeys(prev => [data, ...prev]);
+      setNewKeyLabel('');
+    } catch { setApiKeyMsg({ ok: false, text: 'Erreur réseau.' }); }
+    finally { setApiKeyLoading(false); }
+  };
+
+  const handleRevokeKey = async (id) => {
+    const res = await fetch(`${API_URL}/api-keys/${id}`, { method: 'DELETE', headers: authHeaders() });
+    if (res.ok) setApiKeys(prev => prev.map(k => k.id === id ? { ...k, is_active: false } : k));
   };
 
   // ── Suppression compte ──
@@ -130,6 +165,44 @@ export function AccountSettings({ onBack, darkMode, isMobile, userEmail, onLogou
                   {deleteLoading ? 'Suppression...' : 'Confirmer la suppression'}
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* API Keys */}
+        <div style={sectionStyle}>
+          <p style={{ color: '#a78bfa', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 8px' }}>🔌 Clés API publique</p>
+          <p style={{ color: T.sub, fontSize: '12px', margin: '0 0 14px', lineHeight: 1.5 }}>
+            Intégrez PixGlow dans vos outils (scripts Python, Zapier, Make). Envoyez le header <code style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>X-API-Key: votre_clé</code> à l'endpoint <code style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>POST /enhance</code>.
+          </p>
+
+          {revealedKey && (
+            <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '10px', padding: '12px', marginBottom: '14px' }}>
+              <p style={{ color: '#10b981', fontSize: '12px', fontWeight: 700, margin: '0 0 6px' }}>✓ Clé créée — copiez-la maintenant, elle ne sera plus affichée :</p>
+              <code style={{ display: 'block', color: '#34d399', fontSize: '12px', wordBreak: 'break-all', background: darkMode ? 'rgba(0,0,0,.3)' : 'rgba(0,0,0,.06)', padding: '8px 10px', borderRadius: '6px', userSelect: 'all' }}>{revealedKey}</code>
+              <button onClick={() => { navigator.clipboard?.writeText(revealedKey).catch(()=>{}); }} style={{ marginTop: '8px', background: 'rgba(16,185,129,.15)', border: '1px solid rgba(16,185,129,.3)', color: '#10b981', borderRadius: '7px', padding: '5px 12px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Copier</button>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            <input type="text" placeholder="Nom (ex: Mon script Python)" value={newKeyLabel} onChange={e => setNewKeyLabel(e.target.value)} style={{ ...inputStyle, flex: 1, marginBottom: 0 }} />
+            <button onClick={handleCreateKey} disabled={apiKeyLoading} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: '0 16px', fontWeight: 700, fontSize: '13px', cursor: apiKeyLoading ? 'wait' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {apiKeyLoading ? '...' : '+ Créer'}
+            </button>
+          </div>
+          {apiKeyMsg && <p style={{ color: apiKeyMsg.ok ? '#10b981' : '#f87171', fontSize: '12px', marginBottom: '10px' }}>{apiKeyMsg.text}</p>}
+
+          {apiKeys.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {apiKeys.map(k => (
+                <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: darkMode ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.03)', border: `1px solid ${T.border}`, borderRadius: '8px', padding: '8px 12px', opacity: k.is_active ? 1 : 0.4 }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: T.sub }}>{k.key_prefix}•••</span>
+                  <span style={{ flex: 1, fontSize: '12px', color: T.text }}>{k.label || '(sans nom)'}</span>
+                  {k.last_used_at && <span style={{ fontSize: '11px', color: T.sub }}>Utilisée {new Date(k.last_used_at).toLocaleDateString('fr-FR')}</span>}
+                  {k.is_active && <button onClick={() => handleRevokeKey(k.id)} style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171', borderRadius: '6px', padding: '3px 10px', fontWeight: 600, fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit' }}>Révoquer</button>}
+                  {!k.is_active && <span style={{ fontSize: '11px', color: '#f87171' }}>Révoquée</span>}
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -3504,8 +3504,18 @@ function PixGlowApp() {
   const [sliderModal, setSliderModal] = useState(null); // { before, after }
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [pwaPrompt, setPwaPrompt] = useState(null);
+  const [showWatermarkCta, setShowWatermarkCta] = useState(false);
 
   useScrollReveal();
+
+  // PWA install prompt
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setPwaPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const getToken = () => localStorage.getItem('pg_token');
   const authHeaders = () => { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; };
@@ -3697,6 +3707,58 @@ function PixGlowApp() {
     setLoading(false);
   };
 
+  // Mode essai avec watermark (visiteurs non connectés)
+  const handlePreviewUpload = async () => {
+    if (!files.length) { setError('Sélectionnez une photo'); return; }
+    setLoading(true); setError(null); setResults([]); setProgress(1);
+    try {
+      const form = new FormData();
+      form.append('file', files[0]);
+      form.append('bg_style', bgStyle);
+      form.append('category', category);
+      const res = await fetch(`${API_URL}/enhance-preview`, { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.detail || 'Erreur traitement'); return; }
+      const processedUrl = `${API_URL}${data.url}`;
+      setResults([{ url: processedUrl, filename: data.filename, original: previews[0], bgStyle, category, watermarked: true }]);
+      setShowWatermarkCta(true);
+    } catch { setError('Erreur réseau — réessayez.'); }
+    finally { setLoading(false); }
+  };
+
+  // Génère image avant/après (canvas client-side)
+  const handleGenerateComparison = async (r) => {
+    if (!r.original) { window.open(r.url, '_blank'); return; }
+    try {
+      const [procImg, origImg] = await Promise.all([
+        new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = r.url; }),
+        new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = r.original; }),
+      ]);
+      const H = 800;
+      const ow = Math.round(origImg.width * H / origImg.height);
+      const pw = Math.round(procImg.width * H / procImg.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = ow + pw + 6; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, canvas.width, H);
+      ctx.drawImage(origImg, 0, 0, ow, H);
+      ctx.fillStyle = '#0a0a0f'; ctx.fillRect(ow, 0, 6, H);
+      ctx.drawImage(procImg, ow + 6, 0, pw, H);
+      const badge = (x, label, color) => {
+        ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.beginPath(); ctx.roundRect(x + 12, 14, 100, 28, 6); ctx.fill();
+        ctx.fillStyle = color; ctx.font = 'bold 13px sans-serif'; ctx.fillText(label, x + 22, 33);
+      };
+      badge(0, 'AVANT', '#f87171'); badge(ow + 6, 'APRÈS ✅', '#34d399');
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `pixglow-avant-apres-${Date.now()}.jpg`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+      }, 'image/jpeg', 0.92);
+    } catch { window.open(r.url, '_blank'); }
+  };
+
   // Détection iOS — Safari ne supporte pas a.download sur blob, il faut window.open
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -3858,6 +3920,7 @@ function PixGlowApp() {
                         <button onClick={() => { setPage('mon-compte'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Mon compte</button>
                         <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
                         {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                        {pwaPrompt && <button onClick={() => { pwaPrompt.prompt(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#34d399', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📲 Télécharger l'app</button>}
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
                     </>
@@ -4439,6 +4502,19 @@ function PixGlowApp() {
           <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '18px', fontFamily: 'inherit', padding: '0 4px', flexShrink: 0 }}>✕</button>
         </div>
       )}
+      {showWatermarkCta && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowWatermarkCta(false)}>
+          <div style={{ background: '#0d0d1a', border: '1px solid rgba(124,58,237,.35)', borderRadius: '20px', padding: '28px', maxWidth: '360px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>✨</div>
+            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '20px', margin: '0 0 10px' }}>Résultat impressionnant !</h3>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '22px', lineHeight: 1.6 }}>Inscrivez-vous gratuitement pour <strong style={{ color: '#a78bfa' }}>télécharger sans watermark</strong> et recevoir <strong style={{ color: '#34d399' }}>5 crédits offerts</strong>.</p>
+            <button onClick={() => { setShowWatermarkCta(false); openAuth('register'); }} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, fontSize: '16px', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '10px' }}>
+              🚀 Créer mon compte gratuit
+            </button>
+            <button onClick={() => setShowWatermarkCta(false)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>Continuer sans s'inscrire</button>
+          </div>
+        </div>
+      )}
       {lightboxUrl && (
         <div onClick={() => setLightboxUrl(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', padding: '20px' }}>
           <img src={lightboxUrl} alt="Aperçu" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '12px', objectFit: 'contain', boxShadow: '0 0 60px rgba(0,0,0,.6)' }} onClick={e => e.stopPropagation()} />
@@ -4554,6 +4630,11 @@ function PixGlowApp() {
                 </div>
               )}
 
+              {!isConnected && files.length > 0 && !loading && (
+                <button onClick={handlePreviewUpload} style={{ width: '100%', border: '1px solid rgba(124,58,237,.3)', fontWeight: 700, borderRadius: '14px', padding: '13px', fontSize: isMobile ? '14px' : '15px', cursor: 'pointer', background: 'rgba(124,58,237,.08)', color: '#a78bfa', fontFamily: 'inherit', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                  👁 Voir le résultat (aperçu avec watermark)
+                </button>
+              )}
               {!limitReached && (
                 <button onClick={handleUpload} disabled={!files.length || loading || previews.some(p => p === null)} className={files.length && !loading && !previews.some(p => p === null) ? 'pg-btn' : ''}
                   style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '18px', fontSize: isMobile ? '17px' : '19px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.03)', color: files.length && !loading ? '#fff' : '#1e293b', fontFamily: 'inherit', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -4608,7 +4689,15 @@ function PixGlowApp() {
                           }
                         </div>
                         {!r.error && (
-                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                          <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
+                            {r.watermarked
+                              ? <button onClick={() => { openAuth('register'); }} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>🚀 S'inscrire pour télécharger sans watermark</button>
+                              : <button onClick={() => handleDownload(r)} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                            }
+                            {!r.watermarked && r.original && (
+                              <button onClick={() => handleGenerateComparison(r)} title="Télécharger image avant/après" style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit', flexShrink: 0 }}>⇔ Avant/Après</button>
+                            )}
+                          </div>
                         )}
                         {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                       </div>
