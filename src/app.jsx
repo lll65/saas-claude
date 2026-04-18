@@ -1996,29 +1996,6 @@ function StickyBottomBar({ show, doneCount, onDownloadAll, onReset, onBuyCredits
   );
 }
 
-/* ══ MOBILE NAV BAR (news / gains / aide) ══ */
-function MobileNavBar({ isMobile, show, onNews, onGains, onHelp, onShare, onPhotos, darkMode }) {
-  const [hidden, setHidden] = React.useState(false);
-  if (!isMobile || !show || hidden) return null;
-  const items = [
-    { icon: '🖼', label: 'Mes photos', onClick: onPhotos },
-    { icon: '💰', label: 'Mes gains',  onClick: onGains },
-    { icon: '🎁', label: 'Inviter',    onClick: onShare },
-    { icon: '❓', label: 'Aide',        onClick: onHelp  },
-  ];
-  return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 198, background: darkMode ? 'rgba(10,8,20,.97)' : 'rgba(255,255,255,.97)', backdropFilter: 'blur(16px)', borderTop: `1px solid ${darkMode ? 'rgba(124,58,237,.2)' : 'rgba(0,0,0,.08)'}`, padding: '6px 0 calc(6px + env(safe-area-inset-bottom,0px))', display: 'flex', alignItems: 'stretch' }}>
-      {items.map(({ icon, label, onClick }) => (
-        <button key={label} onClick={onClick} style={{ flex: 1, background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '4px 0', cursor: 'pointer', color: darkMode ? '#94a3b8' : '#6b7280', fontFamily: 'inherit' }}>
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>{icon}</span>
-          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.2px' }}>{label}</span>
-        </button>
-      ))}
-      <button onClick={() => setHidden(true)} style={{ background: 'none', border: 'none', borderLeft: `1px solid ${darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'}`, color: darkMode ? '#475569' : '#9ca3af', cursor: 'pointer', padding: '4px 12px', fontSize: '16px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Masquer">✕</button>
-    </div>
-  );
-}
-
 /* ─── AUTH MODAL ─── */
 function AuthModal({ show, initialMode, onClose, onSuccess, isMobile, resetToken }) {
   const [mode, setMode] = useState(initialMode || 'login');
@@ -3533,6 +3510,10 @@ function PixGlowApp() {
   const cameraInputRef = useRef(null);
   const [pwaPrompt, setPwaPrompt] = useState(null);
   const [showWatermarkCta, setShowWatermarkCta] = useState(false);
+  const [showIosInstall, setShowIosInstall] = useState(false);
+  // iOS : beforeinstallprompt ne se déclenche jamais sur Safari
+  const isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
   useScrollReveal();
 
@@ -3947,7 +3928,12 @@ function PixGlowApp() {
                         <button onClick={() => { setPage('mon-compte'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Mon compte</button>
                         <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
                         {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
-                        {pwaPrompt && <button onClick={() => { pwaPrompt.prompt(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#34d399', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📲 Télécharger l'app</button>}
+                        {!isStandalone && (pwaPrompt
+                          ? <button onClick={() => { pwaPrompt.prompt(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#34d399', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📲 Installer l'app</button>
+                          : isIOSDevice
+                            ? <button onClick={() => { setShowIosInstall(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#34d399', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📲 Ajouter à l'écran d'accueil</button>
+                            : null
+                        )}
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
                     </>
@@ -4797,17 +4783,29 @@ function PixGlowApp() {
         isMobile={isMobile}
         zipping={zipping}
       />
-      {/* ══ MOBILE NAV BAR (liens raccourcis bas d'écran) ══ */}
-      <MobileNavBar
-        isMobile={isMobile}
-        show={!hasResults && isConnected}
-        onPhotos={() => setPage('mes-photos')}
-        onGains={() => setShowTracker(true)}
-        onShare={() => openReferral()}
-        onHelp={() => setPage('help')}
-        onNews={() => setPage('nouveautes')}
-        darkMode={darkMode}
-      />
+      {showIosInstall && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0 16px 24px' }} onClick={() => setShowIosInstall(false)}>
+          <div style={{ background: '#1a1730', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', padding: '24px', maxWidth: '360px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '36px', marginBottom: '10px' }}>📲</div>
+            <p style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '17px', margin: '0 0 6px' }}>Installer PixGlow</p>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px' }}>Ajoute l'app sur ton écran d'accueil pour un accès instantané.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              {[
+                { step: '1', text: 'Appuie sur l\'icône Partager', icon: '⎙' },
+                { step: '2', text: '"Sur l\'écran d\'accueil"', icon: '＋' },
+                { step: '3', text: 'Appuie sur "Ajouter"', icon: '✓' },
+              ].map(({ step, text, icon }) => (
+                <div key={step} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.04)', borderRadius: '10px', padding: '10px 14px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', color: '#fff', flexShrink: 0 }}>{step}</div>
+                  <span style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 600, flex: 1, textAlign: 'left' }}>{text}</span>
+                  <span style={{ fontSize: '18px', color: '#a78bfa' }}>{icon}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setShowIosInstall(false)} style={{ width: '100%', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '12px', padding: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>Fermer</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
