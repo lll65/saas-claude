@@ -304,6 +304,17 @@ async def startup_event():
             created_at TIMESTAMP DEFAULT NOW()
         )""")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_user_images_email ON user_images(user_email, created_at DESC)")
+        # API keys
+        cur.execute("""CREATE TABLE IF NOT EXISTS api_keys (
+            id SERIAL PRIMARY KEY,
+            user_email TEXT NOT NULL,
+            key_prefix TEXT NOT NULL,
+            key_hash TEXT NOT NULL,
+            label TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT NOW(),
+            last_used_at TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE
+        )""")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -504,7 +515,9 @@ def apply_studio_lighting(img_rgba: Image.Image, intensity: float = 0.35) -> Ima
 #  FOND D'ARRIÈRE-PLAN — couleurs studio
 # ─────────────────────────────────────────────
 def create_background(width: int, height: int, bg_style: str) -> Image.Image:
-    """Crée un fond selon le style choisi (blanc, gris, beige, nature, tendance)."""
+    """Crée un fond selon le style choisi (blanc, gris, beige, nature, tendance, noir)."""
+    if bg_style == "noir":
+        return Image.new("RGB", (width, height), (20, 20, 26))
     if bg_style == "gris":
         # Gris studio vrai — assez foncé pour être clairement gris
         return Image.new("RGB", (width, height), (155, 155, 160))
@@ -525,6 +538,32 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
         return Image.fromarray(arr, "RGB")
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
+
+# ─────────────────────────────────────────────
+#  WATERMARK (mode essai gratuit)
+# ─────────────────────────────────────────────
+def _add_watermark(img: Image.Image) -> Image.Image:
+    from PIL import ImageDraw
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    text = "PixGlow"
+    try:
+        from PIL import ImageFont
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(24, img.width // 10))
+    except Exception:
+        from PIL import ImageFont
+        font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    step_x = max(tw + 60, img.width // 3)
+    step_y = max(th + 40, img.height // 4)
+    for y in range(-img.height, img.height * 2, step_y):
+        for x in range(-img.width, img.width * 2, step_x):
+            draw.text((x, y), text, fill=(255, 255, 255, 70), font=font)
+    rotated = overlay.rotate(25, expand=False, resample=Image.Resampling.BICUBIC)
+    base = img.convert("RGBA")
+    result = Image.alpha_composite(base, rotated)
+    return result.convert("RGB")
 
 # ─────────────────────────────────────────────
 #  AJUSTEMENTS PAR CATÉGORIE D'ARTICLE
@@ -973,6 +1012,87 @@ async def get_my_history(current_user: str = Depends(get_current_user)):
     return {"images": [dict(r) for r in rows]}
 
 
+# ── API Keys ──────────────────────────────────────────────────────────────────
+class ApiKeyCreateBody(BaseModel):
+    label: str = ""
+
+def _get_api_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Auth qui accepte JWT ou X-API-Key header."""
+    # Essai JWT d'abord
+    if credentials:
+        try:
+            payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            return payload.get("sub")
+        except JWTError:
+            pass
+    # Essai clé API
+    raw_key = request.headers.get("X-API-Key", "")
+    if raw_key.startswith("pg_"):
+        prefix = raw_key[:12]
+        conn = get_db(); cur = conn.cursor()
+        try:
+            cur.execute("SELECT user_email, key_hash, is_active FROM api_keys WHERE key_prefix = %s", (prefix,))
+            row = cur.fetchone()
+            if row and row["is_active"] and _bcrypt.checkpw(raw_key.encode(), row["key_hash"].encode()):
+                cur.execute("UPDATE api_keys SET last_used_at = NOW() WHERE key_prefix = %s", (prefix,))
+                conn.commit()
+                return row["user_email"]
+        finally:
+            cur.close(); conn.close()
+    return None
+
+@app.post("/api-keys")
+async def create_api_key(body: ApiKeyCreateBody, current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT COUNT(*) as n FROM api_keys WHERE user_email = %s AND is_active = TRUE", (current_user,))
+        if cur.fetchone()["n"] >= 5:
+            raise HTTPException(400, "Maximum 5 clés API actives. Révoquez-en une avant d'en créer une nouvelle.")
+        raw = "pg_" + secrets.token_hex(20)
+        prefix = raw[:12]
+        key_hash = _bcrypt.hashpw(raw.encode(), _bcrypt.gensalt(10)).decode()
+        cur.execute(
+            "INSERT INTO api_keys (user_email, key_prefix, key_hash, label) VALUES (%s, %s, %s, %s) RETURNING id, created_at",
+            (current_user, prefix, key_hash, body.label[:60])
+        )
+        row = cur.fetchone()
+        conn.commit()
+        logger.info("Clé API créée pour %s (prefix=%s)", current_user, prefix)
+    finally:
+        cur.close(); conn.close()
+    return {"id": row["id"], "key": raw, "prefix": prefix, "label": body.label, "created_at": row["created_at"].isoformat()}
+
+@app.get("/api-keys")
+async def list_api_keys(current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT id, key_prefix, label, created_at, last_used_at, is_active FROM api_keys WHERE user_email = %s ORDER BY created_at DESC",
+            (current_user,)
+        )
+        rows = cur.fetchall()
+    finally:
+        cur.close(); conn.close()
+    return {"keys": [dict(r) for r in rows]}
+
+@app.delete("/api-keys/{key_id}")
+async def revoke_api_key(key_id: int, current_user: str = Depends(get_current_user)):
+    if not current_user: raise HTTPException(401, "Non authentifié")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute(
+            "UPDATE api_keys SET is_active = FALSE WHERE id = %s AND user_email = %s RETURNING id",
+            (key_id, current_user)
+        )
+        if not cur.fetchone(): raise HTTPException(404, "Clé introuvable")
+        conn.commit()
+    finally:
+        cur.close(); conn.close()
+    return {"ok": True}
+
+
 @app.get("/verify-email/{token}")
 async def verify_email(token: str):
     conn = get_db(); cur = conn.cursor()
@@ -1154,7 +1274,7 @@ async def enhance_photo(
     current_user: str = Depends(get_current_user)
 ):
     # Validation des valeurs enum
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
@@ -1424,6 +1544,68 @@ async def enhance_batch(
         results.append({"filename": filename, "url": f"/image/{filename}", "bg_style": bg_style, "category": category})
 
     return JSONResponse({"results": results, "credits_left": credits_left})
+
+
+@app.post("/enhance-preview")
+async def enhance_preview(
+    file: UploadFile = File(...),
+    bg_style: str = File("blanc"),
+    category: str = File("autre"),
+):
+    """Traitement avec watermark PixGlow — aucune auth requise, sans limite."""
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir"):
+        bg_style = "blanc"
+    if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
+        category = "autre"
+
+    content_type = (file.content_type or "").lower()
+    if content_type not in ALLOWED_TYPES:
+        ext = (file.filename or "").rsplit(".", 1)[-1].lower()
+        ext_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "heic": "image/heic", "heif": "image/heif"}
+        content_type = ext_map.get(ext, content_type)
+    if content_type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"Format non supporté ({file.content_type}). Utilisez JPG, PNG, WEBP ou HEIC.")
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(400, f"Fichier trop lourd (max {MAX_FILE_SIZE_MB} Mo).")
+
+    try:
+        orig = Image.open(BytesIO(contents))
+        orig = ImageOps.exif_transpose(orig)
+        if orig.mode not in ("RGB", "RGBA"):
+            orig = orig.convert("RGBA" if "transparency" in orig.info else "RGB")
+        w, h = orig.size
+        PROCESS_MAX = 1200
+        if w > PROCESS_MAX or h > PROCESS_MAX:
+            scale = PROCESS_MAX / max(w, h)
+            orig = orig.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+        proc_w, proc_h = orig.size
+        tmp_rgb = orig.convert("RGB") if orig.mode != "RGB" else orig
+        no_bg = remove(reduce_wrinkles(tmp_rgb, 0.75))
+        no_bg = apply_studio_lighting(no_bg)
+        bg_img = create_background(proc_w, proc_h, bg_style)
+        bg_img.paste(no_bg, (0, 0), no_bg if no_bg.mode == "RGBA" else None)
+        bg_img = ImageEnhance.Brightness(bg_img).enhance(1.04)
+        bg_img = ImageEnhance.Contrast(bg_img).enhance(1.04)
+        bg_img = ImageEnhance.Color(bg_img).enhance(1.06)
+        bg_img = ImageEnhance.Sharpness(bg_img).enhance(1.08)
+        bg_img = adjust_for_category(bg_img, category)
+        bg_img = _add_watermark(bg_img)
+        filename = f"preview_{uuid.uuid4()}.jpg"
+        bg_img.save(os.path.join(UPLOAD_DIR, filename), "JPEG", quality=82, optimize=True)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Preview processing %s: %s", type(e).__name__, e)
+        raise HTTPException(500, f"Erreur traitement image: {str(e)}")
+
+    return JSONResponse({
+        "status": "preview",
+        "filename": filename,
+        "url": f"/image/{filename}",
+        "watermarked": True,
+    })
 
 
 class CheckoutBody(BaseModel):

@@ -2442,42 +2442,52 @@ const DEMO_PAIRS = [
   {
     beforeSrc: '/demo/bomber-avant.jpg', afterSrc: '/demo/bomber-apres.png',
     beforeLabel: 'Photo sur le lit', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Bomber noir zippé',
-    desc: 'Bomber noir élégant, coupe droite. Fermeture éclair dorée. Très bon état, porté quelques fois.',
-    tags: ['#bomber','#vintedfrançais','#modeoccasion','#jacketstyle','#modehomme'],
-    badgeBefore: 'Photo brute · Fond encombré', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
+    titre: 'Bomber satiné noir zippé — Taille M/L',
+    desc: "Bomber oversize en satin noir brillant, coupe droite légèrement déstructurée. Fermeture éclair dorée sur toute la longueur, deux poches zippées sur les côtés. Col rond côtelé, poignets et bas élastiques. Matière douce et légère, parfait pour mi-saison. Porté 3 fois maximum, aucune accroche ni décoloration. Vendu avec son étiquette d'origine. Idéal pour un look streetwear ou une tenue soirée.",
+    state: 'Très bon état', size: 'M / L', price: '28 €',
+    score: 91,
+    tags: ['#bomber','#satinnoir','#streetwear','#jacketstyle','#modehomme','#vintedfrançais','#modeoccasion'],
+    badgeBefore: 'Photo lit · Fond encombré', badgeAfter: 'Fond blanc · Score 91/100 ✅',
   },
   {
     beforeSrc: '/demo/carhartt-fleece-avant.jpeg', afterSrc: '/demo/carhartt-fleece-apres.png',
     beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Carhartt Fleece — Taille L',
-    desc: 'Carhartt Relaxed Fit fleece, coloris naturel/kaki. Très chaud, excellent état. Taille L.',
-    tags: ['#carhartt','#fleece','#vintedmode','#streetwear','#modeoccasion'],
-    badgeBefore: 'Photo lit · Fond gris', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Carhartt Fleece Relaxed Fit — Taille L',
+    desc: "Sweat polaire Carhartt WIP modèle Relaxed Fit, coloris naturel/kaki stone wash. Tissu molletonné très épais, idéal pour l'automne et l'hiver. Coupe ample et confortable, col montant avec demi-zip. Deux poches plaquées avec fermeture éclair. Broderie logo Carhartt sur la poitrine. Excellent état, lavé à basse température, fibres intactes, aucun boulochage. Très recherché, taille vite.",
+    state: 'Très bon état', size: 'L', price: '55 €',
+    score: 88,
+    tags: ['#carhartt','#fleece','#polarcarhartt','#streetwear','#vintedmode','#modeoccasion','#oversized'],
+    badgeBefore: 'Photo lit · Fond gris', badgeAfter: 'Fond blanc · Score 88/100 ✅',
   },
   {
     beforeSrc: '/demo/doudoune-avant.jpeg', afterSrc: '/demo/doudoune-apres.png',
     beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Doudoune légère noire',
-    desc: 'Doudoune ultra-légère noire, coupe droite. Légère, chaude et compacte. Excellent état.',
-    tags: ['#doudoune','#vintedfrançais','#modeoccasion','#winterwear','#modehomme'],
-    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Doudoune légère sans manches — Taille S',
+    desc: "Doudoune sans manches ultra-légère, coloris noir mat. Rembourrage en polyester haute densité, chaud sans être encombrant. Fermeture éclair frontale dissimulée, col montant rembourré. Coutures baffles horizontales pour un maintien optimal du garnissage. Peut se porter seule ou en couche intermédiaire sous une veste. État impeccable, aucune tache ni déchirure. Très compact, se range dans sa propre poche. Idéale pour les déplacements.",
+    state: 'Comme neuf', size: 'S', price: '22 €',
+    score: 84,
+    tags: ['#doudoune','#sansmanches','#winterwear','#vintedfrançais','#modeoccasion','#compact','#modehiver'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Score 84/100 ✅',
   },
   {
     beforeSrc: '/demo/carhartt-rain-avant.jpeg', afterSrc: '/demo/carhartt-rain-apres.png',
     beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Carhartt Nimbus — Imperméable',
-    desc: 'Veste imperméable Carhartt Nimbus, coloris natural. Neuve avec étiquettes. Taille L.',
-    tags: ['#carhartt','#imperméable','#vintedmode','#streetwear','#modeoccasion'],
-    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Carhartt Nimbus Pullover — Imperméable L',
+    desc: "Veste imperméable Carhartt WIP modèle Nimbus Pullover, coloris natural (beige clair). Tissu ripstop déperlant, coutures scellées sur les zones critiques. Coupe pull avec demi-zip au col, pas de boutons ni fermeture éclair frontale pour réduire les zones de fuite d'air. Capuche ajustable dissimulée dans le col. Idéale pour le vélo, la randonnée ou le quotidien sous la pluie. Portée moins de 5 fois, imperméabilisation d'origine intacte.",
+    state: 'Très bon état', size: 'L', price: '72 €',
+    score: 94,
+    tags: ['#carhartt','#nimbus','#imperméable','#outdoorwear','#streetwear','#vintedmode','#modeoccasion'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Score 94/100 ✅',
   },
   {
     beforeSrc: '/demo/montre-avant.jpeg', afterSrc: '/demo/montre-apres.png',
     beforeLabel: 'Photo table', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Montre Poedagar Quartz',
-    desc: 'Montre Poedagar Quartz, cadran turquoise, bracelet acier. Très bon état, pile neuve.',
-    tags: ['#montre','#vintedmode','#accessoires','#quartz','#modeoccasion'],
-    badgeBefore: 'Photo table · Fond bois', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Montre Poedagar Quartz Sport — Turquoise/Acier',
+    desc: "Montre homme Poedagar Quartz, cadran turquoise élégant avec index dorés et trotteuse assortie. Boîtier acier inoxydable argenté, verre minéral anti-rayures. Bracelet maillons acier ajustable avec boucle déployante. Étanche 30m (éclaboussures). Mouvement japonais précis, pile changée il y a 2 mois, autonomie estimée 2 ans. Aucune rayure sur le verre ni sur le boîtier. Livré dans sa boîte d'origine avec les maillons retirés. Bracelet cuir offert.",
+    state: 'Très bon état', size: 'Taille unique', price: '38 €',
+    score: 89,
+    tags: ['#montre','#poedagar','#quartz','#montrehomme','#accessoires','#vintedmode','#modeoccasion'],
+    badgeBefore: 'Photo table · Fond bois', badgeAfter: 'Fond blanc · Score 89/100 ✅',
   },
 ];
 /* ══ TRUST BAR ANIMATED ══ */
@@ -2552,15 +2562,32 @@ function DemoSlider({ darkMode, T, isMobile }) {
           <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
           <span style={{ background: 'rgba(16,185,129,.1)', color: '#10b981', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeAfter}</span>
         </div>
-        <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px' }}>
-          <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
-            Texte généré automatiquement
-          </p>
-          <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{pair.titre}</p>
-          <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>{pair.desc}</p>
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {pair.tags.map((t,i) => <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>)}
+        <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '14px', padding: '16px 18px' }}>
+          {/* Header avec score */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+            <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              Annonce générée par IA
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ background: pair.score >= 90 ? 'rgba(16,185,129,.15)' : 'rgba(245,158,11,.12)', color: pair.score >= 90 ? '#10b981' : '#f59e0b', fontSize: '12px', fontWeight: 800, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${pair.score >= 90 ? 'rgba(16,185,129,.3)' : 'rgba(245,158,11,.25)'}` }}>
+                Score {pair.score}/100
+              </span>
+              <span style={{ color: '#34d399', fontSize: '14px', fontWeight: 800 }}>{pair.price}</span>
+            </div>
+          </div>
+          {/* Titre */}
+          <p style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 700, marginBottom: '8px', lineHeight: 1.3 }}>{pair.titre}</p>
+          {/* Méta-données */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+            <span style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px' }}>📏 {pair.size}</span>
+            <span style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#34d399', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px' }}>✓ {pair.state}</span>
+          </div>
+          {/* Description complète */}
+          <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.65, marginBottom: '12px' }}>{pair.desc}</p>
+          {/* Hashtags */}
+          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+            {pair.tags.map((t,i) => <span key={i} style={{ background: 'rgba(124,58,237,.12)', color: '#c4b5fd', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '100px', border: '1px solid rgba(124,58,237,.2)' }}>{t}</span>)}
           </div>
         </div>
       </div>
@@ -3504,8 +3531,18 @@ function PixGlowApp() {
   const [sliderModal, setSliderModal] = useState(null); // { before, after }
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [pwaPrompt, setPwaPrompt] = useState(null);
+  const [showWatermarkCta, setShowWatermarkCta] = useState(false);
 
   useScrollReveal();
+
+  // PWA install prompt
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setPwaPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const getToken = () => localStorage.getItem('pg_token');
   const authHeaders = () => { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; };
@@ -3697,6 +3734,58 @@ function PixGlowApp() {
     setLoading(false);
   };
 
+  // Mode essai avec watermark (visiteurs non connectés)
+  const handlePreviewUpload = async () => {
+    if (!files.length) { setError('Sélectionnez une photo'); return; }
+    setLoading(true); setError(null); setResults([]); setProgress(1);
+    try {
+      const form = new FormData();
+      form.append('file', files[0]);
+      form.append('bg_style', bgStyle);
+      form.append('category', category);
+      const res = await fetch(`${API_URL}/enhance-preview`, { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.detail || 'Erreur traitement'); return; }
+      const processedUrl = `${API_URL}${data.url}`;
+      setResults([{ url: processedUrl, filename: data.filename, original: previews[0], bgStyle, category, watermarked: true }]);
+      setShowWatermarkCta(true);
+    } catch { setError('Erreur réseau — réessayez.'); }
+    finally { setLoading(false); }
+  };
+
+  // Génère image avant/après (canvas client-side)
+  const handleGenerateComparison = async (r) => {
+    if (!r.original) { window.open(r.url, '_blank'); return; }
+    try {
+      const [procImg, origImg] = await Promise.all([
+        new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = r.url; }),
+        new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = r.original; }),
+      ]);
+      const H = 800;
+      const ow = Math.round(origImg.width * H / origImg.height);
+      const pw = Math.round(procImg.width * H / procImg.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = ow + pw + 6; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, canvas.width, H);
+      ctx.drawImage(origImg, 0, 0, ow, H);
+      ctx.fillStyle = '#0a0a0f'; ctx.fillRect(ow, 0, 6, H);
+      ctx.drawImage(procImg, ow + 6, 0, pw, H);
+      const badge = (x, label, color) => {
+        ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.beginPath(); ctx.roundRect(x + 12, 14, 100, 28, 6); ctx.fill();
+        ctx.fillStyle = color; ctx.font = 'bold 13px sans-serif'; ctx.fillText(label, x + 22, 33);
+      };
+      badge(0, 'AVANT', '#f87171'); badge(ow + 6, 'APRÈS ✅', '#34d399');
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `pixglow-avant-apres-${Date.now()}.jpg`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+      }, 'image/jpeg', 0.92);
+    } catch { window.open(r.url, '_blank'); }
+  };
+
   // Détection iOS — Safari ne supporte pas a.download sur blob, il faut window.open
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -3858,6 +3947,7 @@ function PixGlowApp() {
                         <button onClick={() => { setPage('mon-compte'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Mon compte</button>
                         <button onClick={() => { setPage('help'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>❓ Aide</button>
                         {isAdmin && <button onClick={() => { setPage('admin'); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⚙ Admin</button>}
+                        {pwaPrompt && <button onClick={() => { pwaPrompt.prompt(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#34d399', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📲 Télécharger l'app</button>}
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
                     </>
@@ -4439,6 +4529,19 @@ function PixGlowApp() {
           <button onClick={() => setPaymentSuccess(null)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '18px', fontFamily: 'inherit', padding: '0 4px', flexShrink: 0 }}>✕</button>
         </div>
       )}
+      {showWatermarkCta && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowWatermarkCta(false)}>
+          <div style={{ background: '#0d0d1a', border: '1px solid rgba(124,58,237,.35)', borderRadius: '20px', padding: '28px', maxWidth: '360px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>✨</div>
+            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '20px', margin: '0 0 10px' }}>Résultat impressionnant !</h3>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '22px', lineHeight: 1.6 }}>Inscrivez-vous gratuitement pour <strong style={{ color: '#a78bfa' }}>télécharger sans watermark</strong> et recevoir <strong style={{ color: '#34d399' }}>5 crédits offerts</strong>.</p>
+            <button onClick={() => { setShowWatermarkCta(false); openAuth('register'); }} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: 800, fontSize: '16px', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '10px' }}>
+              🚀 Créer mon compte gratuit
+            </button>
+            <button onClick={() => setShowWatermarkCta(false)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>Continuer sans s'inscrire</button>
+          </div>
+        </div>
+      )}
       {lightboxUrl && (
         <div onClick={() => setLightboxUrl(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', padding: '20px' }}>
           <img src={lightboxUrl} alt="Aperçu" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '12px', objectFit: 'contain', boxShadow: '0 0 60px rgba(0,0,0,.6)' }} onClick={e => e.stopPropagation()} />
@@ -4554,6 +4657,11 @@ function PixGlowApp() {
                 </div>
               )}
 
+              {!isConnected && files.length > 0 && !loading && (
+                <button onClick={handlePreviewUpload} style={{ width: '100%', border: '1px solid rgba(124,58,237,.3)', fontWeight: 700, borderRadius: '14px', padding: '13px', fontSize: isMobile ? '14px' : '15px', cursor: 'pointer', background: 'rgba(124,58,237,.08)', color: '#a78bfa', fontFamily: 'inherit', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                  👁 Voir le résultat (aperçu avec watermark)
+                </button>
+              )}
               {!limitReached && (
                 <button onClick={handleUpload} disabled={!files.length || loading || previews.some(p => p === null)} className={files.length && !loading && !previews.some(p => p === null) ? 'pg-btn' : ''}
                   style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '18px', fontSize: isMobile ? '17px' : '19px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.03)', color: files.length && !loading ? '#fff' : '#1e293b', fontFamily: 'inherit', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -4608,7 +4716,15 @@ function PixGlowApp() {
                           }
                         </div>
                         {!r.error && (
-                          <button onClick={() => handleDownload(r)} className="pg-btn" style={{ width: '100%', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                          <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
+                            {r.watermarked
+                              ? <button onClick={() => { openAuth('register'); }} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>🚀 S'inscrire pour télécharger sans watermark</button>
+                              : <button onClick={() => handleDownload(r)} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                            }
+                            {!r.watermarked && r.original && (
+                              <button onClick={() => handleGenerateComparison(r)} title="Télécharger image avant/après" style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit', flexShrink: 0 }}>⇔ Avant/Après</button>
+                            )}
+                          </div>
                         )}
                         {r.error && <p style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', margin: '6px 0 0' }}>{r.error}</p>}
                       </div>
