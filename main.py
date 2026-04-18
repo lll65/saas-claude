@@ -1043,6 +1043,50 @@ async def reviews_summary():
     total = int(row["total"]) if row else 0
     return {"avg_stars": avg, "total": total}
 
+def _mask_email(email: str) -> str:
+    local = email.split('@')[0].lower()
+    parts = [p for p in _re.split(r'[._\-]', local) if p and not p.isdigit()]
+    if not parts:
+        s = local[:2].capitalize() if len(local) >= 2 else local.capitalize()
+        return s + '***'
+    first = parts[0].capitalize()
+    if len(parts) >= 2 and parts[1]:
+        return f"{first} {parts[1][0].upper()}."
+    return (first[:3] if len(first) >= 4 else first) + '***'
+
+def _review_color(email: str) -> str:
+    cols = ['#7c3aed','#10b981','#60a5fa','#f59e0b','#ec4899','#14b8a6']
+    return cols[sum(ord(c) for c in email) % len(cols)]
+
+def _rel_date(dt) -> str:
+    if not dt: return ''
+    try:
+        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+        d = (now - dt).days
+        if d == 0: return "aujourd'hui"
+        if d == 1: return "hier"
+        if d < 7: return f"il y a {d}j"
+        if d < 30: return f"il y a {d//7} sem."
+        if d < 365: return f"il y a {d//30} mois"
+        return f"il y a {d//365} an{'s' if d//365>1 else ''}"
+    except Exception:
+        return ''
+
+@app.get("/reviews/list")
+async def reviews_list():
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""SELECT user_email, stars, comment, created_at FROM reviews
+                   WHERE LENGTH(TRIM(COALESCE(comment,''))) > 10
+                   ORDER BY created_at DESC LIMIT 12""")
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    return [{"name": _mask_email(r["user_email"]),
+             "initial": _mask_email(r["user_email"])[0].upper(),
+             "color": _review_color(r["user_email"]),
+             "stars": r["stars"],
+             "comment": r["comment"],
+             "date": _rel_date(r["created_at"])} for r in rows]
+
 class ReviewBody(BaseModel):
     stars: int
     comment: str = ""
