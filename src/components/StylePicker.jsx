@@ -8,6 +8,7 @@ export const BG_STYLES = [
   { id: 'tendance', label: 'Tendance', sub: 'Dégradé',
     gradient: 'linear-gradient(160deg,#c39bf5,#f5afda)', border: '#a855f7', check: '#7c3aed' },
   { id: 'noir',     label: 'Noir',     sub: 'Studio noir', color: '#1a1a20', border: '#444', check: '#ffffff' },
+  { id: 'lin',      label: 'Lin',      sub: 'Tissu naturel', color: '#b89a6e', border: '#9a7c50', check: '#78350f' },
 ];
 
 export const CATEGORIES = [

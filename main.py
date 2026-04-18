@@ -536,6 +536,22 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
             t = y / max(height - 1, 1)
             arr[y, :] = (top + (bottom - top) * t).astype(np.uint8)
         return Image.fromarray(arr, "RGB")
+    if bg_style == "lin":
+        # Tissu lin naturel — texture trame/chaîne avec grain fibre
+        rng = np.random.default_rng(42)
+        base = np.full((height, width, 3), [185, 161, 124], dtype=np.float32)
+        y = np.arange(height, dtype=np.float32)
+        h_wave = 5.0 * np.sin(y * 1.8) + 2.5 * np.sin(y * 4.5)
+        base[:, :, 0] += h_wave[:, None]
+        base[:, :, 1] += h_wave[:, None] * 0.75
+        base[:, :, 2] += h_wave[:, None] * 0.5
+        x = np.arange(width, dtype=np.float32)
+        v_wave = 4.0 * np.cos(x * 1.8) + 2.0 * np.cos(x * 4.5)
+        base[:, :, 0] += v_wave[None, :]
+        base[:, :, 1] += v_wave[None, :] * 0.75
+        base[:, :, 2] += v_wave[None, :] * 0.5
+        noise = rng.normal(0, 8, (height, width, 3))
+        return Image.fromarray(np.clip(base + noise, 0, 255).astype(np.uint8), "RGB")
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
 
@@ -1274,7 +1290,7 @@ async def enhance_photo(
     current_user: str = Depends(get_current_user)
 ):
     # Validation des valeurs enum
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
@@ -1459,7 +1475,7 @@ async def enhance_batch(
     MAX_BATCH = 10
     if not current_user: raise HTTPException(401, "Connectez-vous pour traiter des photos en lot.")
     if len(files) > MAX_BATCH: raise HTTPException(400, f"Maximum {MAX_BATCH} photos par lot.")
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance"): bg_style = "blanc"
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "lin"): bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"): category = "autre"
 
     conn = get_db(); cur = conn.cursor()
@@ -1553,7 +1569,7 @@ async def enhance_preview(
     category: str = File("autre"),
 ):
     """Traitement avec watermark PixGlow — aucune auth requise, sans limite."""
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
