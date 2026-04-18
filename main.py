@@ -315,6 +315,14 @@ async def startup_event():
             last_used_at TIMESTAMP,
             is_active BOOLEAN DEFAULT TRUE
         )""")
+        # User reviews (one per user, 1 credit reward)
+        cur.execute("""CREATE TABLE IF NOT EXISTS reviews (
+            id SERIAL PRIMARY KEY,
+            user_email TEXT NOT NULL UNIQUE,
+            stars INTEGER NOT NULL CHECK (stars >= 1 AND stars <= 5),
+            comment TEXT DEFAULT '',
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )""")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -536,6 +544,35 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
             t = y / max(height - 1, 1)
             arr[y, :] = (top + (bottom - top) * t).astype(np.uint8)
         return Image.fromarray(arr, "RGB")
+    if bg_style == "tapis":
+        from PIL import ImageFilter
+        rng = np.random.default_rng(42)
+        # Tapis Berber blanc cassé — boucles serrées crème/ivoire
+        tuft_sz = max(4, min(width, height) // 100)
+        arr = np.full((height, width, 3), [228, 220, 206], dtype=np.float32)
+        y_idx = np.arange(height)
+        x_idx = np.arange(width)
+        yy_mod = (y_idx % tuft_sz).astype(np.float32)
+        xx_mod = (x_idx % tuft_sz).astype(np.float32)
+        yyg, xxg = np.meshgrid(yy_mod, xx_mod, indexing='ij')
+        cy = cx = (tuft_sz - 1) / 2.0
+        dist = np.sqrt((yyg - cy) ** 2 + (xxg - cx) ** 2) / max(tuft_sz / 2, 1)
+        dist = np.clip(dist, 0, 1)
+        # Sommet du poil : brillant ; bord : ombre inter-poil
+        shading = 24 * (1 - dist ** 1.4) - 14 * (dist > 0.72).astype(np.float32)
+        arr += shading[:, :, None]
+        # Variation aléatoire de hauteur entre les poils (usure naturelle)
+        n_ty = height // tuft_sz + 1
+        n_tx = width // tuft_sz + 1
+        tuft_var = rng.normal(0, 8, (n_ty, n_tx)).astype(np.float32)
+        ty_idx = np.minimum(y_idx // tuft_sz, n_ty - 1)
+        tx_idx = np.minimum(x_idx // tuft_sz, n_tx - 1)
+        tyg, txg = np.meshgrid(ty_idx, tx_idx, indexing='ij')
+        arr += tuft_var[tyg, txg, None]
+        # Bruit fin de fibre
+        noise = rng.normal(0, 4, (height, width, 3)).astype(np.float32)
+        result = Image.fromarray(np.clip(arr + noise, 0, 255).astype(np.uint8), "RGB")
+        return result.filter(ImageFilter.GaussianBlur(radius=0.5))
     if bg_style == "lin":
         from PIL import ImageFilter
         rng = np.random.default_rng(42)
@@ -988,9 +1025,49 @@ async def get_me(current_user: str = Depends(get_current_user)):
     if notif > 0:
         cur.execute("UPDATE users SET parrain_notif = 0 WHERE email = %s", (current_user,))
         conn.commit()
+    cur.execute("SELECT EXISTS(SELECT 1 FROM reviews WHERE user_email = %s) AS has_reviewed", (current_user,))
+    rev = cur.fetchone()
     cur.close(); conn.close()
-    return {"email": current_user, "credits": user["credits"], "parrain_notif": notif, "is_admin": bool(ADMIN_EMAIL and current_user == ADMIN_EMAIL)}
+    return {"email": current_user, "credits": user["credits"], "parrain_notif": notif,
+            "is_admin": bool(ADMIN_EMAIL and current_user == ADMIN_EMAIL),
+            "has_reviewed": bool(rev and rev["has_reviewed"])}
 
+
+@app.get("/reviews/summary")
+async def reviews_summary():
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT ROUND(AVG(stars)::numeric, 1) AS avg_stars, COUNT(*) AS total FROM reviews")
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    avg = float(row["avg_stars"]) if row and row["avg_stars"] else 0.0
+    total = int(row["total"]) if row else 0
+    return {"avg_stars": avg, "total": total}
+
+class ReviewBody(BaseModel):
+    stars: int
+    comment: str = ""
+
+@app.post("/reviews")
+async def leave_review(body: ReviewBody, current_user: str = Depends(get_current_user)):
+    if not (1 <= body.stars <= 5):
+        raise HTTPException(400, "Note entre 1 et 5 étoiles.")
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM reviews WHERE user_email = %s", (current_user,))
+        if cur.fetchone():
+            raise HTTPException(400, "Vous avez déjà laissé un avis.")
+        cur.execute("INSERT INTO reviews (user_email, stars, comment) VALUES (%s, %s, %s)",
+                    (current_user, body.stars, (body.comment or "")[:500]))
+        cur.execute("UPDATE users SET credits = credits + 1 WHERE email = %s RETURNING credits", (current_user,))
+        row = cur.fetchone()
+        conn.commit()
+        return {"status": "ok", "credits": row["credits"] if row else None}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback(); raise HTTPException(500, str(e))
+    finally:
+        cur.close(); conn.close()
 
 @app.post("/change-password")
 async def change_password(body: ChangePasswordBody, current_user: str = Depends(get_current_user)):
@@ -1303,7 +1380,7 @@ async def enhance_photo(
     current_user: str = Depends(get_current_user)
 ):
     # Validation des valeurs enum
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin", "tapis"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
@@ -1488,7 +1565,7 @@ async def enhance_batch(
     MAX_BATCH = 10
     if not current_user: raise HTTPException(401, "Connectez-vous pour traiter des photos en lot.")
     if len(files) > MAX_BATCH: raise HTTPException(400, f"Maximum {MAX_BATCH} photos par lot.")
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "lin"): bg_style = "blanc"
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "lin", "tapis"): bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"): category = "autre"
 
     conn = get_db(); cur = conn.cursor()
@@ -1582,7 +1659,7 @@ async def enhance_preview(
     category: str = File("autre"),
 ):
     """Traitement avec watermark PixGlow — aucune auth requise, sans limite."""
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin", "tapis"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
