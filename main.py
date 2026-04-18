@@ -537,21 +537,34 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
             arr[y, :] = (top + (bottom - top) * t).astype(np.uint8)
         return Image.fromarray(arr, "RGB")
     if bg_style == "lin":
-        # Tissu lin naturel — texture trame/chaîne avec grain fibre
+        from PIL import ImageFilter
         rng = np.random.default_rng(42)
-        base = np.full((height, width, 3), [185, 161, 124], dtype=np.float32)
-        y = np.arange(height, dtype=np.float32)
-        h_wave = 5.0 * np.sin(y * 1.8) + 2.5 * np.sin(y * 4.5)
-        base[:, :, 0] += h_wave[:, None]
-        base[:, :, 1] += h_wave[:, None] * 0.75
-        base[:, :, 2] += h_wave[:, None] * 0.5
-        x = np.arange(width, dtype=np.float32)
-        v_wave = 4.0 * np.cos(x * 1.8) + 2.0 * np.cos(x * 4.5)
-        base[:, :, 0] += v_wave[None, :]
-        base[:, :, 1] += v_wave[None, :] * 0.75
-        base[:, :, 2] += v_wave[None, :] * 0.5
-        noise = rng.normal(0, 8, (height, width, 3))
-        return Image.fromarray(np.clip(base + noise, 0, 255).astype(np.uint8), "RGB")
+        # Période d'un fil en pixels (adapté à la taille de l'image)
+        period = max(6, min(width, height) // 55)
+        # Couleurs fils : ton jute/lin chaud — fil dessus plus clair, fil dessous plus sombre
+        c_over  = np.array([198, 176, 140], dtype=np.float32)
+        c_under = np.array([155, 132,  96], dtype=np.float32)
+        y_idx = np.arange(height)
+        x_idx = np.arange(width)
+        y_band = (y_idx // period) % 2
+        x_band = (x_idx // period) % 2
+        yy_b, xx_b = np.meshgrid(y_band, x_band, indexing='ij')
+        h_on_top = (yy_b == xx_b)  # alternance chaîne/trame (plain weave)
+        arr = np.zeros((height, width, 3), dtype=np.float32)
+        for ch in range(3):
+            arr[:, :, ch] = np.where(h_on_top, c_over[ch], c_under[ch])
+        # Relief 3D : ombre sinusoïdale sur les bords de chaque fil
+        y_frac = ((y_idx % period) / period).astype(np.float32)
+        x_frac = ((x_idx % period) / period).astype(np.float32)
+        yy_f, xx_f = np.meshgrid(y_frac, x_frac, indexing='ij')
+        h_shading = 14 * np.sin(yy_f * np.pi)
+        v_shading = 14 * np.sin(xx_f * np.pi)
+        arr += np.where(h_on_top, h_shading, v_shading)[:, :, None]
+        # Grain fibre naturelle
+        noise = rng.normal(0, 7, (height, width, 3))
+        result = Image.fromarray(np.clip(arr + noise, 0, 255).astype(np.uint8), "RGB")
+        # Légère douceur pour simuler la surface du tissu
+        return result.filter(ImageFilter.GaussianBlur(radius=0.7))
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
 
