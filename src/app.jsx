@@ -4822,7 +4822,7 @@ export default function PixGlow() {
 
 /*
 ══════════════════════════════════════════════════════════════
-  CHANGELOG v2 — MODIFICATIONS APPORTÉES
+  CHANGELOG — MODIFICATIONS APPORTÉES
 ══════════════════════════════════════════════════════════════
 
 ✅ Feature 1 — VintedBoostPanel (AI Boost)
@@ -4866,7 +4866,7 @@ description auto"
    mais pas de faux badges "influenceurs recommandés" pour rester
    dans les clous légaux (pratiques commerciales trompeuses).
 
-❌ PWA manifest/service worker : non applicable dans ce contexte.
+✅ PWA manifest/service worker : manifest.json + sw.js ajoutés, install prompt dans le menu nav.
 
 ══════════════════════════════════════════════════════════════
   3 PROMPTS MIDJOURNEY pour vraies photos avant/après
