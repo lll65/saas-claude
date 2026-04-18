@@ -2442,42 +2442,52 @@ const DEMO_PAIRS = [
   {
     beforeSrc: '/demo/bomber-avant.jpg', afterSrc: '/demo/bomber-apres.png',
     beforeLabel: 'Photo sur le lit', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Bomber noir zippé',
-    desc: 'Bomber noir élégant, coupe droite. Fermeture éclair dorée. Très bon état, porté quelques fois.',
-    tags: ['#bomber','#vintedfrançais','#modeoccasion','#jacketstyle','#modehomme'],
-    badgeBefore: 'Photo brute · Fond encombré', badgeAfter: 'Fond blanc · Annonce rédigée ✅',
+    titre: 'Bomber satiné noir zippé — Taille M/L',
+    desc: "Bomber oversize en satin noir brillant, coupe droite légèrement déstructurée. Fermeture éclair dorée sur toute la longueur, deux poches zippées sur les côtés. Col rond côtelé, poignets et bas élastiques. Matière douce et légère, parfait pour mi-saison. Porté 3 fois maximum, aucune accroche ni décoloration. Vendu avec son étiquette d'origine. Idéal pour un look streetwear ou une tenue soirée.",
+    state: 'Très bon état', size: 'M / L', price: '28 €',
+    score: 91,
+    tags: ['#bomber','#satinnoir','#streetwear','#jacketstyle','#modehomme','#vintedfrançais','#modeoccasion'],
+    badgeBefore: 'Photo lit · Fond encombré', badgeAfter: 'Fond blanc · Score 91/100 ✅',
   },
   {
     beforeSrc: '/demo/carhartt-fleece-avant.jpeg', afterSrc: '/demo/carhartt-fleece-apres.png',
     beforeLabel: 'Photo brute', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Carhartt Fleece — Taille L',
-    desc: 'Carhartt Relaxed Fit fleece, coloris naturel/kaki. Très chaud, excellent état. Taille L.',
-    tags: ['#carhartt','#fleece','#vintedmode','#streetwear','#modeoccasion'],
-    badgeBefore: 'Photo lit · Fond gris', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Carhartt Fleece Relaxed Fit — Taille L',
+    desc: "Sweat polaire Carhartt WIP modèle Relaxed Fit, coloris naturel/kaki stone wash. Tissu molletonné très épais, idéal pour l'automne et l'hiver. Coupe ample et confortable, col montant avec demi-zip. Deux poches plaquées avec fermeture éclair. Broderie logo Carhartt sur la poitrine. Excellent état, lavé à basse température, fibres intactes, aucun boulochage. Très recherché, taille vite.",
+    state: 'Très bon état', size: 'L', price: '55 €',
+    score: 88,
+    tags: ['#carhartt','#fleece','#polarcarhartt','#streetwear','#vintedmode','#modeoccasion','#oversized'],
+    badgeBefore: 'Photo lit · Fond gris', badgeAfter: 'Fond blanc · Score 88/100 ✅',
   },
   {
     beforeSrc: '/demo/doudoune-avant.jpeg', afterSrc: '/demo/doudoune-apres.png',
     beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Doudoune légère noire',
-    desc: 'Doudoune ultra-légère noire, coupe droite. Légère, chaude et compacte. Excellent état.',
-    tags: ['#doudoune','#vintedfrançais','#modeoccasion','#winterwear','#modehomme'],
-    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Doudoune légère sans manches — Taille S',
+    desc: "Doudoune sans manches ultra-légère, coloris noir mat. Rembourrage en polyester haute densité, chaud sans être encombrant. Fermeture éclair frontale dissimulée, col montant rembourré. Coutures baffles horizontales pour un maintien optimal du garnissage. Peut se porter seule ou en couche intermédiaire sous une veste. État impeccable, aucune tache ni déchirure. Très compact, se range dans sa propre poche. Idéale pour les déplacements.",
+    state: 'Comme neuf', size: 'S', price: '22 €',
+    score: 84,
+    tags: ['#doudoune','#sansmanches','#winterwear','#vintedfrançais','#modeoccasion','#compact','#modehiver'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Score 84/100 ✅',
   },
   {
     beforeSrc: '/demo/carhartt-rain-avant.jpeg', afterSrc: '/demo/carhartt-rain-apres.png',
     beforeLabel: 'Photo parquet', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Carhartt Nimbus — Imperméable',
-    desc: 'Veste imperméable Carhartt Nimbus, coloris natural. Neuve avec étiquettes. Taille L.',
-    tags: ['#carhartt','#imperméable','#vintedmode','#streetwear','#modeoccasion'],
-    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Carhartt Nimbus Pullover — Imperméable L',
+    desc: "Veste imperméable Carhartt WIP modèle Nimbus Pullover, coloris natural (beige clair). Tissu ripstop déperlant, coutures scellées sur les zones critiques. Coupe pull avec demi-zip au col, pas de boutons ni fermeture éclair frontale pour réduire les zones de fuite d'air. Capuche ajustable dissimulée dans le col. Idéale pour le vélo, la randonnée ou le quotidien sous la pluie. Portée moins de 5 fois, imperméabilisation d'origine intacte.",
+    state: 'Très bon état', size: 'L', price: '72 €',
+    score: 94,
+    tags: ['#carhartt','#nimbus','#imperméable','#outdoorwear','#streetwear','#vintedmode','#modeoccasion'],
+    badgeBefore: 'Photo sol · Fond parquet', badgeAfter: 'Fond blanc · Score 94/100 ✅',
   },
   {
     beforeSrc: '/demo/montre-avant.jpeg', afterSrc: '/demo/montre-apres.png',
     beforeLabel: 'Photo table', afterLabel: 'Fond blanc PixGlow',
-    titre: 'Montre Poedagar Quartz',
-    desc: 'Montre Poedagar Quartz, cadran turquoise, bracelet acier. Très bon état, pile neuve.',
-    tags: ['#montre','#vintedmode','#accessoires','#quartz','#modeoccasion'],
-    badgeBefore: 'Photo table · Fond bois', badgeAfter: 'Fond blanc · Prêt à publier ✅',
+    titre: 'Montre Poedagar Quartz Sport — Turquoise/Acier',
+    desc: "Montre homme Poedagar Quartz, cadran turquoise élégant avec index dorés et trotteuse assortie. Boîtier acier inoxydable argenté, verre minéral anti-rayures. Bracelet maillons acier ajustable avec boucle déployante. Étanche 30m (éclaboussures). Mouvement japonais précis, pile changée il y a 2 mois, autonomie estimée 2 ans. Aucune rayure sur le verre ni sur le boîtier. Livré dans sa boîte d'origine avec les maillons retirés. Bracelet cuir offert.",
+    state: 'Très bon état', size: 'Taille unique', price: '38 €',
+    score: 89,
+    tags: ['#montre','#poedagar','#quartz','#montrehomme','#accessoires','#vintedmode','#modeoccasion'],
+    badgeBefore: 'Photo table · Fond bois', badgeAfter: 'Fond blanc · Score 89/100 ✅',
   },
 ];
 /* ══ TRUST BAR ANIMATED ══ */
@@ -2552,15 +2562,32 @@ function DemoSlider({ darkMode, T, isMobile }) {
           <span style={{ fontSize: '14px', color: '#475569' }}>→</span>
           <span style={{ background: 'rgba(16,185,129,.1)', color: '#10b981', fontSize: '12px', padding: '4px 12px', borderRadius: '8px', fontWeight: 600 }}>{pair.badgeAfter}</span>
         </div>
-        <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '12px', padding: '14px 16px' }}>
-          <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
-            Texte généré automatiquement
-          </p>
-          <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{pair.titre}</p>
-          <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '8px' }}>{pair.desc}</p>
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {pair.tags.map((t,i) => <span key={i} style={{ background: 'rgba(124,58,237,.1)', color: '#c4b5fd', fontSize: '11px', padding: '2px 8px', borderRadius: '100px' }}>{t}</span>)}
+        <div style={{ background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.15)', borderRadius: '14px', padding: '16px 18px' }}>
+          {/* Header avec score */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+            <p style={{ color: '#a78bfa', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4h8M2 6h6M2 8h4" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              Annonce générée par IA
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ background: pair.score >= 90 ? 'rgba(16,185,129,.15)' : 'rgba(245,158,11,.12)', color: pair.score >= 90 ? '#10b981' : '#f59e0b', fontSize: '12px', fontWeight: 800, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${pair.score >= 90 ? 'rgba(16,185,129,.3)' : 'rgba(245,158,11,.25)'}` }}>
+                Score {pair.score}/100
+              </span>
+              <span style={{ color: '#34d399', fontSize: '14px', fontWeight: 800 }}>{pair.price}</span>
+            </div>
+          </div>
+          {/* Titre */}
+          <p style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 700, marginBottom: '8px', lineHeight: 1.3 }}>{pair.titre}</p>
+          {/* Méta-données */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+            <span style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', color: '#94a3b8', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px' }}>📏 {pair.size}</span>
+            <span style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#34d399', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px' }}>✓ {pair.state}</span>
+          </div>
+          {/* Description complète */}
+          <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.65, marginBottom: '12px' }}>{pair.desc}</p>
+          {/* Hashtags */}
+          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+            {pair.tags.map((t,i) => <span key={i} style={{ background: 'rgba(124,58,237,.12)', color: '#c4b5fd', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '100px', border: '1px solid rgba(124,58,237,.2)' }}>{t}</span>)}
           </div>
         </div>
       </div>
