@@ -988,11 +988,18 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
         const halfW = (CW - pad * 2 - gap) / 2;
 
         const drawImg = (img, x, bg) => {
-          const scale = Math.min(halfW / img.naturalWidth, imgH / img.naturalHeight);
-          const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-          ctx.fillStyle = bg;
-          ctx.fillRect(x, imgY, halfW, imgH);
-          ctx.drawImage(img, x + (halfW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
+          // Canvas intermédiaire pour aplatir la transparence du PNG (rembg)
+          const off = document.createElement('canvas');
+          off.width = halfW; off.height = imgH;
+          const offCtx = off.getContext('2d');
+          offCtx.fillStyle = bg;
+          offCtx.fillRect(0, 0, halfW, imgH);
+          if (img.naturalWidth > 0) {
+            const scale = Math.min(halfW / img.naturalWidth, imgH / img.naturalHeight);
+            const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+            offCtx.drawImage(img, (halfW - dw) / 2, (imgH - dh) / 2, dw, dh);
+          }
+          ctx.drawImage(off, x, imgY, halfW, imgH);
         };
         drawImg(bImg, pad, '#e8e8e8');
         drawImg(aImg, pad + halfW + gap, '#ffffff');
@@ -1093,8 +1100,30 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
           });
         }
 
+        // Caption text (from shareText editor)
+        let textEndY = badgeY + (badges.length > 0 ? 90 : 20);
+        if (shareText && shareText.trim()) {
+          ctx.font = '30px sans-serif';
+          ctx.fillStyle = '#e2e8f0';
+          ctx.textAlign = 'center';
+          const maxW = CW - 100;
+          const lineH = 44;
+          const words = shareText.trim().split(' ');
+          let line = '', lineY = textEndY;
+          for (const word of words) {
+            const test = line ? `${line} ${word}` : word;
+            if (ctx.measureText(test).width > maxW && line) {
+              ctx.fillText(line, CW / 2, lineY);
+              line = word; lineY += lineH;
+              if (lineY > textEndY + lineH * 3) break;
+            } else { line = test; }
+          }
+          if (line) ctx.fillText(line, CW / 2, lineY);
+          textEndY = lineY + lineH;
+        }
+
         // Hashtags
-        const hashY = badgeY + (badges.length > 0 ? 90 : 20);
+        const hashY = textEndY + 20;
         ctx.font = '26px sans-serif';
         ctx.fillStyle = '#7c3aed';
         ctx.textAlign = 'center';
@@ -1831,6 +1860,12 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
 /* ══ VINTED BOOST MODAL ══ */
 function VintedBoostModal({ imageUrl, originalUrl, isConnected, onUpgrade, isMobile, darkMode }) {
   const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (show) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [show]);
 
   return (
     <>
