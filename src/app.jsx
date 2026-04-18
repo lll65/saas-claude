@@ -4713,11 +4713,17 @@ function PixGlowApp() {
               )}
 
               {!isConnected && files.length > 0 && !loading && (
-                <button onClick={handlePreviewUpload} style={{ width: '100%', border: '1px solid rgba(124,58,237,.3)', fontWeight: 700, borderRadius: '14px', padding: '13px', fontSize: isMobile ? '14px' : '15px', cursor: 'pointer', background: 'rgba(124,58,237,.08)', color: '#a78bfa', fontFamily: 'inherit', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-                  👁 Voir le résultat (aperçu avec watermark)
-                </button>
+                <div style={{ marginBottom: '8px' }}>
+                  <button onClick={() => openAuth('register')} className="pg-btn" style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '16px', fontSize: isMobile ? '16px' : '17px', cursor: 'pointer', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6.5H15.5L11 9.5L13 15L8 12L3 15L5 9.5L0.5 6.5H6L8 1Z" fill="white"/></svg>
+                    Créer un compte gratuit — 5 crédits offerts
+                  </button>
+                  <button onClick={handlePreviewUpload} disabled={loading} style={{ width: '100%', border: '1px solid rgba(124,58,237,.25)', fontWeight: 600, borderRadius: '12px', padding: '11px', fontSize: '13px', cursor: 'pointer', background: 'transparent', color: '#7c3aed', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    👁 ou voir l'aperçu avec filigrane (sans inscription)
+                  </button>
+                </div>
               )}
-              {!limitReached && (
+              {!limitReached && isConnected && (
                 <button onClick={handleUpload} disabled={!files.length || loading || previews.some(p => p === null)} className={files.length && !loading && !previews.some(p => p === null) ? 'pg-btn' : ''}
                   style={{ width: '100%', border: 'none', fontWeight: 800, borderRadius: '14px', padding: '18px', fontSize: isMobile ? '17px' : '19px', cursor: files.length && !loading ? 'pointer' : 'not-allowed', background: files.length && !loading ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,.03)', color: files.length && !loading ? '#fff' : '#1e293b', fontFamily: 'inherit', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   {loading
@@ -4771,13 +4777,15 @@ function PixGlowApp() {
                           }
                         </div>
                         {!r.error && (
-                          <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
                             {r.watermarked
-                              ? <button onClick={() => { openAuth('register'); }} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>🚀 S'inscrire pour télécharger sans watermark</button>
+                              ? <button onClick={() => { openAuth('register'); }} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>🚀 S'inscrire — télécharger sans watermark</button>
                               : <button onClick={() => handleDownload(r)} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
                             }
                             {!r.watermarked && r.original && (
-                              <button onClick={() => handleGenerateComparison(r)} title="Télécharger image avant/après" style={{ background: darkMode ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit', flexShrink: 0 }}>⇔ Avant/Après</button>
+                              <button onClick={() => handleGenerateComparison(r)} title="Exporter image avant/après" style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '12px', width: isMobile ? '52px' : '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9h12M3 9l3-3M3 9l3 3M15 9l-3-3M15 9l-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </button>
                             )}
                           </div>
                         )}
