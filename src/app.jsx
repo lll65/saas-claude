@@ -988,11 +988,18 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
         const halfW = (CW - pad * 2 - gap) / 2;
 
         const drawImg = (img, x, bg) => {
-          const scale = Math.min(halfW / img.naturalWidth, imgH / img.naturalHeight);
-          const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-          ctx.fillStyle = bg;
-          ctx.fillRect(x, imgY, halfW, imgH);
-          ctx.drawImage(img, x + (halfW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
+          // Canvas intermédiaire pour aplatir la transparence du PNG (rembg)
+          const off = document.createElement('canvas');
+          off.width = halfW; off.height = imgH;
+          const offCtx = off.getContext('2d');
+          offCtx.fillStyle = bg;
+          offCtx.fillRect(0, 0, halfW, imgH);
+          if (img.naturalWidth > 0) {
+            const scale = Math.min(halfW / img.naturalWidth, imgH / img.naturalHeight);
+            const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+            offCtx.drawImage(img, (halfW - dw) / 2, (imgH - dh) / 2, dw, dh);
+          }
+          ctx.drawImage(off, x, imgY, halfW, imgH);
         };
         drawImg(bImg, pad, '#e8e8e8');
         drawImg(aImg, pad + halfW + gap, '#ffffff');
@@ -1093,8 +1100,30 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
           });
         }
 
+        // Caption text (from shareText editor)
+        let textEndY = badgeY + (badges.length > 0 ? 90 : 20);
+        if (shareText && shareText.trim()) {
+          ctx.font = '30px sans-serif';
+          ctx.fillStyle = '#e2e8f0';
+          ctx.textAlign = 'center';
+          const maxW = CW - 100;
+          const lineH = 44;
+          const words = shareText.trim().split(' ');
+          let line = '', lineY = textEndY;
+          for (const word of words) {
+            const test = line ? `${line} ${word}` : word;
+            if (ctx.measureText(test).width > maxW && line) {
+              ctx.fillText(line, CW / 2, lineY);
+              line = word; lineY += lineH;
+              if (lineY > textEndY + lineH * 3) break;
+            } else { line = test; }
+          }
+          if (line) ctx.fillText(line, CW / 2, lineY);
+          textEndY = lineY + lineH;
+        }
+
         // Hashtags
-        const hashY = badgeY + (badges.length > 0 ? 90 : 20);
+        const hashY = textEndY + 20;
         ctx.font = '26px sans-serif';
         ctx.fillStyle = '#7c3aed';
         ctx.textAlign = 'center';
@@ -1831,6 +1860,12 @@ function VintedBoostPanel({ imageUrl, originalUrl, isConnected, onUpgrade, isMob
 /* ══ VINTED BOOST MODAL ══ */
 function VintedBoostModal({ imageUrl, originalUrl, isConnected, onUpgrade, isMobile, darkMode }) {
   const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (show) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [show]);
 
   return (
     <>
@@ -3511,17 +3546,25 @@ function PixGlowApp() {
   const [pwaPrompt, setPwaPrompt] = useState(null);
   const [showWatermarkCta, setShowWatermarkCta] = useState(false);
   const [showIosInstall, setShowIosInstall] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewStars, setReviewStars] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewDone, setReviewDone] = useState(false);
+  const [reviewsSummary, setReviewsSummary] = useState({ avg_stars: 0, total: 0 });
   // iOS : beforeinstallprompt ne se déclenche jamais sur Safari
   const isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
   useScrollReveal();
 
-  // PWA install prompt
+  // PWA install prompt + avis summary
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setPwaPrompt(e); };
     window.addEventListener('beforeinstallprompt', handler);
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    fetch(`${API_URL}/reviews/summary`).then(r => r.ok ? r.json() : null).then(d => { if (d && d.total > 0) setReviewsSummary(d); }).catch(() => {});
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
@@ -3534,7 +3577,7 @@ function PixGlowApp() {
     const token = getToken(); const savedEmail = localStorage.getItem('pg_email');
     if (token && savedEmail) {
       setUserEmail(savedEmail); setIsConnected(true);
-      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); if (d.is_admin) setIsAdmin(true); }).catch(() => {});
+      fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { if (d.credits !== undefined) setCredits(d.credits); if (d.parrain_notif > 0) setParrainNotif(d.parrain_notif); if (d.is_admin) setIsAdmin(true); if (d.has_reviewed) setHasReviewed(true); }).catch(() => {});
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' && token) {
@@ -3567,6 +3610,22 @@ function PixGlowApp() {
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
   useEffect(() => { if (page === 'app' && !isConnected) { openAuth('register'); setPage('landing'); } }, [page, isConnected]);
+  const handleSubmitReview = async () => {
+    setReviewLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/reviews`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('pg_token')}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stars: reviewStars, comment: reviewComment }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      if (data.credits !== undefined) setCredits(data.credits);
+      setHasReviewed(true);
+      setReviewDone(true);
+    } finally { setReviewLoading(false); }
+  };
+
   const handleLogout = () => {
     // On garde pg_theme (préférence UI) et pg_total_enhanced (compteur UX)
     ['pg_token', 'pg_email'].forEach(k => localStorage.removeItem(k));
@@ -4148,10 +4207,20 @@ function PixGlowApp() {
               ))}
             </div>
             <div>
-              <div style={{ display: 'flex', gap: '2px', marginBottom: '2px' }}>
-                {[0,1,2,3,4].map(i => <svg key={i} width="13" height="13" viewBox="0 0 13 13" fill="#f59e0b"><path d="M6.5 1l1.5 3.5H12l-3 2.5 1.2 3.8L6.5 9 3.3 10.8 4.5 7 1.5 4.5H5z"/></svg>)}
+              <div style={{ display: 'flex', gap: '2px', marginBottom: '2px', alignItems: 'center' }}>
+                {[1,2,3,4,5].map(i => {
+                  const avg = reviewsSummary.avg_stars || 0;
+                  const fill = i <= Math.round(avg) ? '#f59e0b' : 'rgba(245,158,11,0.2)';
+                  return <svg key={i} width="13" height="13" viewBox="0 0 13 13" fill={fill}><path d="M6.5 1l1.5 3.5H12l-3 2.5 1.2 3.8L6.5 9 3.3 10.8 4.5 7 1.5 4.5H5z"/></svg>;
+                })}
+                {reviewsSummary.total > 0 && <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 700, marginLeft: '4px' }}>{reviewsSummary.avg_stars.toFixed(1)}</span>}
               </div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}><strong style={{ color: '#94a3b8' }}>+1 200 photos</strong> traitées en beta · premiers utilisateurs satisfaits</span>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>
+                {reviewsSummary.total > 0
+                  ? <><strong style={{ color: '#94a3b8' }}>{reviewsSummary.total} avis</strong> · {reviewsSummary.avg_stars.toFixed(1)}/5 étoiles</>
+                  : <><strong style={{ color: '#94a3b8' }}>+1 200 photos</strong> traitées · premiers utilisateurs satisfaits</>
+                }
+              </span>
             </div>
           </div>
         </div>
@@ -4726,6 +4795,16 @@ function PixGlowApp() {
                   </div>
                 ))}
               </div>
+              {/* CTA avis — affiché une seule fois aux utilisateurs connectés */}
+              {isConnected && !hasReviewed && !reviewDone && doneCount > 0 && (
+                <div className="pg-slide-up" style={{ background: darkMode ? 'rgba(245,158,11,.06)' : 'rgba(245,158,11,.07)', border: '1px solid rgba(245,158,11,.25)', borderRadius: '16px', padding: '16px 20px', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <div>
+                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px', margin: '0 0 2px' }}>⭐ Laisse un avis — gagne 1 crédit</p>
+                    <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '12px', margin: 0 }}>30 secondes · Une seule fois · Crédit ajouté immédiatement</p>
+                  </div>
+                  <button onClick={() => setShowReviewModal(true)} style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Laisser un avis</button>
+                </div>
+              )}
               {/* Bouton reset — desktop uniquement, sticky bar gère le mobile */}
               {!isMobile && (
                 <button onClick={reset} className="pg-ghost" style={{ width: '100%', background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.textMuted, borderRadius: '14px', padding: '14px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>🔄 Traiter de nouvelles photos</button>
@@ -4783,6 +4862,46 @@ function PixGlowApp() {
         isMobile={isMobile}
         zipping={zipping}
       />
+      {showReviewModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => !reviewDone && setShowReviewModal(false)}>
+          <div style={{ background: darkMode ? '#12101f' : '#fff', border: `1px solid ${darkMode ? 'rgba(245,158,11,.25)' : 'rgba(245,158,11,.3)'}`, borderRadius: '20px', padding: '28px', maxWidth: '400px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            {reviewDone ? (
+              <>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
+                <p style={{ color: '#10b981', fontWeight: 800, fontSize: '18px', margin: '0 0 8px' }}>Merci pour ton avis !</p>
+                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+1 crédit ajouté à ton compte.</p>
+                <button onClick={() => setShowReviewModal(false)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>Super !</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '36px', marginBottom: '10px' }}>⭐</div>
+                <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontWeight: 800, fontSize: '17px', margin: '0 0 4px' }}>Tu aimes PixGlow ?</p>
+                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 20px' }}>Laisse un avis et reçois 1 crédit offert.</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '18px' }}>
+                  {[1,2,3,4,5].map(s => (
+                    <button key={s} onClick={() => setReviewStars(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', transition: 'transform .15s', transform: reviewStars >= s ? 'scale(1.2)' : 'scale(1)' }}>
+                      <svg width="32" height="32" viewBox="0 0 32 32" fill={reviewStars >= s ? '#f59e0b' : (darkMode ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.12)')}><path d="M16 2l3.6 8.6L29 11.8l-6.5 6.1 1.8 9.1L16 22.3l-8.3 4.7 1.8-9.1L3 11.8l9.4-1.2z"/></svg>
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  placeholder="Un mot sur ton expérience ? (optionnel)"
+                  value={reviewComment}
+                  onChange={e => setReviewComment(e.target.value)}
+                  maxLength={300}
+                  style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', resize: 'none', height: '80px', outline: 'none', marginBottom: '16px' }}
+                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => setShowReviewModal(false)} style={{ flex: 1, background: 'none', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#64748b' : '#94a3b8', borderRadius: '10px', padding: '11px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Plus tard</button>
+                  <button onClick={handleSubmitReview} disabled={reviewLoading} style={{ flex: 2, background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 800, cursor: reviewLoading ? 'wait' : 'pointer', fontSize: '13px', fontFamily: 'inherit', opacity: reviewLoading ? 0.7 : 1 }}>
+                    {reviewLoading ? 'Envoi...' : `Envoyer ${reviewStars}★ · +1 crédit`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {showIosInstall && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0 16px 24px' }} onClick={() => setShowIosInstall(false)}>
           <div style={{ background: '#1a1730', border: '1px solid rgba(124,58,237,.3)', borderRadius: '20px', padding: '24px', maxWidth: '360px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
