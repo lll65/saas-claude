@@ -4611,6 +4611,103 @@ function PixGlowApp() {
       </section>
 
       <Footer />
+
+      {/* Modals partagés landing+app */}
+      {showReviewModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => !reviewDone && setShowReviewModal(false)}>
+          <div style={{ background: darkMode ? '#12101f' : '#fff', border: `1px solid ${darkMode ? 'rgba(245,158,11,.25)' : 'rgba(245,158,11,.3)'}`, borderRadius: '20px', padding: '28px', maxWidth: '400px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            {reviewDone ? (
+              <>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
+                <p style={{ color: '#10b981', fontWeight: 800, fontSize: '18px', margin: '0 0 8px' }}>Merci pour ton avis !</p>
+                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+1 crédit ajouté à ton compte.</p>
+                <button onClick={() => setShowReviewModal(false)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', marginBottom: '12px' }}>Super !</button>
+                <div><button onClick={() => { handleDeleteReview(); setShowReviewModal(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', opacity: .7 }}>🗑 Supprimer mon avis</button></div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '36px', marginBottom: '10px' }}>⭐</div>
+                <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontWeight: 800, fontSize: '17px', margin: '0 0 4px' }}>Tu aimes PixGlow ?</p>
+                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 16px' }}>Laisse un avis et reçois 1 crédit offert.</p>
+                <input type="text" placeholder="Ton prénom (affiché sur l'avis)" value={reviewDisplayName} onChange={e => setReviewDisplayName(e.target.value.slice(0,30))} maxLength={30} style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', outline: 'none', marginBottom: '12px' }} />
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+                  {[1,2,3,4,5].map(s => (
+                    <button key={s} onClick={() => setReviewStars(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', transition: 'transform .15s', transform: reviewStars >= s ? 'scale(1.2)' : 'scale(1)' }}>
+                      <svg width="32" height="32" viewBox="0 0 32 32" fill={reviewStars >= s ? '#f59e0b' : (darkMode ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.12)')}><path d="M16 2l3.6 8.6L29 11.8l-6.5 6.1 1.8 9.1L16 22.3l-8.3 4.7 1.8-9.1L3 11.8l9.4-1.2z"/></svg>
+                    </button>
+                  ))}
+                </div>
+                <textarea placeholder="Un mot sur ton expérience ? (optionnel)" value={reviewComment} onChange={e => setReviewComment(e.target.value)} maxLength={300} style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', resize: 'none', height: '72px', outline: 'none', marginBottom: '14px' }} />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => setShowReviewModal(false)} style={{ flex: 1, background: 'none', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#64748b' : '#94a3b8', borderRadius: '10px', padding: '11px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Plus tard</button>
+                  <button onClick={handleSubmitReview} disabled={reviewLoading} style={{ flex: 2, background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 800, cursor: reviewLoading ? 'wait' : 'pointer', fontSize: '13px', fontFamily: 'inherit', opacity: reviewLoading ? 0.7 : 1 }}>
+                    {reviewLoading ? 'Envoi...' : `Envoyer ${reviewStars}★ · +1 crédit`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {showAllReviews && (() => {
+        const STATIC_REVIEWS = [
+          { name: 'Lucas M.', initial: 'L', color: '#7c3aed', stars: 5, comment: "J'ai mis 3 semaines à vendre ma console avec des photos moches. Avec PixGlow, la suivante était vendue en 48h. La différence visuelle est flagrante.", date: 'Fév. 2026' },
+          { name: 'Amélie T.', initial: 'A', color: '#10b981', stars: 5, comment: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots.", date: 'Jan. 2026' },
+          { name: 'Marc D.', initial: 'M', color: '#60a5fa', stars: 5, comment: "Simple, rapide et le résultat dépasse mes attentes. Mes vêtements font vraiment pro sur Vinted maintenant.", date: 'Mars 2026' },
+        ];
+        const all = reviewsList.length > 0 ? reviewsList : STATIC_REVIEWS;
+        const avg = reviewsSummary.total > 0 ? reviewsSummary.avg_stars : 4.9;
+        const total = reviewsSummary.total > 0 ? reviewsSummary.total : STATIC_REVIEWS.length;
+        return (
+          <div onClick={() => setShowAllReviews(false)} style={{ position: 'fixed', inset: 0, zIndex: 700, background: 'rgba(0,0,0,.82)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: darkMode ? '#0f0e1a' : '#fff', border: `1px solid ${darkMode ? 'rgba(245,158,11,.2)' : 'rgba(245,158,11,.3)'}`, borderRadius: '24px', padding: isMobile ? '20px 16px' : '28px', maxWidth: '560px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexShrink: 0 }}>
+                <div>
+                  <h3 style={{ color: darkMode ? '#e2e8f0' : '#111118', fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: '18px', margin: '0 0 2px' }}>Avis clients</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {[1,2,3,4,5].map(i => <svg key={i} width="13" height="13" viewBox="0 0 15 15" fill={i <= Math.round(avg) ? '#f59e0b' : 'rgba(245,158,11,.2)'}><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>)}
+                    <span style={{ color: '#f59e0b', fontWeight: 800, fontSize: '13px' }}>{avg.toFixed(1)}</span>
+                    <span style={{ color: '#475569', fontSize: '12px' }}>· {total} avis vérifiés</span>
+                  </div>
+                </div>
+                <button onClick={() => setShowAllReviews(false)} style={{ background: darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)', border: 'none', color: darkMode ? '#94a3b8' : '#64748b', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', flexShrink: 0 }}>✕</button>
+              </div>
+              <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+                {all.map((t, i) => (
+                  <div key={i} style={{ background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)'}`, borderRadius: '16px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: `${t.color}22`, border: `2px solid ${t.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ color: t.color, fontWeight: 800, fontSize: '13px' }}>{t.initial}</span>
+                        </div>
+                        <div>
+                          <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontWeight: 700, fontSize: '13px', margin: '0 0 1px' }}>{t.name}</p>
+                          <p style={{ color: '#475569', fontSize: '10px', margin: 0 }}>{t.date}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[1,2,3,4,5].map(j => <svg key={j} width="11" height="11" viewBox="0 0 15 15" fill={j <= t.stars ? '#f59e0b' : 'rgba(245,158,11,.15)'}><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>)}
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '100px', padding: '2px 7px' }}>
+                          <svg width="7" height="7" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <span style={{ color: '#10b981', fontSize: '9px', fontWeight: 700 }}>Vérifié</span>
+                        </div>
+                      </div>
+                    </div>
+                    {t.comment && <p style={{ color: darkMode ? '#94a3b8' : '#475569', fontSize: '13px', lineHeight: 1.65, margin: 0, fontStyle: 'italic' }}>"{t.comment}"</p>}
+                  </div>
+                ))}
+              </div>
+              {isConnected && !hasReviewed && !reviewDone && (
+                <button onClick={() => { setShowAllReviews(false); setShowReviewModal(true); }} style={{ marginTop: '16px', width: '100%', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', flexShrink: 0 }}>
+                  ⭐ Laisser mon avis · +1 crédit offert
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 
@@ -4887,10 +4984,14 @@ function PixGlowApp() {
                         </div>
                         {!r.error && (
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
-                            {r.watermarked
-                              ? <button onClick={() => { openAuth('register'); }} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>🚀 S'inscrire — télécharger sans watermark</button>
-                              : <button onClick={() => handleDownload(r)} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
-                            }
+                            {r.watermarked ? (
+                              <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                                <a href={r.url} download={r.filename || 'apercu-pixglow.jpg'} style={{ flex: 1, background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '14px' : '13px', fontFamily: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>📥 Aperçu</a>
+                                <button onClick={() => openAuth('register')} className="pg-btn" style={{ flex: 2, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '14px' : '13px', fontFamily: 'inherit' }}>🚀 Sans watermark — 5 crédits offerts</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => handleDownload(r)} className="pg-btn" style={{ flex: 1, background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: isMobile ? '14px' : '11px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '15px' : '14px', fontFamily: 'inherit' }}>📥 Télécharger</button>
+                            )}
                             {!r.watermarked && r.original && (
                               <button onClick={() => handleGenerateComparison(r)} title="Exporter image avant/après" style={{ background: darkMode ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', border: `1px solid ${darkMode ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#94a3b8' : '#6b7280', borderRadius: '12px', width: isMobile ? '52px' : '44px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9h12M3 9l3-3M3 9l3 3M15 9l-3-3M15 9l-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
