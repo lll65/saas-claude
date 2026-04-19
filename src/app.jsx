@@ -3550,6 +3550,7 @@ function PixGlowApp() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewStars, setReviewStars] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewDisplayName, setReviewDisplayName] = useState('');
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewDone, setReviewDone] = useState(false);
   const [reviewsSummary, setReviewsSummary] = useState({ avg_stars: 0, total: 0 });
@@ -3619,7 +3620,7 @@ function PixGlowApp() {
       const res = await fetch(`${API_URL}/reviews`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('pg_token')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stars: reviewStars, comment: reviewComment }),
+        body: JSON.stringify({ stars: reviewStars, comment: reviewComment, display_name: reviewDisplayName.trim() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return;
@@ -3631,6 +3632,20 @@ function PixGlowApp() {
       fetch(`${API_URL}/reviews/list`).then(r => r.ok ? r.json() : []).then(d => { if (Array.isArray(d) && d.length > 0) setReviewsList(d); }).catch(() => {});
       fetch(`${API_URL}/reviews/summary`).then(r => r.ok ? r.json() : null).then(d => { if (d && d.total > 0) setReviewsSummary(d); }).catch(() => {});
     } finally { setReviewLoading(false); }
+  };
+
+  const handleDeleteReview = async () => {
+    try {
+      const res = await fetch(`${API_URL}/reviews/my`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('pg_token')}` },
+      });
+      if (!res.ok) return;
+      setHasReviewed(false); setReviewDone(false);
+      setReviewComment(''); setReviewDisplayName(''); setReviewStars(5);
+      fetch(`${API_URL}/reviews/list`).then(r => r.ok ? r.json() : []).then(d => { if (Array.isArray(d)) setReviewsList(d); }).catch(() => {});
+      fetch(`${API_URL}/reviews/summary`).then(r => r.ok ? r.json() : null).then(d => { if (d) setReviewsSummary(d); }).catch(() => {});
+    } catch {}
   };
 
   const handleLogout = () => {
@@ -4003,6 +4018,10 @@ function PixGlowApp() {
                             : null
                         )}
                         {!hasReviewed && !reviewDone && <button onClick={() => { setShowReviewModal(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'rgba(245,158,11,.08)', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⭐ Laisser un avis · +1 crédit</button>}
+                        {(hasReviewed || reviewDone)
+                          ? <button onClick={() => { handleDeleteReview(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f87171', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🗑 Supprimer mon avis</button>
+                          : <button onClick={() => { setShowReviewModal(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'rgba(245,158,11,.08)', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⭐ Laisser un avis · +1 crédit</button>
+                        }
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
                     </>
@@ -4971,14 +4990,25 @@ function PixGlowApp() {
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
                 <p style={{ color: '#10b981', fontWeight: 800, fontSize: '18px', margin: '0 0 8px' }}>Merci pour ton avis !</p>
                 <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+1 crédit ajouté à ton compte.</p>
-                <button onClick={() => setShowReviewModal(false)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}>Super !</button>
+                <button onClick={() => setShowReviewModal(false)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', marginBottom: '12px' }}>Super !</button>
+                <div>
+                  <button onClick={() => { handleDeleteReview(); setShowReviewModal(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', opacity: .7 }}>🗑 Supprimer mon avis</button>
+                </div>
               </>
             ) : (
               <>
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>⭐</div>
                 <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontWeight: 800, fontSize: '17px', margin: '0 0 4px' }}>Tu aimes PixGlow ?</p>
-                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 20px' }}>Laisse un avis et reçois 1 crédit offert.</p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '18px' }}>
+                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 16px' }}>Laisse un avis et reçois 1 crédit offert.</p>
+                <input
+                  type="text"
+                  placeholder="Ton prénom (affiché sur l'avis)"
+                  value={reviewDisplayName}
+                  onChange={e => setReviewDisplayName(e.target.value.slice(0, 30))}
+                  maxLength={30}
+                  style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', outline: 'none', marginBottom: '12px' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
                   {[1,2,3,4,5].map(s => (
                     <button key={s} onClick={() => setReviewStars(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', transition: 'transform .15s', transform: reviewStars >= s ? 'scale(1.2)' : 'scale(1)' }}>
                       <svg width="32" height="32" viewBox="0 0 32 32" fill={reviewStars >= s ? '#f59e0b' : (darkMode ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.12)')}><path d="M16 2l3.6 8.6L29 11.8l-6.5 6.1 1.8 9.1L16 22.3l-8.3 4.7 1.8-9.1L3 11.8l9.4-1.2z"/></svg>
@@ -4990,7 +5020,7 @@ function PixGlowApp() {
                   value={reviewComment}
                   onChange={e => setReviewComment(e.target.value)}
                   maxLength={300}
-                  style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', resize: 'none', height: '80px', outline: 'none', marginBottom: '16px' }}
+                  style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', resize: 'none', height: '72px', outline: 'none', marginBottom: '14px' }}
                 />
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => setShowReviewModal(false)} style={{ flex: 1, background: 'none', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#64748b' : '#94a3b8', borderRadius: '10px', padding: '11px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Plus tard</button>
