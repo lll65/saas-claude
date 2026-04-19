@@ -4052,7 +4052,7 @@ function PixGlowApp() {
               ? <button onClick={() => setPage('app')} className="pg-btn" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mon espace →</button>
               : <>
                   {!isMobile && <button onClick={() => openAuth('login')} className="pg-ghost" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '10px', padding: '10px 16px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Connexion</button>}
-                  <button onClick={() => openAuth('register')} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
+                  <button onClick={goToApp} className="pg-btn pg-glow-hero" style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: '10px', padding: isMobile ? '9px 14px' : '10px 18px', fontWeight: 700, cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{isMobile ? 'Commencer' : 'Commencer gratuitement'}</button>
                 </>}
           </>
         )}
@@ -5020,10 +5020,7 @@ function PixGlowApp() {
                     <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px', margin: '0 0 2px' }}>⭐ Laisse un avis — gagne 1 crédit</p>
                     <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '12px', margin: 0 }}>30 secondes · Une seule fois · Crédit ajouté immédiatement</p>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
-                    <button onClick={() => setShowAllReviews(true)} style={{ background: 'none', border: '1px solid rgba(245,158,11,.4)', color: '#f59e0b', borderRadius: '10px', padding: '9px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Lire les avis</button>
-                    <button onClick={() => setShowReviewModal(true)} style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Laisser un avis</button>
-                  </div>
+                  <button onClick={() => setShowReviewModal(true)} style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>Laisser un avis</button>
                 </div>
               )}
               {/* Bouton reset — desktop uniquement, sticky bar gère le mobile */}
@@ -5174,7 +5171,7 @@ function PixGlowApp() {
           { name: 'Amélie T.', initial: 'A', color: '#10b981', stars: 5, comment: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots.", date: 'Jan. 2026' },
           { name: 'Marc D.', initial: 'M', color: '#60a5fa', stars: 5, comment: "Simple, rapide et le résultat dépasse mes attentes. Mes vêtements font vraiment pro sur Vinted maintenant.", date: 'Mars 2026' },
         ];
-        const all = reviewsList.length >= 2 ? reviewsList : STATIC_REVIEWS;
+        const all = reviewsList.length > 0 ? reviewsList : STATIC_REVIEWS;
         const avg = reviewsSummary.total > 0 ? reviewsSummary.avg_stars : 4.9;
         const total = reviewsSummary.total > 0 ? reviewsSummary.total : STATIC_REVIEWS.length;
         return (
