@@ -3613,7 +3613,6 @@ function PixGlowApp() {
 
   const openAuth = (mode) => { setAuthMode(mode); setShowAuth(true); };
   const handleAuthSuccess = (email, userCredits) => { setUserEmail(email); setCredits(userCredits); setIsConnected(true); setShowAuth(false); setPage('app'); };
-  useEffect(() => { if (page === 'app' && !isConnected) { openAuth('register'); setPage('landing'); } }, [page, isConnected]);
   const handleSubmitReview = async () => {
     setReviewLoading(true);
     try {
@@ -3654,7 +3653,7 @@ function PixGlowApp() {
   const toggleTheme = () => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pg_theme', next ? 'dark' : 'light'); };
   const limitReached = isConnected && credits !== null && credits <= 0;
   const canSelect = () => isConnected && (credits === null || credits > 0);
-  const goToApp = () => { if (isConnected) setPage('app'); else openAuth('register'); };
+  const goToApp = () => setPage('app');
 
   const handleSelectClick = (useCamera = false) => {
     if (isConnected && credits !== null && credits <= 0) { setError('Crédits épuisés. Rechargez pour continuer.'); return; }
@@ -3979,6 +3978,7 @@ function PixGlowApp() {
                   }
                   {credits} crédit{credits > 1 ? 's' : ''}
                 </span>}
+                {!hasReviewed && !reviewDone && !isMobile && <button onClick={() => setShowReviewModal(true)} title="Laisser un avis et gagner +1 crédit" style={{ background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#f59e0b', borderRadius: '100px', padding: '4px 10px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><svg width="11" height="11" viewBox="0 0 15 15" fill="#f59e0b"><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>+1 crédit</button>}
                 {!isMobile && <button onClick={() => setPage('mes-photos')} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🖼 Mes photos</button>}
                 {!isMobile && <button onClick={() => setShowTracker(true)} className="pg-ghost" style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', color: '#10b981', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Mes gains</button>}
                 {!isMobile && <button onClick={openReferral} className="pg-ghost" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.2)', color: '#a78bfa', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🎁 Inviter</button>}
@@ -4002,6 +4002,7 @@ function PixGlowApp() {
                             ? <button onClick={() => { setShowIosInstall(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#34d399', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>📲 Ajouter à l'écran d'accueil</button>
                             : null
                         )}
+                        {!hasReviewed && !reviewDone && <button onClick={() => { setShowReviewModal(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'rgba(245,158,11,.08)', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⭐ Laisser un avis · +1 crédit</button>}
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
                     </>
@@ -4357,10 +4358,10 @@ function PixGlowApp() {
           { name: 'Amélie T.', initial: 'A', color: '#10b981', stars: 5, comment: "La génération d'annonce m'a surprise. Elle a capté exactement ce qu'il fallait écrire pour ma robe vintage. J'ai juste changé deux mots.", date: 'Jan. 2026' },
           { name: 'Marc D.', initial: 'M', color: '#60a5fa', stars: 5, comment: "Simple, rapide et le résultat dépasse mes attentes. Mes vêtements font vraiment pro sur Vinted maintenant.", date: 'Mars 2026' },
         ];
-        const displayReviews = reviewsList.length >= 2 ? reviewsList.slice(0, 6) : STATIC_REVIEWS;
+        const displayReviews = reviewsList.length > 0 ? reviewsList.slice(0, 6) : STATIC_REVIEWS;
         const displayAvg = reviewsSummary.total > 0 ? reviewsSummary.avg_stars : 4.9;
         const displayTotal = reviewsSummary.total > 0 ? reviewsSummary.total : STATIC_REVIEWS.length;
-        const isReal = reviewsList.length >= 2;
+        const isReal = reviewsList.length > 0;
         const starBars = [5,4,3,2,1].map(star => {
           const cnt = isReal ? reviewsList.filter(r => r.stars === star).length : (star === 5 ? 3 : 0);
           const tot = isReal ? reviewsList.length : 3;
