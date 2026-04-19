@@ -321,8 +321,10 @@ async def startup_event():
             user_email TEXT NOT NULL UNIQUE,
             stars INTEGER NOT NULL CHECK (stars >= 1 AND stars <= 5),
             comment TEXT DEFAULT '',
+            display_name TEXT DEFAULT '',
             created_at TIMESTAMPTZ DEFAULT NOW()
         )""")
+        cur.execute("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS display_name TEXT DEFAULT ''")
         # Generate referral codes for existing users who don't have one
         cur.execute("SELECT email FROM users WHERE referral_code IS NULL")
         for u in cur.fetchall():
@@ -1075,21 +1077,25 @@ def _rel_date(dt) -> str:
 @app.get("/reviews/list")
 async def reviews_list():
     conn = get_db(); cur = conn.cursor()
-    cur.execute("""SELECT user_email, stars, comment, created_at FROM reviews
+    cur.execute("""SELECT user_email, stars, comment, display_name, created_at FROM reviews
                    WHERE LENGTH(TRIM(COALESCE(comment,''))) > 10
                    ORDER BY created_at DESC LIMIT 12""")
     rows = cur.fetchall()
     cur.close(); conn.close()
-    return [{"name": _mask_email(r["user_email"]),
-             "initial": _mask_email(r["user_email"])[0].upper(),
-             "color": _review_color(r["user_email"]),
-             "stars": r["stars"],
-             "comment": r["comment"],
-             "date": _rel_date(r["created_at"])} for r in rows]
+    result = []
+    for r in rows:
+        dn = (r.get("display_name") or "").strip()
+        name = dn if dn else _mask_email(r["user_email"])
+        result.append({"name": name, "initial": name[0].upper(),
+                        "color": _review_color(r["user_email"]),
+                        "stars": r["stars"], "comment": r["comment"],
+                        "date": _rel_date(r["created_at"])})
+    return result
 
 class ReviewBody(BaseModel):
     stars: int
     comment: str = ""
+    display_name: str = ""
 
 @app.post("/reviews")
 async def leave_review(body: ReviewBody, current_user: str = Depends(get_current_user)):
@@ -1100,14 +1106,27 @@ async def leave_review(body: ReviewBody, current_user: str = Depends(get_current
         cur.execute("SELECT id FROM reviews WHERE user_email = %s", (current_user,))
         if cur.fetchone():
             raise HTTPException(400, "Vous avez déjà laissé un avis.")
-        cur.execute("INSERT INTO reviews (user_email, stars, comment) VALUES (%s, %s, %s)",
-                    (current_user, body.stars, (body.comment or "")[:500]))
+        dn = (body.display_name or "").strip()[:50]
+        cur.execute("INSERT INTO reviews (user_email, stars, comment, display_name) VALUES (%s, %s, %s, %s)",
+                    (current_user, body.stars, (body.comment or "")[:500], dn))
         cur.execute("UPDATE users SET credits = credits + 1 WHERE email = %s RETURNING credits", (current_user,))
         row = cur.fetchone()
         conn.commit()
         return {"status": "ok", "credits": row["credits"] if row else None}
     except HTTPException:
         raise
+    except Exception as e:
+        conn.rollback(); raise HTTPException(500, str(e))
+    finally:
+        cur.close(); conn.close()
+
+@app.delete("/reviews/my")
+async def delete_my_review(current_user: str = Depends(get_current_user)):
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM reviews WHERE user_email = %s", (current_user,))
+        conn.commit()
+        return {"ok": True}
     except Exception as e:
         conn.rollback(); raise HTTPException(500, str(e))
     finally:
