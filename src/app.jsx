@@ -3657,8 +3657,7 @@ function PixGlowApp() {
   const goToApp = () => { if (isConnected) setPage('app'); else openAuth('register'); };
 
   const handleSelectClick = (useCamera = false) => {
-    if (!isConnected) { openAuth('register'); return; }
-    if (credits !== null && credits <= 0) { setError('Crédits épuisés. Rechargez pour continuer.'); return; }
+    if (isConnected && credits !== null && credits <= 0) { setError('Crédits épuisés. Rechargez pour continuer.'); return; }
     setError(null);
     if (useCamera) cameraInputRef.current?.click(); else fileInputRef.current?.click();
   };
@@ -3682,13 +3681,15 @@ function PixGlowApp() {
     });
     if (!valid.length) return;
 
-    const available = credits ?? 0;
-    const totalMax = Math.min(MAX_SIMULTANEOUS, Math.max(available, 1));
+    const totalMax = isConnected ? Math.min(MAX_SIMULTANEOUS, Math.max(credits ?? 1, 1)) : 1;
 
     // Append new files to existing ones, capped at totalMax
     const combined = [...files, ...valid];
     const chosenAll = combined.slice(0, totalMax);
-    if (combined.length > totalMax && !oversized.length) setError(`Maximum ${totalMax} photo(s) selon vos crédits disponibles.`); else if (!oversized.length) setError(null);
+    if (!oversized.length) {
+      if (combined.length > totalMax && isConnected) setError(`Maximum ${totalMax} photo(s) selon vos crédits disponibles.`);
+      else setError(null);
+    }
     if (e.target.value !== undefined) { try { e.target.value = ''; } catch(_) {} }
 
     // FileReader est plus fiable sur Android (content:// URIs, HEIC, etc.)
@@ -4737,8 +4738,12 @@ function PixGlowApp() {
                       </div>
                   }
                 </div>
-                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : T.text, letterSpacing: '-.3px' }}>{limitReached ? 'Limite atteinte' : "Dépose jusqu'à 5 photos ici"}</p>
-                <p style={{ color: '#475569', fontSize: '13px', marginBottom: 0 }}>{limitReached ? 'Créez un compte pour continuer' : 'JPG · PNG · WEBP · HEIC (iPhone) · ou clique pour sélectionner'}</p>
+                <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '19px' : '22px', fontWeight: 800, marginBottom: '6px', color: limitReached ? '#f87171' : T.text, letterSpacing: '-.3px' }}>
+                  {limitReached ? 'Limite atteinte' : !isConnected ? 'Dépose une photo pour tester' : "Dépose jusqu'à 5 photos ici"}
+                </p>
+                <p style={{ color: '#475569', fontSize: '13px', marginBottom: 0 }}>
+                  {limitReached ? 'Créez un compte pour continuer' : !isConnected ? 'Aperçu gratuit avec filigrane · ou crée un compte pour 5 crédits offerts' : 'JPG · PNG · WEBP · HEIC (iPhone) · ou clique pour sélectionner'}
+                </p>
               </div>
               {!limitReached && isMobile && (
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px', marginBottom: '6px' }}>
