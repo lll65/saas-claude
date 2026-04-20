@@ -70,6 +70,29 @@ export function AccountSettings({ onBack, darkMode, isMobile, userEmail, onLogou
     if (res.ok) setApiKeys(prev => prev.map(k => k.id === id ? { ...k, is_active: false } : k));
   };
 
+  // ── Mon avis ──
+  const [hasReview, setHasReview] = useState(null);
+  const [reviewDeleting, setReviewDeleting] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/me`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => setHasReview(!!d.has_reviewed))
+      .catch(() => {});
+  }, []);
+
+  const handleDeleteReview = async () => {
+    setReviewDeleting(true); setReviewMsg(null);
+    try {
+      const res = await fetch(`${API_URL}/reviews/my`, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setReviewMsg({ ok: false, text: d.detail || 'Erreur serveur.' }); return; }
+      setHasReview(false);
+      setReviewMsg({ ok: true, text: 'Avis supprimé.' });
+    } catch { setReviewMsg({ ok: false, text: 'Erreur réseau.' }); }
+    finally { setReviewDeleting(false); }
+  };
+
   // ── Suppression compte ──
   const [deleteStep, setDeleteStep] = useState(0);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -168,6 +191,32 @@ export function AccountSettings({ onBack, darkMode, isMobile, userEmail, onLogou
             </div>
           )}
         </div>
+
+        {/* Mon avis */}
+        {hasReview !== null && (
+          <div style={sectionStyle}>
+            <p style={{ color: '#a78bfa', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 8px' }}>⭐ Mon avis</p>
+            {hasReview ? (
+              <>
+                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '13px', margin: '0 0 14px', lineHeight: 1.5 }}>
+                  Tu as déjà laissé un avis sur PixGlow. Tu peux le supprimer ci-dessous.
+                </p>
+                {reviewMsg && (
+                  <p style={{ color: reviewMsg.ok ? '#10b981' : '#f87171', fontSize: '13px', marginBottom: '10px' }}>
+                    {reviewMsg.ok ? '✓ ' : '✗ '}{reviewMsg.text}
+                  </p>
+                )}
+                <button onClick={handleDeleteReview} disabled={reviewDeleting} style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171', borderRadius: '10px', padding: '9px 18px', fontWeight: 700, fontSize: '13px', cursor: reviewDeleting ? 'wait' : 'pointer', fontFamily: 'inherit', opacity: reviewDeleting ? 0.7 : 1 }}>
+                  {reviewDeleting ? 'Suppression...' : '🗑 Supprimer mon avis'}
+                </button>
+              </>
+            ) : (
+              <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
+                Tu n'as pas encore laissé d'avis. Retourne sur la page principale pour en laisser un et gagner +1 crédit !
+              </p>
+            )}
+          </div>
+        )}
 
         {/* API Keys */}
         <div style={sectionStyle}>

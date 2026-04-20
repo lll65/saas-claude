@@ -2677,7 +2677,7 @@ function HeroPhone({ isMobile }) {
 }
 
 /* ══ SCROLL REVEAL ══ */
-function useScrollReveal() {
+function useScrollReveal(page) {
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
@@ -2691,7 +2691,7 @@ function useScrollReveal() {
     const t1 = setTimeout(observe, 300);
     const t2 = setTimeout(observe, 800);
     return () => { observer.disconnect(); clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+  }, [page]);
 }
 
 /* ══ FAQ SECTION ══ */
@@ -2742,6 +2742,15 @@ function FAQSection({ T, isMobile }) {
 // 👇 Pour ajouter une news : copie un bloc { date, version, items:[...] }
 //    et colle-le EN PREMIER dans ce tableau. Types disponibles : 'new' | 'improve' | 'fix'
 const CHANGELOG = [
+  {
+    date: '20 avril 2026',
+    version: 'v1.8',
+    items: [
+      { type: 'new', label: '🧶 Fond Lin', desc: 'Nouveau fond textile naturel : Lin. Un rendu doux et authentique, parfait pour les vêtements, accessoires et articles lifestyle. Donne un aspect éditorial soigné à tes annonces.' },
+      { type: 'new', label: '🟤 Fond Tapis', desc: 'Nouveau fond Tapis berbère : texture chaleureuse et artisanale. Idéal pour les produits artisanaux, bijoux, sacs et objets de décoration. Démarque-toi avec un fond unique.' },
+      { type: 'new', label: '⭐ Système d\'avis vérifiés', desc: 'Laisse un avis sur PixGlow et gagne +1 crédit. Les avis sont vérifiés (un seul par compte), affichés avec ton prénom et un badge "Vérifié". Tu peux aussi supprimer ton avis depuis Mon compte.' },
+    ],
+  },
   {
     date: '2 avril 2026',
     version: 'v1.7',
@@ -3561,7 +3570,7 @@ function PixGlowApp() {
   const isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
-  useScrollReveal();
+  useScrollReveal(page);
 
   // PWA install prompt + avis summary
   useEffect(() => {
