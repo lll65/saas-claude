@@ -1,5 +1,7 @@
 import React from 'react';
 
+const _ARC_ARCS = [22,15,8].map(r=>`radial-gradient(circle at 0px 44px, transparent ${r-1}px, rgba(165,152,135,.6) ${r-1}px, rgba(165,152,135,.6) ${r+1}px, transparent ${r+1}px)`).concat([22,15,8].map(r=>`radial-gradient(circle at 44px 0px, transparent ${r-1}px, rgba(165,152,135,.6) ${r-1}px, rgba(165,152,135,.6) ${r+1}px, transparent ${r+1}px)`)).join(', ');
+
 export const BG_STYLES = [
   { id: 'blanc',    label: 'Blanc',    sub: 'Studio pur',   color: '#ffffff', border: '#e2e8f0', check: '#7c3aed' },
   { id: 'gris',     label: 'Gris',     sub: 'Studio pro',   color: '#9b9ba0', border: '#7a7a80', check: '#ffffff' },
@@ -8,10 +10,14 @@ export const BG_STYLES = [
   { id: 'tendance', label: 'Tendance', sub: 'Dégradé',
     gradient: 'linear-gradient(160deg,#c39bf5,#f5afda)', border: '#a855f7', check: '#7c3aed' },
   { id: 'noir',     label: 'Noir',     sub: 'Studio noir', color: '#1a1a20', border: '#444', check: '#ffffff' },
-  { id: 'lin',           label: 'Lin',         sub: 'Tissu naturel',  color: '#b89a6e', border: '#9a7c50', check: '#78350f' },
-  { id: 'tapis',         label: 'Tapis',       sub: 'Berber crème',   color: '#e4dcd0', border: '#c8b89a', check: '#92400e' },
-  { id: 'tapis_geo',     label: 'Tapis Arc',   sub: 'Motifs sculptés', color: '#e8e2d8', border: '#c4baaa', check: '#92400e' },
-  { id: 'tapis_moelleux',label: 'Tapis Shaggy',sub: 'Blanc moelleux', color: '#f5f3ef', border: '#dddad4', check: '#7c3aed' },
+  { id: 'lin',           label: 'Lin',         sub: 'Tissu naturel',  color: '#b89a6e', border: '#9a7c50', check: '#78350f',
+    thumbnailStyle: { backgroundImage: 'repeating-conic-gradient(#9a7040 0% 25%, #c49860 0% 50%)', backgroundSize: '5px 5px' } },
+  { id: 'tapis',         label: 'Tapis',       sub: 'Berber crème',   color: '#e4dcd0', border: '#c8b89a', check: '#92400e',
+    thumbnailStyle: { backgroundColor: '#e4dcd0', backgroundImage: 'radial-gradient(circle 1.5px at 4px 4px, rgba(160,145,125,.7) 100%, transparent 100%), radial-gradient(circle 1.5px at 10px 10px, rgba(160,145,125,.7) 100%, transparent 100%)', backgroundSize: '14px 14px' } },
+  { id: 'tapis_geo',     label: 'Tapis Arc',   sub: 'Motifs sculptés', color: '#e8e2d8', border: '#c4baaa', check: '#92400e',
+    thumbnailStyle: { backgroundColor: '#e8e2d8', backgroundImage: _ARC_ARCS } },
+  { id: 'tapis_moelleux',label: 'Tapis Shaggy',sub: 'Blanc moelleux', color: '#f5f3ef', border: '#dddad4', check: '#7c3aed',
+    thumbnailStyle: { background: 'radial-gradient(ellipse 75% 70% at 32% 28%, #fdfcf8 0%, #eae5db 65%, #d8d2c6 100%)' } },
 ];
 
 export const CATEGORIES = [
@@ -45,7 +51,7 @@ export function StylePicker({ bgStyle, setBgStyle, category, setCategory, darkMo
                 onClick={() => setBgStyle(s.id)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '8px 10px', borderRadius: '12px', border: `2px solid ${selected ? s.selBorder || '#7c3aed' : (darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)')}`, background: selected ? (T2.selBg) : T2.card, cursor: 'pointer', transition: 'all .18s', fontFamily: 'inherit', flexShrink: 0, minWidth: isMobile ? '54px' : '64px', transform: selected ? 'scale(1.05)' : 'scale(1)', boxShadow: selected ? `0 0 0 3px ${s.check || '#7c3aed'}22` : 'none' }}
               >
-                <div style={{ width: isMobile ? '36px' : '44px', height: isMobile ? '36px' : '44px', borderRadius: '8px', background: s.gradient || s.color, border: `1px solid ${s.border}`, position: 'relative', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,.12)' }}>
+                <div style={{ width: isMobile ? '36px' : '44px', height: isMobile ? '36px' : '44px', borderRadius: '8px', background: s.gradient || s.color, ...(s.thumbnailStyle || {}), border: `1px solid ${s.border}`, position: 'relative', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,.12)' }}>
                   {selected && (
                     <div style={{ position: 'absolute', bottom: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', background: s.check || '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>
                       <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l1.5 1.5L6.5 2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>

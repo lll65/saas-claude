@@ -578,79 +578,125 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
     if bg_style == "lin":
         from PIL import ImageFilter
         rng = np.random.default_rng(42)
-        # Période d'un fil en pixels (adapté à la taille de l'image)
-        period = max(6, min(width, height) // 55)
-        # Couleurs fils : ton jute/lin chaud — fil dessus plus clair, fil dessous plus sombre
-        c_over  = np.array([198, 176, 140], dtype=np.float32)
-        c_under = np.array([155, 132,  96], dtype=np.float32)
+        period = max(7, min(width, height) // 45)
+        # Couleurs naturelles lin clair — crème chaud
+        c_over  = np.array([218, 200, 170], dtype=np.float32)
+        c_under = np.array([182, 162, 130], dtype=np.float32)
         y_idx = np.arange(height)
         x_idx = np.arange(width)
         y_band = (y_idx // period) % 2
         x_band = (x_idx // period) % 2
         yy_b, xx_b = np.meshgrid(y_band, x_band, indexing='ij')
-        h_on_top = (yy_b == xx_b)  # alternance chaîne/trame (plain weave)
+        h_on_top = (yy_b == xx_b)
         arr = np.zeros((height, width, 3), dtype=np.float32)
         for ch in range(3):
             arr[:, :, ch] = np.where(h_on_top, c_over[ch], c_under[ch])
-        # Relief 3D : ombre sinusoïdale sur les bords de chaque fil
         y_frac = ((y_idx % period) / period).astype(np.float32)
         x_frac = ((x_idx % period) / period).astype(np.float32)
         yy_f, xx_f = np.meshgrid(y_frac, x_frac, indexing='ij')
-        h_shading = 14 * np.sin(yy_f * np.pi)
-        v_shading = 14 * np.sin(xx_f * np.pi)
+        h_shading = 18 * np.sin(yy_f * np.pi)
+        v_shading = 18 * np.sin(xx_f * np.pi)
         arr += np.where(h_on_top, h_shading, v_shading)[:, :, None]
-        # Grain fibre naturelle
-        noise = rng.normal(0, 7, (height, width, 3))
+        # Variation naturelle de couleur entre fils (non-uniformité du tissu)
+        n_ty = height // period + 1; n_tx = width // period + 1
+        fiber_var = rng.normal(0, 6, (n_ty, n_tx, 3)).astype(np.float32)
+        ty_idx = np.minimum(y_idx // period, n_ty - 1)
+        tx_idx = np.minimum(x_idx // period, n_tx - 1)
+        tyg, txg = np.meshgrid(ty_idx, tx_idx, indexing='ij')
+        arr += fiber_var[tyg, txg]
+        noise = rng.normal(0, 5, (height, width, 3))
         result = Image.fromarray(np.clip(arr + noise, 0, 255).astype(np.uint8), "RGB")
-        # Légère douceur pour simuler la surface du tissu
-        return result.filter(ImageFilter.GaussianBlur(radius=0.7))
+        return result.filter(ImageFilter.GaussianBlur(radius=0.5))
     if bg_style == "tapis_geo":
         from PIL import ImageFilter, ImageDraw
-        base = (234, 228, 218)
-        img_geo = Image.new("RGB", (width, height), base)
-        draw = ImageDraw.Draw(img_geo)
-        tile = max(70, min(width, height) // 6)
-        sp = max(4, tile // 12)
-        lc = (212, 204, 190)
-        lw = max(1, sp // 3)
+        tile = max(80, min(width, height) // 6)
+        sp = max(5, tile // 11)
+        lw = max(2, sp // 2)
+        # Étape 1 : dessiner le motif comme heightmap (blanc = relief)
+        h_img = Image.new("L", (width, height), 0)
+        draw_h = ImageDraw.Draw(h_img)
         for row in range(-1, height // tile + 2):
             for col in range(-1, width // tile + 2):
                 x0, y0 = col * tile, row * tile
                 mode = (row + col) % 4
                 if mode == 0:
                     for i in range(0, tile + sp, sp):
-                        draw.line([(x0, y0 + i), (x0 + tile, y0 + i)], fill=lc, width=lw)
+                        draw_h.line([(x0, y0 + i), (x0 + tile, y0 + i)], fill=255, width=lw)
                 elif mode == 1:
                     for r in range(sp * 2, tile * 2, sp * 2):
-                        draw.arc([x0 - r, y0 - r, x0 + r, y0 + r], 0, 90, fill=lc, width=lw)
+                        draw_h.arc([x0 - r, y0 - r, x0 + r, y0 + r], 0, 90, fill=255, width=lw)
                 elif mode == 2:
                     for i in range(0, tile + sp, sp):
-                        draw.line([(x0 + i, y0), (x0 + i, y0 + tile)], fill=lc, width=lw)
+                        draw_h.line([(x0 + i, y0), (x0 + i, y0 + tile)], fill=255, width=lw)
                 else:
                     cx, cy = x0 + tile, y0 + tile
                     for r in range(sp * 2, tile * 2, sp * 2):
-                        draw.arc([cx - r, cy - r, cx + r, cy + r], 180, 270, fill=lc, width=lw)
+                        draw_h.arc([cx - r, cy - r, cx + r, cy + r], 180, 270, fill=255, width=lw)
+        # Étape 2 : flou pour créer des crêtes douces (aspect sculpté)
+        blur_r = max(2, lw + 1)
+        h_blurred = np.array(h_img.filter(ImageFilter.GaussianBlur(radius=blur_r)), dtype=np.float32) / 255.0
+        # Étape 3 : normales de surface par gradient
+        dh_dx = np.zeros_like(h_blurred)
+        dh_dy = np.zeros_like(h_blurred)
+        dh_dx[:, 1:-1] = (h_blurred[:, 2:] - h_blurred[:, :-2]) * 0.5
+        dh_dy[1:-1, :] = (h_blurred[2:, :] - h_blurred[:-2, :]) * 0.5
+        s = 5.0
+        nx_m = -dh_dx * s; ny_m = -dh_dy * s; nz_m = np.ones_like(nx_m)
+        n_len = np.sqrt(nx_m**2 + ny_m**2 + nz_m**2)
+        nx_m /= n_len; ny_m /= n_len; nz_m /= n_len
+        # Étape 4 : éclairage Phong (lumière haut-gauche)
+        lx, ly, lz = 0.35, -0.35, 0.87
+        ln = (lx**2 + ly**2 + lz**2)**0.5
+        lx /= ln; ly /= ln; lz /= ln
+        diffuse = np.clip(nx_m * lx + ny_m * ly + nz_m * lz, 0, 1)
+        shade = 0.52 + 0.48 * diffuse  # ambient + diffuse
+        # Couleur crème ivoire + relief lumineux
+        base = np.array([234, 226, 212], dtype=np.float32)
+        arr = np.zeros((height, width, 3), dtype=np.float32)
+        for c in range(3):
+            arr[:, :, c] = base[c] * shade + h_blurred * 18
         rng = np.random.default_rng(42)
-        arr_geo = np.array(img_geo, dtype=np.float32)
-        arr_geo += rng.normal(0, 2.5, arr_geo.shape)
-        return Image.fromarray(np.clip(arr_geo, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.3))
+        arr += rng.normal(0, 2, arr.shape)
+        return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.4))
     if bg_style == "tapis_moelleux":
         from PIL import ImageFilter
         rng = np.random.default_rng(42)
-        arr = np.full((height, width, 3), [252, 250, 246], dtype=np.float32)
-        ls = max(15, min(width, height) // 30)
-        n_ly = height // ls + 2
-        n_lx = width // ls + 2
-        lumps = rng.normal(0, 1, (n_ly, n_lx)).astype(np.float32)
-        lump_img = Image.fromarray(np.clip(lumps * 100 + 128, 0, 255).astype(np.uint8), "L")
-        lump_up = np.array(lump_img.resize((width, height), Image.BILINEAR), dtype=np.float32)
-        arr += (lump_up - 128)[:, :, None] * 0.12
-        arr += rng.normal(0, 2.5, (height, width, 3)).astype(np.float32)
+        # Heightmap multi-échelle pour touffe de fibres (grande + petite échelle)
+        h_total = np.zeros((height, width), dtype=np.float32)
+        for sf, amp in [(25, 1.0), (10, 0.45), (4, 0.18)]:
+            ny_s = max(2, height // sf); nx_s = max(2, width // sf)
+            patch = rng.normal(0, 1, (ny_s, nx_s)).astype(np.float32)
+            p_img = Image.fromarray(np.clip(patch * 80 + 128, 0, 255).astype(np.uint8), "L")
+            p_up = np.array(p_img.resize((width, height), Image.BILINEAR), dtype=np.float32) / 255.0
+            h_total += p_up * amp
+        h_total = (h_total - h_total.min()) / (h_total.max() - h_total.min() + 1e-6)
+        # Flou fort → transitions très douces entre touffes (aspect moelleux)
+        blur_r = max(6, min(width, height) // 55)
+        h_img_s = Image.fromarray((h_total * 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(radius=blur_r))
+        h_b = np.array(h_img_s, dtype=np.float32) / 255.0
+        h_b = (h_b - h_b.min()) / (h_b.max() - h_b.min() + 1e-6)
+        # Normales de surface
+        dh_dx = np.zeros_like(h_b); dh_dy = np.zeros_like(h_b)
+        dh_dx[:, 1:-1] = (h_b[:, 2:] - h_b[:, :-2]) * 0.5
+        dh_dy[1:-1, :] = (h_b[2:, :] - h_b[:-2, :]) * 0.5
+        s = 2.8
+        nx_m = -dh_dx * s; ny_m = -dh_dy * s; nz_m = np.ones_like(nx_m)
+        n_len = np.sqrt(nx_m**2 + ny_m**2 + nz_m**2)
+        nx_m /= n_len; ny_m /= n_len; nz_m /= n_len
+        # Lumière quasi-zénithale (peu d'ombre directionnelle — tapis à poils longs)
+        lx, ly, lz = 0.12, -0.2, 0.97
+        ln = (lx**2 + ly**2 + lz**2)**0.5
+        lx /= ln; ly /= ln; lz /= ln
+        diffuse = np.clip(nx_m * lx + ny_m * ly + nz_m * lz, 0, 1)
+        shade = 0.62 + 0.38 * diffuse
+        # Base blanc chaud quasi-pur
+        base = np.array([253, 251, 247], dtype=np.float32)
+        arr = np.zeros((height, width, 3), dtype=np.float32)
+        for c in range(3):
+            arr[:, :, c] = base[c] * shade
+        arr += rng.normal(0, 1.5, arr.shape)
         result = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
-        result = result.filter(ImageFilter.GaussianBlur(radius=3.0))
-        arr2 = np.array(result, dtype=np.float32)
-        arr2 += rng.normal(0, 1.5, arr2.shape)
-        return Image.fromarray(np.clip(arr2, 0, 255).astype(np.uint8), "RGB").filter(ImageFilter.GaussianBlur(radius=0.8))
+        return result.filter(ImageFilter.GaussianBlur(radius=0.6))
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
 
