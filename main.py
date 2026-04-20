@@ -609,9 +609,9 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
         return result.filter(ImageFilter.GaussianBlur(radius=0.5))
     if bg_style == "tapis_geo":
         from PIL import ImageFilter, ImageDraw
-        tile = max(80, min(width, height) // 6)
-        sp = max(5, tile // 11)
-        lw = max(2, sp // 2)
+        tile = max(40, min(width, height) // 10)
+        sp = max(3, tile // 9)
+        lw = max(1, sp // 2)
         # Étape 1 : dessiner le motif comme heightmap (blanc = relief)
         h_img = Image.new("L", (width, height), 0)
         draw_h = ImageDraw.Draw(h_img)
@@ -645,33 +645,33 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
         n_len = np.sqrt(nx_m**2 + ny_m**2 + nz_m**2)
         nx_m /= n_len; ny_m /= n_len; nz_m /= n_len
         # Étape 4 : éclairage Phong (lumière haut-gauche)
-        lx, ly, lz = 0.35, -0.35, 0.87
+        lx, ly, lz = 0.40, -0.40, 0.82
         ln = (lx**2 + ly**2 + lz**2)**0.5
         lx /= ln; ly /= ln; lz /= ln
         diffuse = np.clip(nx_m * lx + ny_m * ly + nz_m * lz, 0, 1)
-        shade = 0.52 + 0.48 * diffuse  # ambient + diffuse
+        shade = 0.42 + 0.58 * diffuse  # fort contraste pour rendre le relief visible
         # Couleur crème ivoire + relief lumineux
         base = np.array([234, 226, 212], dtype=np.float32)
         arr = np.zeros((height, width, 3), dtype=np.float32)
         for c in range(3):
-            arr[:, :, c] = base[c] * shade + h_blurred * 18
+            arr[:, :, c] = base[c] * shade + h_blurred * 22
         rng = np.random.default_rng(42)
         arr += rng.normal(0, 2, arr.shape)
         return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.4))
     if bg_style == "tapis_moelleux":
         from PIL import ImageFilter
         rng = np.random.default_rng(42)
-        # Heightmap multi-échelle pour touffe de fibres (grande + petite échelle)
+        # Heightmap multi-échelle : petites touffes serrées comme un vrai shaggy
         h_total = np.zeros((height, width), dtype=np.float32)
-        for sf, amp in [(25, 1.0), (10, 0.45), (4, 0.18)]:
+        for sf, amp in [(14, 1.0), (6, 0.6), (3, 0.3)]:
             ny_s = max(2, height // sf); nx_s = max(2, width // sf)
             patch = rng.normal(0, 1, (ny_s, nx_s)).astype(np.float32)
             p_img = Image.fromarray(np.clip(patch * 80 + 128, 0, 255).astype(np.uint8), "L")
             p_up = np.array(p_img.resize((width, height), Image.BILINEAR), dtype=np.float32) / 255.0
             h_total += p_up * amp
         h_total = (h_total - h_total.min()) / (h_total.max() - h_total.min() + 1e-6)
-        # Flou fort → transitions très douces entre touffes (aspect moelleux)
-        blur_r = max(6, min(width, height) // 55)
+        # Flou modéré — garder le détail des touffes
+        blur_r = max(3, min(width, height) // 120)
         h_img_s = Image.fromarray((h_total * 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(radius=blur_r))
         h_b = np.array(h_img_s, dtype=np.float32) / 255.0
         h_b = (h_b - h_b.min()) / (h_b.max() - h_b.min() + 1e-6)
@@ -679,24 +679,24 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
         dh_dx = np.zeros_like(h_b); dh_dy = np.zeros_like(h_b)
         dh_dx[:, 1:-1] = (h_b[:, 2:] - h_b[:, :-2]) * 0.5
         dh_dy[1:-1, :] = (h_b[2:, :] - h_b[:-2, :]) * 0.5
-        s = 2.8
+        s = 4.0
         nx_m = -dh_dx * s; ny_m = -dh_dy * s; nz_m = np.ones_like(nx_m)
         n_len = np.sqrt(nx_m**2 + ny_m**2 + nz_m**2)
         nx_m /= n_len; ny_m /= n_len; nz_m /= n_len
-        # Lumière quasi-zénithale (peu d'ombre directionnelle — tapis à poils longs)
-        lx, ly, lz = 0.12, -0.2, 0.97
+        # Lumière légèrement oblique pour accentuer le relief entre touffes
+        lx, ly, lz = 0.30, -0.30, 0.90
         ln = (lx**2 + ly**2 + lz**2)**0.5
         lx /= ln; ly /= ln; lz /= ln
         diffuse = np.clip(nx_m * lx + ny_m * ly + nz_m * lz, 0, 1)
-        shade = 0.62 + 0.38 * diffuse
-        # Base blanc chaud quasi-pur
-        base = np.array([253, 251, 247], dtype=np.float32)
+        shade = 0.38 + 0.62 * diffuse  # fort contraste : ombres visibles dans les creux
+        # Base blanc chaud crème très léger
+        base = np.array([252, 250, 246], dtype=np.float32)
         arr = np.zeros((height, width, 3), dtype=np.float32)
         for c in range(3):
             arr[:, :, c] = base[c] * shade
         arr += rng.normal(0, 1.5, arr.shape)
         result = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
-        return result.filter(ImageFilter.GaussianBlur(radius=0.6))
+        return result.filter(ImageFilter.GaussianBlur(radius=0.5))
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
 
@@ -1201,7 +1201,7 @@ async def leave_review(body: ReviewBody, current_user: str = Depends(get_current
         dn = (body.display_name or "").strip()[:50]
         cur.execute("INSERT INTO reviews (user_email, stars, comment, display_name) VALUES (%s, %s, %s, %s)",
                     (current_user, body.stars, (body.comment or "")[:500], dn))
-        cur.execute("UPDATE users SET credits = credits + 1 WHERE email = %s RETURNING credits", (current_user,))
+        cur.execute("UPDATE users SET credits = credits + 3 WHERE email = %s RETURNING credits", (current_user,))
         row = cur.fetchone()
         conn.commit()
         return {"status": "ok", "credits": row["credits"] if row else None}

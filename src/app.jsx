@@ -2748,7 +2748,7 @@ const CHANGELOG = [
     items: [
       { type: 'new', label: '🧶 Fond Lin', desc: 'Nouveau fond textile naturel : Lin. Un rendu doux et authentique, parfait pour les vêtements, accessoires et articles lifestyle. Donne un aspect éditorial soigné à tes annonces.' },
       { type: 'new', label: '🟤 Fond Tapis', desc: 'Nouveau fond Tapis berbère : texture chaleureuse et artisanale. Idéal pour les produits artisanaux, bijoux, sacs et objets de décoration. Démarque-toi avec un fond unique.' },
-      { type: 'new', label: '⭐ Système d\'avis vérifiés', desc: 'Laisse un avis sur PixGlow et gagne +1 crédit. Les avis sont vérifiés (un seul par compte), affichés avec ton prénom et un badge "Vérifié". Tu peux aussi supprimer ton avis depuis Mon compte.' },
+      { type: 'new', label: '⭐ Système d\'avis vérifiés', desc: 'Laisse un avis sur PixGlow et gagne +3 crédits. Les avis sont vérifiés (un seul par compte), affichés avec ton prénom et un badge "Vérifié". Tu peux aussi supprimer ton avis depuis Mon compte.' },
     ],
   },
   {
@@ -4028,7 +4028,7 @@ function PixGlowApp() {
                         )}
                         {(hasReviewed || reviewDone)
                           ? <button onClick={() => { handleDeleteReview(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#f87171', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>🗑 Supprimer mon avis</button>
-                          : <button onClick={() => { setShowReviewModal(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'rgba(245,158,11,.08)', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⭐ Laisser un avis · +1 crédit</button>
+                          : <button onClick={() => { setShowReviewModal(true); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'rgba(245,158,11,.08)', border: 'none', color: '#f59e0b', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>⭐ Laisser un avis · +3 crédits</button>
                         }
                         <button onClick={() => { handleLogout(); setNavMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', borderRadius: '8px', padding: '9px 12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>↪ Déconnexion</button>
                       </div>
@@ -4398,7 +4398,17 @@ function PixGlowApp() {
           <section className="pg-reveal" style={{ background: darkMode ? 'linear-gradient(180deg,transparent,rgba(124,58,237,.04),transparent)' : 'linear-gradient(180deg,transparent,rgba(124,58,237,.02),transparent)', padding: isMobile ? '32px 16px 44px' : '56px 40px 64px' }}>
             <div style={{ maxWidth: '940px', margin: '0 auto' }}>
               <p style={{ color: '#475569', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2.5px', textAlign: 'center', marginBottom: '12px' }}>Avis clients</p>
-              <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '28px', color: T.text, letterSpacing: '-.5px' }}>Ce qu'ils disent de PixGlow</h2>
+              <h2 className="pg-reveal" style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: isMobile ? '24px' : '36px', fontWeight: 800, textAlign: 'center', marginBottom: '12px', color: T.text, letterSpacing: '-.5px' }}>Ce qu'ils disent de PixGlow</h2>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '28px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '100px', padding: '4px 12px' }}>
+                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#10b981" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span style={{ color: '#10b981', fontSize: '11px', fontWeight: 700 }}>Avis vérifiés · 1 par compte</span>
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.2)', borderRadius: '100px', padding: '4px 12px' }}>
+                  <span style={{ fontSize: '12px' }}>🇫🇷</span>
+                  <span style={{ color: '#60a5fa', fontSize: '11px', fontWeight: 700 }}>Développé en France</span>
+                </div>
+              </div>
 
               {/* Trustpilot-style trust badge */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '36px' }}>
@@ -4628,7 +4638,7 @@ function PixGlowApp() {
               <>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
                 <p style={{ color: '#10b981', fontWeight: 800, fontSize: '18px', margin: '0 0 8px' }}>Merci pour ton avis !</p>
-                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+1 crédit ajouté à ton compte.</p>
+                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+3 crédits ajoutés à ton compte.</p>
                 <button onClick={() => setShowReviewModal(false)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', marginBottom: '12px' }}>Super !</button>
                 <div><button onClick={() => { handleDeleteReview(); setShowReviewModal(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', opacity: .7 }}>🗑 Supprimer mon avis</button></div>
               </>
@@ -4636,7 +4646,7 @@ function PixGlowApp() {
               <>
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>⭐</div>
                 <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontWeight: 800, fontSize: '17px', margin: '0 0 4px' }}>Tu aimes PixGlow ?</p>
-                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 16px' }}>Laisse un avis et reçois 1 crédit offert.</p>
+                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 16px' }}>Laisse un avis et reçois 3 crédits offerts.</p>
                 <input type="text" placeholder="Ton prénom (affiché sur l'avis)" value={reviewDisplayName} onChange={e => setReviewDisplayName(e.target.value.slice(0,30))} maxLength={30} style={{ width: '100%', boxSizing: 'border-box', background: darkMode ? 'rgba(255,255,255,.04)' : '#f8f9fc', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, borderRadius: '10px', padding: '10px 14px', color: darkMode ? '#e2e8f0' : '#111118', fontSize: '13px', fontFamily: 'inherit', outline: 'none', marginBottom: '12px' }} />
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
                   {[1,2,3,4,5].map(s => (
@@ -4649,7 +4659,7 @@ function PixGlowApp() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => setShowReviewModal(false)} style={{ flex: 1, background: 'none', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#64748b' : '#94a3b8', borderRadius: '10px', padding: '11px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Plus tard</button>
                   <button onClick={handleSubmitReview} disabled={reviewLoading} style={{ flex: 2, background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 800, cursor: reviewLoading ? 'wait' : 'pointer', fontSize: '13px', fontFamily: 'inherit', opacity: reviewLoading ? 0.7 : 1 }}>
-                    {reviewLoading ? 'Envoi...' : `Envoyer ${reviewStars}★ · +1 crédit`}
+                    {reviewLoading ? 'Envoi...' : `Envoyer ${reviewStars}★ · +3 crédits`}
                   </button>
                 </div>
               </>
@@ -4709,7 +4719,7 @@ function PixGlowApp() {
               </div>
               {isConnected && !hasReviewed && !reviewDone && (
                 <button onClick={() => { setShowAllReviews(false); setShowReviewModal(true); }} style={{ marginTop: '16px', width: '100%', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', flexShrink: 0 }}>
-                  ⭐ Laisser mon avis · +1 crédit offert
+                  ⭐ Laisser mon avis · +3 crédits offerts
                 </button>
               )}
             </div>
@@ -5025,7 +5035,7 @@ function PixGlowApp() {
               {isConnected && !hasReviewed && !reviewDone && doneCount > 0 && (
                 <div className="pg-slide-up" style={{ background: darkMode ? 'rgba(245,158,11,.06)' : 'rgba(245,158,11,.07)', border: '1px solid rgba(245,158,11,.25)', borderRadius: '16px', padding: '16px 20px', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                   <div>
-                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px', margin: '0 0 2px' }}>⭐ Laisse un avis — gagne 1 crédit</p>
+                    <p style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px', margin: '0 0 2px' }}>⭐ Laisse un avis — gagne 3 crédits</p>
                     <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '12px', margin: 0 }}>30 secondes · Une seule fois · Crédit ajouté immédiatement</p>
                   </div>
                   <button onClick={() => setShowReviewModal(true)} style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 18px', fontWeight: 800, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>Laisser un avis</button>
@@ -5095,7 +5105,7 @@ function PixGlowApp() {
               <>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
                 <p style={{ color: '#10b981', fontWeight: 800, fontSize: '18px', margin: '0 0 8px' }}>Merci pour ton avis !</p>
-                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+1 crédit ajouté à ton compte.</p>
+                <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '14px', margin: '0 0 20px' }}>+3 crédits ajoutés à ton compte.</p>
                 <button onClick={() => setShowReviewModal(false)} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px 28px', fontWeight: 800, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', marginBottom: '12px' }}>Super !</button>
                 <div>
                   <button onClick={() => { handleDeleteReview(); setShowReviewModal(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', opacity: .7 }}>🗑 Supprimer mon avis</button>
@@ -5105,7 +5115,7 @@ function PixGlowApp() {
               <>
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>⭐</div>
                 <p style={{ color: darkMode ? '#e2e8f0' : '#111118', fontWeight: 800, fontSize: '17px', margin: '0 0 4px' }}>Tu aimes PixGlow ?</p>
-                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 16px' }}>Laisse un avis et reçois 1 crédit offert.</p>
+                <p style={{ color: darkMode ? '#64748b' : '#94a3b8', fontSize: '13px', margin: '0 0 16px' }}>Laisse un avis et reçois 3 crédits offerts.</p>
                 <input
                   type="text"
                   placeholder="Ton prénom (affiché sur l'avis)"
@@ -5131,7 +5141,7 @@ function PixGlowApp() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => setShowReviewModal(false)} style={{ flex: 1, background: 'none', border: `1px solid ${darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)'}`, color: darkMode ? '#64748b' : '#94a3b8', borderRadius: '10px', padding: '11px', fontWeight: 600, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>Plus tard</button>
                   <button onClick={handleSubmitReview} disabled={reviewLoading} style={{ flex: 2, background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: 800, cursor: reviewLoading ? 'wait' : 'pointer', fontSize: '13px', fontFamily: 'inherit', opacity: reviewLoading ? 0.7 : 1 }}>
-                    {reviewLoading ? 'Envoi...' : `Envoyer ${reviewStars}★ · +1 crédit`}
+                    {reviewLoading ? 'Envoi...' : `Envoyer ${reviewStars}★ · +3 crédits`}
                   </button>
                 </div>
               </>
@@ -5167,7 +5177,7 @@ function PixGlowApp() {
       {showCreditToast && (
         <div className="pg-slide-up" style={{ position: 'fixed', bottom: isMobile ? '76px' : '28px', left: '50%', transform: 'translateX(-50%)', zIndex: 900, background: 'linear-gradient(135deg,#f59e0b,#d97706)', borderRadius: '100px', padding: '13px 22px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 8px 32px rgba(245,158,11,.5)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
           <svg width="18" height="18" viewBox="0 0 15 15" fill="#fff"><path d="M7.5 1l1.8 4.2H14l-3.7 3 1.5 4.6L7.5 10.5 4.7 12.8l1.5-4.6L2.5 5.2H5.7z"/></svg>
-          <span style={{ color: '#fff', fontWeight: 800, fontSize: '15px' }}>+1 crédit gagné !</span>
+          <span style={{ color: '#fff', fontWeight: 800, fontSize: '15px' }}>+3 crédits gagnés !</span>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3 3 7-7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
       )}
@@ -5228,7 +5238,7 @@ function PixGlowApp() {
               {/* CTA to leave review */}
               {isConnected && !hasReviewed && !reviewDone && (
                 <button onClick={() => { setShowAllReviews(false); setShowReviewModal(true); }} style={{ marginTop: '16px', width: '100%', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none', borderRadius: '12px', padding: '13px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit', flexShrink: 0 }}>
-                  ⭐ Laisser mon avis · +1 crédit offert
+                  ⭐ Laisser mon avis · +3 crédits offerts
                 </button>
               )}
             </div>
