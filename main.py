@@ -1078,7 +1078,6 @@ def _rel_date(dt) -> str:
 async def reviews_list():
     conn = get_db(); cur = conn.cursor()
     cur.execute("""SELECT user_email, stars, comment, display_name, created_at FROM reviews
-                   WHERE LENGTH(TRIM(COALESCE(comment,''))) > 10
                    ORDER BY created_at DESC LIMIT 12""")
     rows = cur.fetchall()
     cur.close(); conn.close()
