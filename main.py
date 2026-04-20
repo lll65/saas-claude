@@ -604,6 +604,53 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
         result = Image.fromarray(np.clip(arr + noise, 0, 255).astype(np.uint8), "RGB")
         # Légère douceur pour simuler la surface du tissu
         return result.filter(ImageFilter.GaussianBlur(radius=0.7))
+    if bg_style == "tapis_geo":
+        from PIL import ImageFilter, ImageDraw
+        base = (234, 228, 218)
+        img_geo = Image.new("RGB", (width, height), base)
+        draw = ImageDraw.Draw(img_geo)
+        tile = max(70, min(width, height) // 6)
+        sp = max(4, tile // 12)
+        lc = (212, 204, 190)
+        lw = max(1, sp // 3)
+        for row in range(-1, height // tile + 2):
+            for col in range(-1, width // tile + 2):
+                x0, y0 = col * tile, row * tile
+                mode = (row + col) % 4
+                if mode == 0:
+                    for i in range(0, tile + sp, sp):
+                        draw.line([(x0, y0 + i), (x0 + tile, y0 + i)], fill=lc, width=lw)
+                elif mode == 1:
+                    for r in range(sp * 2, tile * 2, sp * 2):
+                        draw.arc([x0 - r, y0 - r, x0 + r, y0 + r], 0, 90, fill=lc, width=lw)
+                elif mode == 2:
+                    for i in range(0, tile + sp, sp):
+                        draw.line([(x0 + i, y0), (x0 + i, y0 + tile)], fill=lc, width=lw)
+                else:
+                    cx, cy = x0 + tile, y0 + tile
+                    for r in range(sp * 2, tile * 2, sp * 2):
+                        draw.arc([cx - r, cy - r, cx + r, cy + r], 180, 270, fill=lc, width=lw)
+        rng = np.random.default_rng(42)
+        arr_geo = np.array(img_geo, dtype=np.float32)
+        arr_geo += rng.normal(0, 2.5, arr_geo.shape)
+        return Image.fromarray(np.clip(arr_geo, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.3))
+    if bg_style == "tapis_moelleux":
+        from PIL import ImageFilter
+        rng = np.random.default_rng(42)
+        arr = np.full((height, width, 3), [252, 250, 246], dtype=np.float32)
+        ls = max(15, min(width, height) // 30)
+        n_ly = height // ls + 2
+        n_lx = width // ls + 2
+        lumps = rng.normal(0, 1, (n_ly, n_lx)).astype(np.float32)
+        lump_img = Image.fromarray(np.clip(lumps * 100 + 128, 0, 255).astype(np.uint8), "L")
+        lump_up = np.array(lump_img.resize((width, height), Image.BILINEAR), dtype=np.float32)
+        arr += (lump_up - 128)[:, :, None] * 0.12
+        arr += rng.normal(0, 2.5, (height, width, 3)).astype(np.float32)
+        result = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
+        result = result.filter(ImageFilter.GaussianBlur(radius=3.0))
+        arr2 = np.array(result, dtype=np.float32)
+        arr2 += rng.normal(0, 1.5, arr2.shape)
+        return Image.fromarray(np.clip(arr2, 0, 255).astype(np.uint8), "RGB").filter(ImageFilter.GaussianBlur(radius=0.8))
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
 
@@ -1442,7 +1489,7 @@ async def enhance_photo(
     current_user: str = Depends(get_current_user)
 ):
     # Validation des valeurs enum
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin", "tapis"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin", "tapis", "tapis_geo", "tapis_moelleux"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
@@ -1627,7 +1674,7 @@ async def enhance_batch(
     MAX_BATCH = 10
     if not current_user: raise HTTPException(401, "Connectez-vous pour traiter des photos en lot.")
     if len(files) > MAX_BATCH: raise HTTPException(400, f"Maximum {MAX_BATCH} photos par lot.")
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "lin", "tapis"): bg_style = "blanc"
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "lin", "tapis", "tapis_geo", "tapis_moelleux"): bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"): category = "autre"
 
     conn = get_db(); cur = conn.cursor()
@@ -1721,7 +1768,7 @@ async def enhance_preview(
     category: str = File("autre"),
 ):
     """Traitement avec watermark PixGlow — aucune auth requise, sans limite."""
-    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin", "tapis"):
+    if bg_style not in ("blanc", "gris", "beige", "nature", "tendance", "noir", "lin", "tapis", "tapis_geo", "tapis_moelleux"):
         bg_style = "blanc"
     if category not in ("vetement", "chaussure", "sac", "bijou", "autre"):
         category = "autre"
