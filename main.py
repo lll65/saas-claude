@@ -611,8 +611,8 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
         from PIL import ImageFilter, ImageDraw
         tile = max(40, min(width, height) // 10)
         sp = max(3, tile // 9)
-        lw = max(1, sp // 2)
-        # Étape 1 : dessiner le motif comme heightmap (blanc = relief)
+        lw = max(2, sp // 2)
+        # Heightmap : lignes fines blanc pur sur noir
         h_img = Image.new("L", (width, height), 0)
         draw_h = ImageDraw.Draw(h_img)
         for row in range(-1, height // tile + 2):
@@ -632,71 +632,76 @@ def create_background(width: int, height: int, bg_style: str) -> Image.Image:
                     cx, cy = x0 + tile, y0 + tile
                     for r in range(sp * 2, tile * 2, sp * 2):
                         draw_h.arc([cx - r, cy - r, cx + r, cy + r], 180, 270, fill=255, width=lw)
-        # Étape 2 : flou pour créer des crêtes douces (aspect sculpté)
-        blur_r = max(2, lw + 1)
-        h_blurred = np.array(h_img.filter(ImageFilter.GaussianBlur(radius=blur_r)), dtype=np.float32) / 255.0
-        # Étape 3 : normales de surface par gradient
+        # Flou MINIMAL — laisser des vallées nettes entre les crêtes
+        h_blurred = np.array(h_img.filter(ImageFilter.GaussianBlur(radius=1)), dtype=np.float32) / 255.0
+        # Gradient → normales de surface (pente forte = fort contraste)
         dh_dx = np.zeros_like(h_blurred)
         dh_dy = np.zeros_like(h_blurred)
         dh_dx[:, 1:-1] = (h_blurred[:, 2:] - h_blurred[:, :-2]) * 0.5
         dh_dy[1:-1, :] = (h_blurred[2:, :] - h_blurred[:-2, :]) * 0.5
-        s = 5.0
+        s = 18.0  # très forte inclinaison des normales sur les flancs des crêtes
         nx_m = -dh_dx * s; ny_m = -dh_dy * s; nz_m = np.ones_like(nx_m)
         n_len = np.sqrt(nx_m**2 + ny_m**2 + nz_m**2)
         nx_m /= n_len; ny_m /= n_len; nz_m /= n_len
-        # Étape 4 : éclairage Phong (lumière haut-gauche)
-        lx, ly, lz = 0.40, -0.40, 0.82
-        ln = (lx**2 + ly**2 + lz**2)**0.5
-        lx /= ln; ly /= ln; lz /= ln
+        lx, ly, lz = 0.50, -0.50, 0.71
+        ln = (lx**2 + ly**2 + lz**2)**0.5; lx /= ln; ly /= ln; lz /= ln
         diffuse = np.clip(nx_m * lx + ny_m * ly + nz_m * lz, 0, 1)
-        shade = 0.42 + 0.58 * diffuse  # fort contraste pour rendre le relief visible
-        # Couleur crème ivoire + relief lumineux
+        # Contraste maximal : ombres sombres, crêtes brillantes
+        shade = 0.18 + 0.82 * diffuse
         base = np.array([234, 226, 212], dtype=np.float32)
         arr = np.zeros((height, width, 3), dtype=np.float32)
         for c in range(3):
-            arr[:, :, c] = base[c] * shade + h_blurred * 22
+            arr[:, :, c] = base[c] * shade + h_blurred * 35
         rng = np.random.default_rng(42)
-        arr += rng.normal(0, 2, arr.shape)
-        return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.4))
+        arr += rng.normal(0, 1.5, arr.shape)
+        return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.3))
     if bg_style == "tapis_moelleux":
         from PIL import ImageFilter
         rng = np.random.default_rng(42)
-        # Heightmap multi-échelle : petites touffes serrées comme un vrai shaggy
-        h_total = np.zeros((height, width), dtype=np.float32)
-        for sf, amp in [(14, 1.0), (6, 0.6), (3, 0.3)]:
-            ny_s = max(2, height // sf); nx_s = max(2, width // sf)
-            patch = rng.normal(0, 1, (ny_s, nx_s)).astype(np.float32)
-            p_img = Image.fromarray(np.clip(patch * 80 + 128, 0, 255).astype(np.uint8), "L")
-            p_up = np.array(p_img.resize((width, height), Image.BILINEAR), dtype=np.float32) / 255.0
-            h_total += p_up * amp
-        h_total = (h_total - h_total.min()) / (h_total.max() - h_total.min() + 1e-6)
-        # Flou modéré — garder le détail des touffes
-        blur_r = max(3, min(width, height) // 120)
-        h_img_s = Image.fromarray((h_total * 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(radius=blur_r))
-        h_b = np.array(h_img_s, dtype=np.float32) / 255.0
-        h_b = (h_b - h_b.min()) / (h_b.max() - h_b.min() + 1e-6)
+        # Worley noise : une bosse gaussienne par touffe de poils (O(9·W·H) numpy)
+        fiber_sp = max(7, min(width, height) // 90)
+        sigma = fiber_sp * 0.48
+        n_gy = height // fiber_sp + 3
+        n_gx = width // fiber_sp + 3
+        jit_x = rng.uniform(-fiber_sp * 0.45, fiber_sp * 0.45, (n_gy, n_gx)).astype(np.float32)
+        jit_y = rng.uniform(-fiber_sp * 0.45, fiber_sp * 0.45, (n_gy, n_gx)).astype(np.float32)
+        # Hauteur variable par touffe (poils de longueurs différentes)
+        fiber_h = rng.uniform(0.65, 1.0, (n_gy, n_gx)).astype(np.float32)
+        xx, yy = np.meshgrid(np.arange(width, dtype=np.float32), np.arange(height, dtype=np.float32))
+        cell_y = (yy / fiber_sp).astype(np.int32)
+        cell_x = (xx / fiber_sp).astype(np.int32)
+        min_dist_sq = np.full((height, width), np.inf, dtype=np.float32)
+        nearest_h = np.ones((height, width), dtype=np.float32)
+        for dy in range(-1, 2):
+            for dx in range(-1, 2):
+                cy = np.clip(cell_y + dy, 0, n_gy - 1)
+                cx = np.clip(cell_x + dx, 0, n_gx - 1)
+                fc_x = cx * fiber_sp + fiber_sp * 0.5 + jit_x[cy, cx]
+                fc_y = cy * fiber_sp + fiber_sp * 0.5 + jit_y[cy, cx]
+                d2 = (xx - fc_x) ** 2 + (yy - fc_y) ** 2
+                mask = d2 < min_dist_sq
+                min_dist_sq = np.where(mask, d2, min_dist_sq)
+                nearest_h = np.where(mask, fiber_h[cy, cx], nearest_h)
+        # Hauteur : bosse gaussienne × variation de hauteur de la touffe
+        h_arr = np.exp(-0.5 * (np.sqrt(min_dist_sq) / sigma) ** 2) * nearest_h
         # Normales de surface
-        dh_dx = np.zeros_like(h_b); dh_dy = np.zeros_like(h_b)
-        dh_dx[:, 1:-1] = (h_b[:, 2:] - h_b[:, :-2]) * 0.5
-        dh_dy[1:-1, :] = (h_b[2:, :] - h_b[:-2, :]) * 0.5
-        s = 4.0
+        dh_dx = np.zeros_like(h_arr); dh_dy = np.zeros_like(h_arr)
+        dh_dx[:, 1:-1] = (h_arr[:, 2:] - h_arr[:, :-2]) * 0.5
+        dh_dy[1:-1, :] = (h_arr[2:, :] - h_arr[:-2, :]) * 0.5
+        s = 7.0
         nx_m = -dh_dx * s; ny_m = -dh_dy * s; nz_m = np.ones_like(nx_m)
         n_len = np.sqrt(nx_m**2 + ny_m**2 + nz_m**2)
         nx_m /= n_len; ny_m /= n_len; nz_m /= n_len
-        # Lumière légèrement oblique pour accentuer le relief entre touffes
-        lx, ly, lz = 0.30, -0.30, 0.90
-        ln = (lx**2 + ly**2 + lz**2)**0.5
-        lx /= ln; ly /= ln; lz /= ln
+        lx, ly, lz = 0.28, -0.28, 0.92
+        ln = (lx**2 + ly**2 + lz**2)**0.5; lx /= ln; ly /= ln; lz /= ln
         diffuse = np.clip(nx_m * lx + ny_m * ly + nz_m * lz, 0, 1)
-        shade = 0.38 + 0.62 * diffuse  # fort contraste : ombres visibles dans les creux
-        # Base blanc chaud crème très léger
+        shade = 0.25 + 0.75 * diffuse  # creux sombres, pointes blanches
         base = np.array([252, 250, 246], dtype=np.float32)
         arr = np.zeros((height, width, 3), dtype=np.float32)
         for c in range(3):
-            arr[:, :, c] = base[c] * shade
+            arr[:, :, c] = base[c] * shade + h_arr * 18
         arr += rng.normal(0, 1.5, arr.shape)
-        result = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
-        return result.filter(ImageFilter.GaussianBlur(radius=0.5))
+        return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB").filter(ImageFilter.GaussianBlur(radius=0.3))
     # Défaut : blanc studio
     return Image.new("RGB", (width, height), (255, 255, 255))
 
